@@ -248,6 +248,12 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
         </button>
       </div>
       <div class="sidebar-section" style="margin-top:16px;">
+        <div class="sidebar-label">資料匯入</div>
+        <button class="sidebar-btn" onclick="showPage('import', this)">
+          <span class="sidebar-icon">📥</span> 從試算表匯入
+        </button>
+      </div>
+      <div class="sidebar-section" style="margin-top:16px;">
         <div class="sidebar-label">快速篩選</div>
         <button class="sidebar-btn" onclick="filterSnakes('all'); showPage('list', document.querySelector('.sidebar-btn'))">
           <span class="sidebar-icon">📋</span> 全部
@@ -270,6 +276,52 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
         <div class="page-title">所有個體</div>
         <div class="page-sub" id="list-sub">載入中...</div>
         <div class="snake-grid" id="snake-grid"></div>
+      </div>
+
+      <!-- IMPORT PAGE -->
+      <div class="page" id="page-import">
+        <div class="page-title">從試算表匯入</div>
+        <div class="page-sub">從 hm.Pythons 繁殖蛇類清單「銷售蛇」分頁匯入已售出個體</div>
+
+        <div class="form-card" style="max-width:700px;">
+          <div style="background:rgba(181,115,58,0.08);border:1px solid rgba(181,115,58,0.2);border-radius:6px;padding:16px 20px;margin-bottom:24px;">
+            <div style="font-size:13px;font-weight:500;color:var(--brown);margin-bottom:6px;">⚠️ 匯入說明</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.8;">
+              · 只匯入「銷售蛇」分頁的資料，狀態自動設為「已售出」<br>
+              · 匯入前請先確認試算表已設為「知道連結的任何人可檢視」<br>
+              · 重複的個體編號不會重複匯入<br>
+              · 照片需另外在後台上傳（試算表沒有照片欄位）
+            </div>
+          </div>
+
+          <button onclick="previewImport()" id="preview-btn" class="submit-btn" style="margin-bottom:20px;">
+            📋 預覽試算表資料
+          </button>
+
+          <div id="import-preview" style="display:none;">
+            <div style="font-size:12px;font-weight:500;color:var(--brown);margin-bottom:12px;" id="preview-count"></div>
+            <div style="max-height:360px;overflow-y:auto;border:1px solid rgba(181,115,58,0.15);border-radius:6px;margin-bottom:20px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead>
+                  <tr style="background:var(--cream);position:sticky;top:0;">
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">編號</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">基因/名稱</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">物種</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">性別</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">售價</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">狀態</th>
+                  </tr>
+                </thead>
+                <tbody id="preview-table-body"></tbody>
+              </table>
+            </div>
+            <button onclick="doImport()" id="import-btn" class="submit-btn">
+              ✅ 確認匯入到 Firestore
+            </button>
+          </div>
+
+          <div id="import-result" style="display:none;"></div>
+        </div>
       </div>
 
       <!-- ADD PAGE -->
@@ -309,6 +361,18 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
           </div>
 
           <div class="form-group">
+            <label class="form-label">物種</label>
+            <select class="form-select" id="f-species">
+              <option value="ball_python">球蟒 Ball Python</option>
+              <option value="boa">紅尾蚺 Boa Constrictor</option>
+              <option value="leopard_gecko">豹紋守宮 Leopard Gecko</option>
+              <option value="corn_snake">玉米蛇 Corn Snake</option>
+              <option value="king_snake">王蛇 King Snake</option>
+              <option value="other">其他 Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label class="form-label">中文名稱</label>
             <input class="form-input" id="f-name-zh" placeholder="例：沙漠幽靈（女生）">
           </div>
@@ -332,6 +396,11 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
               <option value="auction">競標中</option>
               <option value="sold">已售出</option>
             </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">售價</label>
+            <input class="form-input" id="f-price" placeholder="例：NT$8,500 / 洽詢 / 競標">
           </div>
 
           <div class="form-group">
@@ -369,7 +438,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const ADMIN_EMAIL = 'jim540888894@gmail.com'; // 只有這個 email 能登入後台
+const ADMIN_EMAILS = ['jim540888894@gmail.com']; // 在這裡新增管理員 email
 const CLOUDINARY_CLOUD = 'dzfnc1h7k';
 const CLOUDINARY_PRESET = 'hm_pythons';
 
@@ -395,7 +464,7 @@ let currentTags = [];
 
 // Auth
 onAuthStateChanged(auth, user => {
-  if (user && user.email === ADMIN_EMAIL) {
+  if (user && ADMIN_EMAILS.includes(user.email)) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-ui').style.display = 'block';
     document.getElementById('user-name').textContent = user.displayName;
@@ -457,6 +526,108 @@ function renderSnakes() {
 }
 
 window.filterSnakes = filter => { currentFilter = filter; renderSnakes(); };
+
+  const SHEET_ID = '1_--bMZA1rkg5Is7oOP9sJh3RSjYtNU2P0oF5kqFZX50';
+  const SHEET_GID = '419301412';
+  let previewData = [];
+
+  const SPECIES_MAP_IMPORT = {
+    '球蟒': 'ball_python', '紅尾蚺': 'boa', '豹紋守宮': 'leopard_gecko',
+    '玉米蛇': 'corn_snake', '王蛇': 'king_snake',
+  };
+
+  window.previewImport = async () => {
+    const btn = document.getElementById('preview-btn');
+    btn.textContent = '載入中...'; btn.disabled = true;
+
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+
+      const cols = json.table.cols.map(c => c.label);
+      console.log('Columns:', cols);
+
+      previewData = json.table.rows
+        .filter(row => row && row.c && row.c[1] && row.c[1].v) // filter empty rows
+        .map(row => {
+          const get = (i) => (row.c[i] && row.c[i].v != null) ? String(row.c[i].v).trim() : '';
+          // Columns from screenshot: 所有人, 產品編號, 物種, 基因, 性別, 出生日期/進貨日期, 親代A, 親代B, 進貨成本, 售價/利潤, 來源, 銷售狀態, 銷售管道, 買家資料, 出貨日期, 公基金10%, 交付狀態
+          return {
+            code: get(1),
+            speciesRaw: get(2),
+            species: SPECIES_MAP_IMPORT[get(2)] || 'ball_python',
+            morph: get(3),
+            nameZh: get(3) + '（' + (get(4) === 'F' ? '女生' : get(4) === 'M' ? '男生' : get(4)) + '）',
+            nameEn: get(3) + ' ' + (get(4) === 'F' ? 'Female' : get(4) === 'M' ? 'Male' : get(4)),
+            gender: get(4),
+            birthYear: get(5),
+            parentA: get(6),
+            parentB: get(7),
+            cost: get(8),
+            price: get(9) ? 'NT$' + get(9) : '',
+            source: get(10),
+            tags: get(3).split(' ').filter(t => t.length > 1 && t.length < 30),
+            status: 'sold',
+            imgUrl: '',
+          };
+        });
+
+      // Render preview table
+      const tbody = document.getElementById('preview-table-body');
+      tbody.innerHTML = previewData.map((s,i) => `
+        <tr style="border-bottom:1px solid rgba(181,115,58,0.08);${i%2===0?'background:white;':'background:var(--cream);'}">
+          <td style="padding:8px 12px;color:var(--brown);font-family:monospace;">${s.code}</td>
+          <td style="padding:8px 12px;color:var(--brown);">${s.morph}</td>
+          <td style="padding:8px 12px;color:var(--muted);">${s.speciesRaw||'球蟒'}</td>
+          <td style="padding:8px 12px;color:var(--muted);">${s.gender}</td>
+          <td style="padding:8px 12px;color:var(--copper);">${s.price||'-'}</td>
+          <td style="padding:8px 12px;"><span style="background:rgba(139,0,0,0.1);color:#8B0000;padding:2px 8px;border-radius:2px;font-size:10px;letter-spacing:1px;">SOLD</span></td>
+        </tr>`).join('');
+
+      document.getElementById('preview-count').textContent = `找到 ${previewData.length} 筆資料，確認後點下方按鈕匯入`;
+      document.getElementById('import-preview').style.display = 'block';
+      document.getElementById('import-result').style.display = 'none';
+
+    } catch(e) {
+      showToast('❌ 讀取失敗：' + e.message);
+      console.error(e);
+    }
+    btn.textContent = '📋 預覽試算表資料'; btn.disabled = false;
+  };
+
+  window.doImport = async () => {
+    const btn = document.getElementById('import-btn');
+    btn.disabled = true; btn.textContent = '匯入中...';
+
+    // Get existing codes to avoid duplicates
+    const existing = await getDocs(collection(db, 'snakes'));
+    const existingCodes = new Set(existing.docs.map(d => d.data().code));
+
+    let imported = 0, skipped = 0;
+    for (const s of previewData) {
+      if (existingCodes.has(s.code)) { skipped++; continue; }
+      await addDoc(collection(db, 'snakes'), { ...s, createdAt: serverTimestamp() });
+      imported++;
+    }
+
+    const result = document.getElementById('import-result');
+    result.style.display = 'block';
+    result.innerHTML = `
+      <div style="background:rgba(42,61,46,0.08);border:1px solid rgba(42,61,46,0.2);border-radius:6px;padding:16px 20px;text-align:center;">
+        <div style="font-size:20px;margin-bottom:8px;">✅</div>
+        <div style="font-size:14px;font-weight:500;color:var(--brown);">匯入完成！</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px;">成功匯入 <strong>${imported}</strong> 筆 · 跳過重複 <strong>${skipped}</strong> 筆</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;">⚠️ 照片需在「所有個體」頁面另外上傳</div>
+      </div>`;
+
+    document.getElementById('import-preview').style.display = 'none';
+    showToast(`✅ 成功匯入 ${imported} 筆！`);
+    await loadSnakes();
+    btn.disabled = false; btn.textContent = '✅ 確認匯入到 Firestore';
+  };
+
 
 // Image upload to Cloudinary
 window.handleImageUpload = async (input) => {
@@ -534,6 +705,8 @@ window.submitSnake = async () => {
   const nameEn = document.getElementById('f-name-en').value.trim();
   const status = document.getElementById('f-status').value;
   const auctionUrl = document.getElementById('f-auction-url').value.trim();
+    const price = document.getElementById('f-price').value.trim();
+    const species = document.getElementById('f-species').value;
 
   if (!imgUrl) { showToast('❌ 請先上傳照片'); return; }
   if (!code || !nameZh) { showToast('❌ 請填寫編號和名稱'); return; }
@@ -544,7 +717,7 @@ window.submitSnake = async () => {
   try {
     await addDoc(collection(db, 'snakes'), {
       imgUrl, code, morph, nameZh, nameEn,
-      tags: currentTags, status, auctionUrl,
+      tags: currentTags, status, auctionUrl, price, species,
       createdAt: serverTimestamp()
     });
     showToast('✅ 新增成功！');
@@ -552,7 +725,7 @@ window.submitSnake = async () => {
     document.getElementById('img-url').value = '';
     document.getElementById('upload-preview').style.display = 'none';
     document.getElementById('upload-placeholder').style.display = 'block';
-    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url'].forEach(id => document.getElementById(id).value = '');
+    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-price'].forEach(id => document.getElementById(id).value = '');
     currentTags = [];
     renderTags();
     await loadSnakes();
