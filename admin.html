@@ -7,13 +7,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --brown: #3B1A10; --copper: #B5733A; --copper-light: #D4A06A;
-  --copper-pale: #EDD4A8; --cream: #F5EFE4; --muted: #7A6A5A; --red: #8B0000;
+  --brown: #3B1A10;
+  --copper: #B5733A;
+  --copper-light: #D4A06A;
+  --copper-pale: #EDD4A8;
+  --cream: #F5EFE4;
+  --silver: #F2F4F6;
+  --muted: #7A6A5A;
+  --red: #8B0000;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var(--brown); }
 
-/* 登入畫面 */
+/* LOGIN SCREEN */
 #login-screen {
   min-height:100vh; display:flex; align-items:center; justify-content:center;
   background: linear-gradient(135deg, #F2F4F6 0%, #DDD8D0 100%);
@@ -23,68 +29,955 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
   border-radius:12px; padding:48px; text-align:center; width:360px;
   box-shadow:0 8px 32px rgba(59,26,16,0.1);
 }
-.login-title { font-family:'Playfair Display',serif; font-size:24px; color:var(--brown); margin-bottom:32px; }
+.login-logo { width:80px; height:80px; border-radius:50%; margin:0 auto 20px; display:block; object-fit:contain; }
+.login-title { font-family:'Playfair Display',serif; font-size:24px; color:var(--brown); margin-bottom:6px; }
+.login-sub { font-size:12px; color:var(--muted); letter-spacing:1px; margin-bottom:32px; }
 .google-btn {
   display:flex; align-items:center; justify-content:center; gap:10px;
   width:100%; padding:12px; border:1px solid rgba(59,26,16,0.2);
-  border-radius:6px; background:white; cursor:pointer; font-size:14px; font-weight:500;
+  border-radius:6px; background:white; cursor:pointer;
+  font-size:14px; font-weight:500; color:var(--brown);
+  font-family:'Noto Sans TC',sans-serif; transition:background 0.2s;
 }
+.google-btn:hover { background:var(--cream); }
 .access-denied { color:var(--red); font-size:13px; margin-top:12px; display:none; }
 
-/* 主介面 */
+/* ADMIN UI */
 #admin-ui { display:none; }
 .navbar {
-  background:var(--brown); color:white; display:flex; align-items:center; 
-  justify-content:space-between; padding:0 40px; height:60px; position:sticky; top:0; z-index:100;
+  background:var(--brown); color:white;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 40px; height:60px; position:sticky; top:0; z-index:100;
 }
+.nav-brand { font-family:'Playfair Display',serif; font-size:18px; color:var(--copper-pale); }
+.nav-right { display:flex; align-items:center; gap:16px; }
+.user-name { font-size:13px; color:rgba(255,255,255,0.6); }
+.logout-btn {
+  background:none; border:1px solid rgba(255,255,255,0.2);
+  color:rgba(255,255,255,0.6); padding:6px 14px; border-radius:4px;
+  font-size:11px; cursor:pointer; font-family:'Noto Sans TC',sans-serif;
+  letter-spacing:1px; transition:border-color 0.2s;
+}
+.logout-btn:hover { border-color:rgba(255,255,255,0.5); color:white; }
+
 .main { display:grid; grid-template-columns:240px 1fr; min-height:calc(100vh - 60px); }
+
+/* SIDEBAR */
 .sidebar { background:white; border-right:1px solid rgba(181,115,58,0.12); padding:24px 0; }
+.sidebar-section { margin-bottom:8px; }
+.sidebar-label { font-size:10px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; padding:0 24px; margin-bottom:6px; }
 .sidebar-btn {
-  display:block; width:100%; padding:12px 24px; background:none; border:none;
-  text-align:left; cursor:pointer; font-size:14px; color:var(--brown);
+  display:flex; align-items:center; gap:10px;
+  width:100%; padding:10px 24px; background:none; border:none;
+  font-size:13px; color:var(--brown); cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif; text-align:left;
+  transition:background 0.15s; border-left:3px solid transparent;
 }
-.sidebar-btn.active { background:var(--cream); color:var(--copper); font-weight:700; border-left:4px solid var(--copper); }
+.sidebar-btn:hover { background:var(--cream); }
+.sidebar-btn.active { background:var(--cream); border-left-color:var(--copper); color:var(--copper); font-weight:500; }
+.sidebar-icon { font-size:16px; width:20px; }
+
+/* CONTENT */
 .content { padding:40px; }
 .page { display:none; }
 .page.active { display:block; }
 
-/* 卡片佈局 */
-.snake-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:20px; }
-.snake-card { background:white; border-radius:8px; overflow:hidden; border:1px solid rgba(181,115,58,0.1); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.snake-card-img { width:100%; aspect-ratio:1/1; object-fit:cover; background: #eee; }
-.snake-card-body { padding:15px; }
-.card-btns { display: flex; gap: 8px; margin-top: 12px; }
-.btn-sm { flex: 1; padding: 6px; font-size: 11px; cursor: pointer; border: 1px solid #ddd; background: #fff; border-radius: 4px; }
+.page-title { font-family:'Playfair Display',serif; font-size:28px; color:var(--brown); margin-bottom:6px; }
+.page-sub { font-size:13px; color:var(--muted); margin-bottom:32px; }
 
-.form-card { background:white; padding:32px; border-radius:8px; max-width:600px; border:1px solid rgba(181,115,58,0.1); }
+/* CARDS GRID */
+.snake-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+.snake-card {
+  background:white; border:1px solid rgba(181,115,58,0.12);
+  border-radius:8px; overflow:hidden; position:relative;
+}
+.snake-card-img { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; }
+.snake-card-img.sold { filter:grayscale(60%); opacity:0.6; }
+.snake-card-body { padding:14px; }
+.snake-card-name { font-size:14px; font-weight:700; color:var(--brown); margin-bottom:2px; }
+.snake-card-code { font-size:10px; color:var(--muted); letter-spacing:1px; margin-bottom:8px; }
+.snake-card-tags { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px; }
+.tag { font-size:10px; background:rgba(181,115,58,0.1); color:var(--copper); padding:2px 8px; border-radius:2px; }
+.status-badge {
+  position:absolute; top:10px; right:10px;
+  font-size:10px; font-weight:700; letter-spacing:2px;
+  padding:4px 10px; border-radius:2px;
+}
+.status-sale { background:#2A3D2E; color:#B8CDB4; }
+.status-auction { background:rgba(181,115,58,0.9); color:white; }
+.status-sold { background:rgba(139,0,0,0.85); color:white; }
+
+.card-actions { display:flex; gap:6px; }
+.action-btn {
+  flex:1; padding:6px; border:1px solid rgba(181,115,58,0.2);
+  background:none; border-radius:4px; font-size:11px; cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif; transition:background 0.15s;
+  color:var(--brown);
+}
+.action-btn:hover { background:var(--cream); }
+.action-btn.danger { color:var(--red); border-color:rgba(139,0,0,0.2); }
+.action-btn.danger:hover { background:#fff0f0; }
+
+/* ADD FORM */
+.form-card {
+  background:white; border:1px solid rgba(181,115,58,0.12);
+  border-radius:8px; padding:32px; max-width:600px;
+}
 .form-group { margin-bottom:20px; }
-.form-label { display:block; font-size:13px; font-weight: 500; margin-bottom:8px; }
-.form-input, .form-select { width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; }
-.submit-btn { background:var(--brown); color:var(--copper-pale); padding:12px; border:none; border-radius:4px; width:100%; cursor:pointer; }
+.form-label { font-size:12px; font-weight:500; color:var(--brown); letter-spacing:0.5px; margin-bottom:6px; display:block; }
+.form-input, .form-select, .form-textarea {
+  width:100%; border:1px solid rgba(181,115,58,0.25);
+  border-radius:4px; padding:10px 12px; font-size:13px;
+  font-family:'Noto Sans TC',sans-serif; color:var(--brown);
+  background:white; outline:none; transition:border-color 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--copper); }
+.form-textarea { resize:vertical; min-height:80px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000; }
+/* Image upload */
+.upload-area {
+  border:2px dashed rgba(181,115,58,0.3); border-radius:8px;
+  padding:32px; text-align:center; cursor:pointer;
+  transition:border-color 0.2s; background:var(--cream);
+}
+.upload-area:hover { border-color:var(--copper); }
+.upload-preview { width:100%; max-height:200px; object-fit:cover; border-radius:4px; display:none; margin-bottom:12px; }
+.upload-icon { font-size:32px; margin-bottom:8px; }
+.upload-text { font-size:13px; color:var(--muted); }
+.upload-progress { display:none; margin-top:10px; }
+.progress-bar { width:100%; height:4px; background:#eee; border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--copper); border-radius:2px; transition:width 0.3s; width:0%; }
+
+/* Tags input */
+.tags-input-wrap { display:flex; flex-wrap:wrap; gap:6px; border:1px solid rgba(181,115,58,0.25); border-radius:4px; padding:8px; }
+.tag-chip { background:rgba(181,115,58,0.1); color:var(--copper); padding:3px 10px; border-radius:2px; font-size:12px; display:flex; align-items:center; gap:4px; }
+.tag-chip-x { cursor:pointer; font-size:14px; line-height:1; color:var(--copper); }
+.tags-input { border:none; outline:none; font-size:13px; font-family:'Noto Sans TC',sans-serif; flex:1; min-width:100px; color:var(--brown); background:transparent; }
+
+/* Submit */
+.submit-btn {
+  background:var(--brown); color:var(--copper-pale);
+  border:none; border-radius:4px; padding:12px 28px;
+  font-size:13px; font-weight:500; letter-spacing:1px;
+  cursor:pointer; font-family:'Noto Sans TC',sans-serif;
+  transition:background 0.2s; width:100%;
+}
+.submit-btn:hover { background:#6B3020; }
+.submit-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  background:var(--brown); color:var(--copper-pale);
+  padding:12px 20px; border-radius:6px; font-size:13px;
+  display:none; box-shadow:0 4px 16px rgba(0,0,0,0.2);
+}
+
+/* Status change modal */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.5);
+  z-index:999; display:none; align-items:center; justify-content:center;
+}
 .modal-overlay.show { display:flex; }
-.modal { background:white; padding:30px; border-radius:8px; width:350px; text-align:center; }
-
-.toast { position:fixed; bottom:20px; right:20px; background:var(--brown); color:white; padding:12px 24px; border-radius:6px; display:none; z-index:2000; }
+.modal {
+  background:white; border-radius:8px; padding:28px; width:360px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.2);
+}
+.modal-title { font-family:'Playfair Display',serif; font-size:18px; color:var(--brown); margin-bottom:6px; }
+.modal-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
+.modal-btns { display:flex; flex-direction:column; gap:8px; }
+.modal-option {
+  padding:10px 16px; border-radius:4px; border:1px solid rgba(181,115,58,0.2);
+  background:none; font-size:13px; cursor:pointer; text-align:left;
+  font-family:'Noto Sans TC',sans-serif; color:var(--brown); transition:background 0.15s;
+}
+.modal-option:hover { background:var(--cream); }
+.modal-option.selected { border-color:var(--copper); background:rgba(181,115,58,0.08); }
+.modal-cancel { margin-top:8px; font-size:12px; color:var(--muted); text-align:center; cursor:pointer; }
+.modal-cancel:hover { color:var(--brown); }
+.modal-save {
+  margin-top:12px; width:100%; padding:10px;
+  background:var(--brown); color:var(--copper-pale);
+  border:none; border-radius:4px; font-size:13px;
+  cursor:pointer; font-family:'Noto Sans TC',sans-serif;
+}
 </style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-title">hm.pythons 後台</div>
-    <button class="google-btn" id="btn-login-trigger">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="18">
-      使用 Google 帳號登入
+    <img class="login-logo" src="" alt="hm.pythons" id="login-logo">
+    <div class="login-title">hm.pythons</div>
+    <div class="login-sub">後台管理系統</div>
+    <button class="google-btn" onclick="doLogin()">
+      <svg width="18" height="18" viewBox="0 0 24 24">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      使用 Google 登入
     </button>
     <div class="access-denied" id="access-denied">⚠️ 此帳號無管理員權限</div>
   </div>
 </div>
 
+<!-- ADMIN UI -->
 <div id="admin-ui">
   <nav class="navbar">
-    <div style="font-weight:700">hm.pythons Admin</div>
-    <div>
-      <span id="user-name" style="margin-right:15px; font-size:12px"></span>
-      <button id="btn-logout" style="background:none; border:1px solid #fff; color:#fff; padding:4px
+    <div class="nav-brand">hm.pythons 後台</div>
+    <div class="nav-right">
+      <span class="user-name" id="user-name"></span>
+      <button class="logout-btn" onclick="doLogout()">登出</button>
+      <a href="index.html" target="_blank" style="font-size:11px;color:rgba(255,255,255,0.5);text-decoration:none;letter-spacing:1px;">← 前往官網</a>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">管理</div>
+        <button class="sidebar-btn active" onclick="showPage('list', this)">
+          <span class="sidebar-icon">🐍</span> 所有個體
+        </button>
+        <button class="sidebar-btn" onclick="showPage('add', this)">
+          <span class="sidebar-icon">➕</span> 新增個體
+        </button>
+      </div>
+      <div class="sidebar-section" style="margin-top:16px;">
+        <div class="sidebar-label">資料匯入</div>
+        <button class="sidebar-btn" onclick="showPage('import', this)">
+          <span class="sidebar-icon">📥</span> 從試算表匯入
+        </button>
+      </div>
+      <div class="sidebar-section" style="margin-top:16px;">
+        <div class="sidebar-label">快速篩選</div>
+        <button class="sidebar-btn" onclick="filterSnakes('all'); showPage('list', document.querySelector('.sidebar-btn'))">
+          <span class="sidebar-icon">📋</span> 全部
+        </button>
+        <button class="sidebar-btn" onclick="filterSnakes('sale'); showPage('list', document.querySelector('.sidebar-btn'))">
+          <span class="sidebar-icon">✅</span> 待售中
+        </button>
+        <button class="sidebar-btn" onclick="filterSnakes('auction'); showPage('list', document.querySelector('.sidebar-btn'))">
+          <span class="sidebar-icon">🔨</span> 競標中
+        </button>
+        <button class="sidebar-btn" onclick="filterSnakes('sold'); showPage('list', document.querySelector('.sidebar-btn'))">
+          <span class="sidebar-icon">📦</span> 已售出
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- LIST PAGE -->
+      <div class="page active" id="page-list">
+        <div class="page-title">所有個體</div>
+        <div class="page-sub" id="list-sub">載入中...</div>
+        <div class="snake-grid" id="snake-grid"></div>
+      </div>
+
+      <!-- IMPORT PAGE -->
+      <div class="page" id="page-import">
+        <div class="page-title">從試算表匯入</div>
+        <div class="page-sub">從 hm.Pythons 繁殖蛇類清單「銷售蛇」分頁匯入已售出個體</div>
+
+        <div class="form-card" style="max-width:700px;">
+          <div style="background:rgba(181,115,58,0.08);border:1px solid rgba(181,115,58,0.2);border-radius:6px;padding:16px 20px;margin-bottom:24px;">
+            <div style="font-size:13px;font-weight:500;color:var(--brown);margin-bottom:6px;">⚠️ 匯入說明</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.8;">
+              · 只匯入「銷售蛇」分頁的資料，狀態自動設為「已售出」<br>
+              · 匯入前請先確認試算表已設為「知道連結的任何人可檢視」<br>
+              · 重複的個體編號不會重複匯入<br>
+              · 照片需另外在後台上傳（試算表沒有照片欄位）
+            </div>
+          </div>
+
+          <button onclick="previewImport()" id="preview-btn" class="submit-btn" style="margin-bottom:20px;">
+            📋 預覽試算表資料
+          </button>
+
+          <div id="import-preview" style="display:none;">
+            <div style="font-size:12px;font-weight:500;color:var(--brown);margin-bottom:12px;" id="preview-count"></div>
+            <div style="max-height:360px;overflow-y:auto;border:1px solid rgba(181,115,58,0.15);border-radius:6px;margin-bottom:20px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead>
+                  <tr style="background:var(--cream);position:sticky;top:0;">
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">編號</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">基因/名稱</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">物種</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">性別</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">售價</th>
+                    <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid rgba(181,115,58,0.15);">狀態</th>
+                  </tr>
+                </thead>
+                <tbody id="preview-table-body"></tbody>
+              </table>
+            </div>
+            <button onclick="doImport()" id="import-btn" class="submit-btn">
+              ✅ 確認匯入到 Firestore
+            </button>
+          </div>
+
+          <div id="import-result" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- ADD PAGE -->
+      <div class="page" id="page-add">
+        <div class="page-title">新增個體</div>
+        <div class="page-sub">填寫資料並上傳照片</div>
+        <div class="form-card">
+
+          <!-- Image Upload -->
+          <div class="form-group">
+            <label class="form-label">個體照片</label>
+            <div class="upload-area" onclick="document.getElementById('img-input').click()" id="upload-area">
+              <img id="upload-preview" class="upload-preview">
+              <div id="upload-placeholder">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">點擊上傳照片</div>
+                <div style="font-size:11px;color:#bbb;margin-top:4px;">支援 JPG、PNG</div>
+              </div>
+              <div class="upload-progress" id="upload-progress">
+                <div style="font-size:12px;color:var(--muted);margin-bottom:6px;" id="upload-status">上傳中...</div>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+              </div>
+            </div>
+            <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+            <input type="hidden" id="img-url">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">個體編號</label>
+              <input class="form-input" id="f-code" placeholder="例：CPR251023#1-01">
+            </div>
+            <div class="form-group">
+              <label class="form-label">色型標籤</label>
+              <input class="form-input" id="f-morph" placeholder="例：DG / Pastel Leopard">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">物種</label>
+            <select class="form-select" id="f-species">
+              <option value="ball_python">球蟒 Ball Python</option>
+              <option value="boa">紅尾蚺 Boa Constrictor</option>
+              <option value="leopard_gecko">豹紋守宮 Leopard Gecko</option>
+              <option value="corn_snake">玉米蛇 Corn Snake</option>
+              <option value="king_snake">王蛇 King Snake</option>
+              <option value="other">其他 Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">中文名稱</label>
+            <input class="form-input" id="f-name-zh" placeholder="例：沙漠幽靈（女生）">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">英文名稱</label>
+            <input class="form-input" id="f-name-en" placeholder="例：Desert Ghost Female">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">基因標籤 <span style="font-size:11px;color:var(--muted);">（輸入後按 Enter 新增）</span></label>
+            <div class="tags-input-wrap" id="tags-wrap" onclick="document.getElementById('tags-input').focus()">
+              <input class="tags-input" id="tags-input" placeholder="輸入基因名稱..." onkeydown="handleTagInput(event)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">狀態</label>
+            <select class="form-select" id="f-status">
+              <option value="sale">待售中</option>
+              <option value="auction">競標中</option>
+              <option value="sold">已售出</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">售價</label>
+            <input class="form-input" id="f-price" placeholder="例：NT$8,500 / 洽詢 / 競標">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">競標連結 <span style="font-size:11px;color:var(--muted);">（競標中時填寫）</span></label>
+            <input class="form-input" id="f-auction-url" placeholder="https://www.auc-tion.com/...">
+          </div>
+
+          <button class="submit-btn" id="submit-btn" onclick="submitSnake()">新增個體</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">更改狀態</div>
+    <div class="modal-sub" id="modal-snake-name">選擇此個體的新狀態</div>
+    <div class="modal-btns">
+      <button class="modal-option" onclick="selectStatus('sale', this)">✅ 待售中</button>
+      <button class="modal-option" onclick="selectStatus('auction', this)">🔨 競標中</button>
+      <button class="modal-option" onclick="selectStatus('sold', this)">📦 已售出</button>
+    </div>
+    <button class="modal-save" onclick="saveStatus()">儲存變更</button>
+    <div class="modal-cancel" onclick="closeModal()">取消</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const ADMIN_EMAILS = ['jim540888894@gmail.com', 'neilchen03@gmail.com', 'lin19880209@gmail.com'];
+const CLOUDINARY_CLOUD = 'dzfnc1h7k';
+const CLOUDINARY_PRESET = 'hm_pythons';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAnH6a_WrFdVlSEWvW-jLq2cTQElrQ4po0",
+  authDomain: "hm-pythons-5ecff.firebaseapp.com",
+  projectId: "hm-pythons-5ecff",
+  storageBucket: "hm-pythons-5ecff.firebasestorage.app",
+  messagingSenderId: "883526808218",
+  appId: "1:883526808218:web:72d5b49e4dd9296e222523"
+};
+
+const app = initializeApp(firebaseConfig, 'admin-app');
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+let allSnakes = [];
+let currentFilter = 'all';
+let editingId = null;
+let newStatus = null;
+let currentTags = [];
+
+// Auth
+onAuthStateChanged(auth, user => {
+  if (user && ADMIN_EMAILS.includes(user.email)) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-ui').style.display = 'block';
+    document.getElementById('user-name').textContent = user.displayName;
+    loadSnakes();
+  } else if (user) {
+    signOut(auth);
+    document.getElementById('access-denied').style.display = 'block';
+  }
+});
+
+window.doLogin = async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { console.error(e); }
+};
+
+window.doLogout = async () => {
+  await signOut(auth);
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-ui').style.display = 'none';
+};
+
+// Load snakes
+async function loadSnakes() {
+  const q = query(collection(db, 'snakes'), orderBy('createdAt', 'desc'));
+  const snap = await getDocs(q);
+  allSnakes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderSnakes();
+}
+
+function renderSnakes() {
+  const grid = document.getElementById('snake-grid');
+  const filtered = currentFilter === 'all' ? allSnakes : allSnakes.filter(s => s.status === currentFilter);
+  document.getElementById('list-sub').textContent = `共 ${filtered.length} 隻個體`;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-size:14px;">沒有個體</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(s => {
+    const badgeClass = s.status === 'sale' ? 'status-sale' : s.status === 'auction' ? 'status-auction' : 'status-sold';
+    const badgeText = s.status === 'sale' ? '待售中' : s.status === 'auction' ? '競標中' : '已售出';
+    const tags = (s.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+    return `
+    <div class="snake-card">
+      <img class="snake-card-img ${s.status === 'sold' ? 'sold' : ''}" src="${s.imgUrl}" onerror="this.style.background='#eee';this.style.height='200px'">
+      <div class="status-badge ${badgeClass}">${badgeText}</div>
+      <div class="snake-card-body">
+        <div class="snake-card-name">${s.nameZh || ''}</div>
+        <div class="snake-card-code">${s.code || ''}</div>
+        <div class="snake-card-tags">${tags}</div>
+        <div class="card-actions">
+          <button class="action-btn" onclick="openEditModal('${s.id}')">編輯</button>
+          <button class="action-btn" onclick="openStatusModal('${s.id}', '${(s.nameZh||'').replace(/'/g,'&apos;')}', '${s.status}')">狀態</button>
+          <button class="action-btn danger" onclick="deleteSnake('${s.id}')">刪除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.filterSnakes = filter => { currentFilter = filter; renderSnakes(); };
+
+  const SHEET_ID = '1_--bMZA1rkg5Is7oOP9sJh3RSjYtNU2P0oF5kqFZX50';
+  const SHEET_GID = '419301412';
+  let previewData = [];
+
+  const SPECIES_MAP_IMPORT = {
+    '球蟒': 'ball_python', '紅尾蚺': 'boa', '豹紋守宮': 'leopard_gecko',
+    '玉米蛇': 'corn_snake', '王蛇': 'king_snake',
+  };
+
+  window.previewImport = async () => {
+    const btn = document.getElementById('preview-btn');
+    btn.textContent = '載入中...'; btn.disabled = true;
+
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+
+      const cols = json.table.cols.map(c => c.label);
+      console.log('Columns:', cols);
+
+      previewData = json.table.rows
+        .filter(row => row && row.c && row.c[1] && row.c[1].v) // filter empty rows
+        .map(row => {
+          const get = (i) => (row.c[i] && row.c[i].v != null) ? String(row.c[i].v).trim() : '';
+          // Columns from screenshot: 所有人, 產品編號, 物種, 基因, 性別, 出生日期/進貨日期, 親代A, 親代B, 進貨成本, 售價/利潤, 來源, 銷售狀態, 銷售管道, 買家資料, 出貨日期, 公基金10%, 交付狀態
+          return {
+            code: get(1),
+            speciesRaw: get(2),
+            species: SPECIES_MAP_IMPORT[get(2)] || 'ball_python',
+            morph: get(3),
+            nameZh: get(3) + '（' + (get(4) === 'F' ? '女生' : get(4) === 'M' ? '男生' : get(4)) + '）',
+            nameEn: get(3) + ' ' + (get(4) === 'F' ? 'Female' : get(4) === 'M' ? 'Male' : get(4)),
+            gender: get(4),
+            birthYear: get(5),
+            parentA: get(6),
+            parentB: get(7),
+            cost: get(8),
+            price: get(9) ? 'NT$' + get(9) : '',
+            source: get(10),
+            tags: get(3).split(' ').filter(t => t.length > 1 && t.length < 30),
+            status: 'sold',
+            imgUrl: '',
+          };
+        });
+
+      // Render preview table
+      const tbody = document.getElementById('preview-table-body');
+      tbody.innerHTML = previewData.map((s,i) => `
+        <tr style="border-bottom:1px solid rgba(181,115,58,0.08);${i%2===0?'background:white;':'background:var(--cream);'}">
+          <td style="padding:8px 12px;color:var(--brown);font-family:monospace;">${s.code}</td>
+          <td style="padding:8px 12px;color:var(--brown);">${s.morph}</td>
+          <td style="padding:8px 12px;color:var(--muted);">${s.speciesRaw||'球蟒'}</td>
+          <td style="padding:8px 12px;color:var(--muted);">${s.gender}</td>
+          <td style="padding:8px 12px;color:var(--copper);">${s.price||'-'}</td>
+          <td style="padding:8px 12px;"><span style="background:rgba(139,0,0,0.1);color:#8B0000;padding:2px 8px;border-radius:2px;font-size:10px;letter-spacing:1px;">SOLD</span></td>
+        </tr>`).join('');
+
+      document.getElementById('preview-count').textContent = `找到 ${previewData.length} 筆資料，確認後點下方按鈕匯入`;
+      document.getElementById('import-preview').style.display = 'block';
+      document.getElementById('import-result').style.display = 'none';
+
+    } catch(e) {
+      showToast('❌ 讀取失敗：' + e.message);
+      console.error(e);
+    }
+    btn.textContent = '📋 預覽試算表資料'; btn.disabled = false;
+  };
+
+  window.doImport = async () => {
+    const btn = document.getElementById('import-btn');
+    btn.disabled = true; btn.textContent = '匯入中...';
+
+    // Get existing codes to avoid duplicates
+    const existing = await getDocs(collection(db, 'snakes'));
+    const existingCodes = new Set(existing.docs.map(d => d.data().code));
+
+    let imported = 0, skipped = 0;
+    for (const s of previewData) {
+      if (existingCodes.has(s.code)) { skipped++; continue; }
+      await addDoc(collection(db, 'snakes'), { ...s, createdAt: serverTimestamp() });
+      imported++;
+    }
+
+    const result = document.getElementById('import-result');
+    result.style.display = 'block';
+    result.innerHTML = `
+      <div style="background:rgba(42,61,46,0.08);border:1px solid rgba(42,61,46,0.2);border-radius:6px;padding:16px 20px;text-align:center;">
+        <div style="font-size:20px;margin-bottom:8px;">✅</div>
+        <div style="font-size:14px;font-weight:500;color:var(--brown);">匯入完成！</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px;">成功匯入 <strong>${imported}</strong> 筆 · 跳過重複 <strong>${skipped}</strong> 筆</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;">⚠️ 照片需在「所有個體」頁面另外上傳</div>
+      </div>`;
+
+    document.getElementById('import-preview').style.display = 'none';
+    showToast(`✅ 成功匯入 ${imported} 筆！`);
+    await loadSnakes();
+    btn.disabled = false; btn.textContent = '✅ 確認匯入到 Firestore';
+  };
+
+
+// Image upload to Cloudinary
+window.handleImageUpload = async (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  const preview = document.getElementById('upload-preview');
+  const placeholder = document.getElementById('upload-placeholder');
+  const progress = document.getElementById('upload-progress');
+  const fill = document.getElementById('progress-fill');
+  const status = document.getElementById('upload-status');
+
+  preview.style.display = 'none';
+  placeholder.style.display = 'none';
+  progress.style.display = 'block';
+  status.textContent = '上傳中...';
+  fill.style.width = '30%';
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+
+  try {
+    fill.style.width = '60%';
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+      method:'POST', body:formData
+    });
+    const data = await res.json();
+    fill.style.width = '100%';
+    status.textContent = '✅ 上傳成功！';
+    document.getElementById('img-url').value = data.secure_url;
+    preview.src = data.secure_url;
+    preview.style.display = 'block';
+    setTimeout(() => { progress.style.display = 'none'; }, 1000);
+  } catch(e) {
+    status.textContent = '❌ 上傳失敗，請重試';
+    console.error(e);
+  }
+};
+
+// Tags
+window.handleTagInput = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const val = e.target.value.trim();
+    if (val) {
+      currentTags.push(val);
+      renderTags();
+      e.target.value = '';
+    }
+  }
+};
+
+function renderTags() {
+  const wrap = document.getElementById('tags-wrap');
+  const input = document.getElementById('tags-input');
+  wrap.innerHTML = '';
+  currentTags.forEach((t, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${t} <span class="tag-chip-x" onclick="removeTag(${i})">×</span>`;
+    wrap.appendChild(chip);
+  });
+  wrap.appendChild(input);
+  input.focus();
+}
+
+window.removeTag = (i) => { currentTags.splice(i,1); renderTags(); };
+
+// Submit new snake
+window.submitSnake = async () => {
+  const imgUrl = document.getElementById('img-url').value;
+  const code = document.getElementById('f-code').value.trim();
+  const morph = document.getElementById('f-morph').value.trim();
+  const nameZh = document.getElementById('f-name-zh').value.trim();
+  const nameEn = document.getElementById('f-name-en').value.trim();
+  const status = document.getElementById('f-status').value;
+  const auctionUrl = document.getElementById('f-auction-url').value.trim();
+    const price = document.getElementById('f-price').value.trim();
+    const species = document.getElementById('f-species').value;
+
+  if (!imgUrl) { showToast('❌ 請先上傳照片'); return; }
+  if (!code || !nameZh) { showToast('❌ 請填寫編號和名稱'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = '儲存中...';
+
+  try {
+    await addDoc(collection(db, 'snakes'), {
+      imgUrl, code, morph, nameZh, nameEn,
+      tags: currentTags, status, auctionUrl, price, species,
+      createdAt: serverTimestamp()
+    });
+    showToast('✅ 新增成功！');
+    // Reset form
+    document.getElementById('img-url').value = '';
+    document.getElementById('upload-preview').style.display = 'none';
+    document.getElementById('upload-placeholder').style.display = 'block';
+    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-price'].forEach(id => document.getElementById(id).value = '');
+    currentTags = [];
+    renderTags();
+    await loadSnakes();
+    showPage('list', document.querySelector('.sidebar-btn'));
+  } catch(e) {
+    showToast('❌ 儲存失敗：' + e.message);
+    console.error(e);
+  }
+  btn.disabled = false; btn.textContent = '新增個體';
+};
+
+// Status modal
+window.openStatusModal = (id, name, status) => {
+  editingId = id; newStatus = status;
+  document.getElementById('modal-snake-name').textContent = name;
+  document.querySelectorAll('.modal-option').forEach(btn => {
+    btn.classList.remove('selected');
+    if ((btn.textContent.includes('待售') && status==='sale') ||
+        (btn.textContent.includes('競標') && status==='auction') ||
+        (btn.textContent.includes('已售') && status==='sold')) {
+      btn.classList.add('selected');
+    }
+  });
+  document.getElementById('modal-overlay').classList.add('show');
+};
+
+window.selectStatus = (s, btn) => {
+  newStatus = s;
+  document.querySelectorAll('.modal-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+};
+
+window.saveStatus = async () => {
+  if (!editingId || !newStatus) return;
+  await updateDoc(doc(db, 'snakes', editingId), { status: newStatus });
+  closeModal();
+  showToast('✅ 狀態已更新');
+  await loadSnakes();
+};
+
+window.closeModal = () => { document.getElementById('modal-overlay').classList.remove('show'); };
+
+  let editingSnakeId = null;
+  let editTags = [];
+
+  window.openEditModal = async (id) => {
+    const snake = allSnakes.find(s => s.id === id);
+    if (!snake) return;
+    editingSnakeId = id;
+    editTags = [...(snake.tags || [])];
+
+    document.getElementById('edit-code').value = snake.code || '';
+    document.getElementById('edit-morph').value = snake.morph || '';
+    document.getElementById('edit-species').value = snake.species || 'ball_python';
+    document.getElementById('edit-name-zh').value = snake.nameZh || '';
+    document.getElementById('edit-name-en').value = snake.nameEn || '';
+    document.getElementById('edit-price').value = snake.price || '';
+    document.getElementById('edit-status').value = snake.status || 'sale';
+    document.getElementById('edit-auction-url').value = snake.auctionUrl || '';
+    document.getElementById('edit-img-url').value = snake.imgUrl || '';
+
+    const preview = document.getElementById('edit-upload-preview');
+    const placeholder = document.getElementById('edit-upload-placeholder');
+    if (snake.imgUrl) {
+      preview.src = snake.imgUrl;
+      preview.style.display = 'block';
+      placeholder.textContent = '點擊更換照片';
+    } else {
+      preview.style.display = 'none';
+      placeholder.textContent = '點擊上傳照片';
+    }
+
+    renderEditTags();
+    document.getElementById('edit-modal-overlay').classList.add('show');
+  };
+
+  window.closeEditModal = () => {
+    document.getElementById('edit-modal-overlay').classList.remove('show');
+    editingSnakeId = null;
+  };
+
+  window.handleEditTagInput = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = e.target.value.trim();
+      if (val) { editTags.push(val); renderEditTags(); e.target.value = ''; }
+    }
+  };
+
+  window.removeEditTag = (i) => { editTags.splice(i,1); renderEditTags(); };
+
+  function renderEditTags() {
+    const wrap = document.getElementById('edit-tags-wrap');
+    const input = document.getElementById('edit-tags-input');
+    wrap.innerHTML = '';
+    editTags.forEach((t,i) => {
+      const chip = document.createElement('div');
+      chip.className = 'tag-chip';
+      chip.innerHTML = t + ' <span class="tag-chip-x" onclick="removeEditTag('+i+')">×</span>';
+      wrap.appendChild(chip);
+    });
+    wrap.appendChild(input);
+  }
+
+  window.handleEditImageUpload = async (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    const statusEl = document.getElementById('edit-upload-status');
+    const preview = document.getElementById('edit-upload-preview');
+    const placeholder = document.getElementById('edit-upload-placeholder');
+    statusEl.style.display = 'block';
+    statusEl.textContent = '上傳中...';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_PRESET);
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method:'POST', body:formData });
+      const data = await res.json();
+      document.getElementById('edit-img-url').value = data.secure_url;
+      preview.src = data.secure_url;
+      preview.style.display = 'block';
+      placeholder.textContent = '點擊更換照片';
+      statusEl.textContent = '✅ 上傳成功！';
+      setTimeout(() => { statusEl.style.display = 'none'; }, 2000);
+    } catch(e) {
+      statusEl.textContent = '❌ 上傳失敗';
+    }
+  };
+
+  window.saveEdit = async () => {
+    if (!editingSnakeId) return;
+    const btn = document.getElementById('edit-save-btn');
+    btn.disabled = true; btn.textContent = '儲存中...';
+    try {
+      await updateDoc(doc(db, 'snakes', editingSnakeId), {
+        code: document.getElementById('edit-code').value.trim(),
+        morph: document.getElementById('edit-morph').value.trim(),
+        species: document.getElementById('edit-species').value,
+        nameZh: document.getElementById('edit-name-zh').value.trim(),
+        nameEn: document.getElementById('edit-name-en').value.trim(),
+        tags: editTags,
+        price: document.getElementById('edit-price').value.trim(),
+        status: document.getElementById('edit-status').value,
+        auctionUrl: document.getElementById('edit-auction-url').value.trim(),
+        imgUrl: document.getElementById('edit-img-url').value,
+      });
+      showToast('✅ 儲存成功！');
+      closeEditModal();
+      await loadSnakes();
+    } catch(e) {
+      showToast('❌ 儲存失敗：' + e.message);
+    }
+    btn.disabled = false; btn.textContent = '儲存變更';
+  };
+
+
+// Delete
+window.deleteSnake = async (id) => {
+  if (!confirm('確定要刪除這隻個體嗎？')) return;
+  await deleteDoc(doc(db, 'snakes', id));
+  showToast('🗑️ 已刪除');
+  await loadSnakes();
+};
+
+// UI helpers
+window.showPage = (page, btn) => {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+};
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+</script>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal-overlay">
+  <div class="modal" style="width:520px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">編輯個體</div>
+    <div style="margin-bottom:16px;">
+      <!-- Image upload -->
+      <label class="form-label">照片</label>
+      <div id="edit-upload-area" onclick="document.getElementById('edit-img-input').click()" style="border:2px dashed rgba(181,115,58,0.3);border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:var(--cream);margin-bottom:12px;">
+        <img id="edit-upload-preview" style="max-height:160px;object-fit:cover;border-radius:4px;display:none;margin:0 auto 8px;">
+        <div id="edit-upload-placeholder" style="font-size:13px;color:var(--muted);">點擊上傳/更換照片</div>
+        <div id="edit-upload-status" style="font-size:12px;color:var(--copper);margin-top:6px;display:none;"></div>
+      </div>
+      <input type="file" id="edit-img-input" accept="image/*" style="display:none" onchange="handleEditImageUpload(this)">
+      <input type="hidden" id="edit-img-url">
+    </div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div>
+        <label class="form-label">個體編號</label>
+        <input class="form-input" id="edit-code">
+      </div>
+      <div>
+        <label class="form-label">色型標籤</label>
+        <input class="form-input" id="edit-morph">
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">物種</label>
+      <select class="form-select" id="edit-species">
+        <option value="ball_python">球蟒</option>
+        <option value="boa">紅尾蚺</option>
+        <option value="leopard_gecko">豹紋守宮</option>
+        <option value="corn_snake">玉米蛇</option>
+        <option value="king_snake">王蛇</option>
+        <option value="other">其他</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">中文名稱</label>
+      <input class="form-input" id="edit-name-zh">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">英文名稱</label>
+      <input class="form-input" id="edit-name-en">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">基因標籤 <span style="font-size:11px;color:var(--muted);">（輸入後按 Enter）</span></label>
+      <div class="tags-input-wrap" id="edit-tags-wrap" onclick="document.getElementById('edit-tags-input').focus()">
+        <input class="tags-input" id="edit-tags-input" placeholder="輸入基因..." onkeydown="handleEditTagInput(event)">
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div>
+        <label class="form-label">售價</label>
+        <input class="form-input" id="edit-price" placeholder="NT$8,500 / 洽詢">
+      </div>
+      <div>
+        <label class="form-label">狀態</label>
+        <select class="form-select" id="edit-status">
+          <option value="sale">待售中</option>
+          <option value="auction">競標中</option>
+          <option value="sold">已售出</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label class="form-label">競標連結</label>
+      <input class="form-input" id="edit-auction-url" placeholder="https://...">
+    </div>
+    <button class="modal-save" onclick="saveEdit()" id="edit-save-btn">儲存變更</button>
+    <div class="modal-cancel" onclick="closeEditModal()" style="margin-top:10px;">取消</div>
+  </div>
+</div>
+
+</body>
+</html>
