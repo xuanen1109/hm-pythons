@@ -517,7 +517,8 @@ function renderSnakes() {
         <div class="snake-card-code">${s.code || ''}</div>
         <div class="snake-card-tags">${tags}</div>
         <div class="card-actions">
-          <button class="action-btn" onclick="openStatusModal('${s.id}', '${(s.nameZh||'').replace(/'/g,'&apos;')}', '${s.status}')">更改狀態</button>
+          <button class="action-btn" onclick="openEditModal('${s.id}')">編輯</button>
+          <button class="action-btn" onclick="openStatusModal('${s.id}', '${(s.nameZh||'').replace(/'/g,'&apos;')}', '${s.status}')">狀態</button>
           <button class="action-btn danger" onclick="deleteSnake('${s.id}')">刪除</button>
         </div>
       </div>
@@ -768,6 +769,120 @@ window.saveStatus = async () => {
 
 window.closeModal = () => { document.getElementById('modal-overlay').classList.remove('show'); };
 
+  let editingSnakeId = null;
+  let editTags = [];
+
+  window.openEditModal = async (id) => {
+    const snake = allSnakes.find(s => s.id === id);
+    if (!snake) return;
+    editingSnakeId = id;
+    editTags = [...(snake.tags || [])];
+
+    document.getElementById('edit-code').value = snake.code || '';
+    document.getElementById('edit-morph').value = snake.morph || '';
+    document.getElementById('edit-species').value = snake.species || 'ball_python';
+    document.getElementById('edit-name-zh').value = snake.nameZh || '';
+    document.getElementById('edit-name-en').value = snake.nameEn || '';
+    document.getElementById('edit-price').value = snake.price || '';
+    document.getElementById('edit-status').value = snake.status || 'sale';
+    document.getElementById('edit-auction-url').value = snake.auctionUrl || '';
+    document.getElementById('edit-img-url').value = snake.imgUrl || '';
+
+    const preview = document.getElementById('edit-upload-preview');
+    const placeholder = document.getElementById('edit-upload-placeholder');
+    if (snake.imgUrl) {
+      preview.src = snake.imgUrl;
+      preview.style.display = 'block';
+      placeholder.textContent = '點擊更換照片';
+    } else {
+      preview.style.display = 'none';
+      placeholder.textContent = '點擊上傳照片';
+    }
+
+    renderEditTags();
+    document.getElementById('edit-modal-overlay').classList.add('show');
+  };
+
+  window.closeEditModal = () => {
+    document.getElementById('edit-modal-overlay').classList.remove('show');
+    editingSnakeId = null;
+  };
+
+  window.handleEditTagInput = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = e.target.value.trim();
+      if (val) { editTags.push(val); renderEditTags(); e.target.value = ''; }
+    }
+  };
+
+  window.removeEditTag = (i) => { editTags.splice(i,1); renderEditTags(); };
+
+  function renderEditTags() {
+    const wrap = document.getElementById('edit-tags-wrap');
+    const input = document.getElementById('edit-tags-input');
+    wrap.innerHTML = '';
+    editTags.forEach((t,i) => {
+      const chip = document.createElement('div');
+      chip.className = 'tag-chip';
+      chip.innerHTML = t + ' <span class="tag-chip-x" onclick="removeEditTag('+i+')">×</span>';
+      wrap.appendChild(chip);
+    });
+    wrap.appendChild(input);
+  }
+
+  window.handleEditImageUpload = async (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    const statusEl = document.getElementById('edit-upload-status');
+    const preview = document.getElementById('edit-upload-preview');
+    const placeholder = document.getElementById('edit-upload-placeholder');
+    statusEl.style.display = 'block';
+    statusEl.textContent = '上傳中...';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_PRESET);
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method:'POST', body:formData });
+      const data = await res.json();
+      document.getElementById('edit-img-url').value = data.secure_url;
+      preview.src = data.secure_url;
+      preview.style.display = 'block';
+      placeholder.textContent = '點擊更換照片';
+      statusEl.textContent = '✅ 上傳成功！';
+      setTimeout(() => { statusEl.style.display = 'none'; }, 2000);
+    } catch(e) {
+      statusEl.textContent = '❌ 上傳失敗';
+    }
+  };
+
+  window.saveEdit = async () => {
+    if (!editingSnakeId) return;
+    const btn = document.getElementById('edit-save-btn');
+    btn.disabled = true; btn.textContent = '儲存中...';
+    try {
+      await updateDoc(doc(db, 'snakes', editingSnakeId), {
+        code: document.getElementById('edit-code').value.trim(),
+        morph: document.getElementById('edit-morph').value.trim(),
+        species: document.getElementById('edit-species').value,
+        nameZh: document.getElementById('edit-name-zh').value.trim(),
+        nameEn: document.getElementById('edit-name-en').value.trim(),
+        tags: editTags,
+        price: document.getElementById('edit-price').value.trim(),
+        status: document.getElementById('edit-status').value,
+        auctionUrl: document.getElementById('edit-auction-url').value.trim(),
+        imgUrl: document.getElementById('edit-img-url').value,
+      });
+      showToast('✅ 儲存成功！');
+      closeEditModal();
+      await loadSnakes();
+    } catch(e) {
+      showToast('❌ 儲存失敗：' + e.message);
+    }
+    btn.disabled = false; btn.textContent = '儲存變更';
+  };
+
+
 // Delete
 window.deleteSnake = async (id) => {
   if (!confirm('確定要刪除這隻個體嗎？')) return;
@@ -790,5 +905,79 @@ function showToast(msg) {
   setTimeout(() => { t.style.display = 'none'; }, 3000);
 }
 </script>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal-overlay">
+  <div class="modal" style="width:520px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">編輯個體</div>
+    <div style="margin-bottom:16px;">
+      <!-- Image upload -->
+      <label class="form-label">照片</label>
+      <div id="edit-upload-area" onclick="document.getElementById('edit-img-input').click()" style="border:2px dashed rgba(181,115,58,0.3);border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:var(--cream);margin-bottom:12px;">
+        <img id="edit-upload-preview" style="max-height:160px;object-fit:cover;border-radius:4px;display:none;margin:0 auto 8px;">
+        <div id="edit-upload-placeholder" style="font-size:13px;color:var(--muted);">點擊上傳/更換照片</div>
+        <div id="edit-upload-status" style="font-size:12px;color:var(--copper);margin-top:6px;display:none;"></div>
+      </div>
+      <input type="file" id="edit-img-input" accept="image/*" style="display:none" onchange="handleEditImageUpload(this)">
+      <input type="hidden" id="edit-img-url">
+    </div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div>
+        <label class="form-label">個體編號</label>
+        <input class="form-input" id="edit-code">
+      </div>
+      <div>
+        <label class="form-label">色型標籤</label>
+        <input class="form-input" id="edit-morph">
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">物種</label>
+      <select class="form-select" id="edit-species">
+        <option value="ball_python">球蟒</option>
+        <option value="boa">紅尾蚺</option>
+        <option value="leopard_gecko">豹紋守宮</option>
+        <option value="corn_snake">玉米蛇</option>
+        <option value="king_snake">王蛇</option>
+        <option value="other">其他</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">中文名稱</label>
+      <input class="form-input" id="edit-name-zh">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">英文名稱</label>
+      <input class="form-input" id="edit-name-en">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">基因標籤 <span style="font-size:11px;color:var(--muted);">（輸入後按 Enter）</span></label>
+      <div class="tags-input-wrap" id="edit-tags-wrap" onclick="document.getElementById('edit-tags-input').focus()">
+        <input class="tags-input" id="edit-tags-input" placeholder="輸入基因..." onkeydown="handleEditTagInput(event)">
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div>
+        <label class="form-label">售價</label>
+        <input class="form-input" id="edit-price" placeholder="NT$8,500 / 洽詢">
+      </div>
+      <div>
+        <label class="form-label">狀態</label>
+        <select class="form-select" id="edit-status">
+          <option value="sale">待售中</option>
+          <option value="auction">競標中</option>
+          <option value="sold">已售出</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label class="form-label">競標連結</label>
+      <input class="form-input" id="edit-auction-url" placeholder="https://...">
+    </div>
+    <button class="modal-save" onclick="saveEdit()" id="edit-save-btn">儲存變更</button>
+    <div class="modal-cancel" onclick="closeEditModal()" style="margin-top:10px;">取消</div>
+  </div>
+</div>
+
 </body>
 </html>
