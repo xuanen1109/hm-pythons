@@ -303,7 +303,42 @@ async function loadSoldSnakes() {
       return;
     }
 
-    grid.innerHTML = sold.map(s => {
+    const SHOW_LIMIT = 6;
+    const showAll = sold.length <= SHOW_LIMIT;
+
+    const renderCards = (list) => list.map(s => {
+      const tags = (s.tags||[]).map(t => `<span style="font-size:10px;letter-spacing:0.5px;color:#7A5230;background:rgba(181,115,58,0.1);padding:3px 10px;border-radius:1px;">${t}</span>`).join('');
+      return `
+        <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:hidden;">
+          <div style="position:relative;">
+            <img src="${s.imgUrl||''}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;" onerror="this.style.background='#eee'">
+            <div style="position:absolute;top:12px;right:12px;background:rgba(139,0,0,0.85);color:white;font-family:'Playfair Display',serif;font-size:13px;font-weight:700;letter-spacing:3px;padding:5px 14px;border-radius:2px;">SOLD</div>
+          </div>
+          <div style="padding:20px;">
+            <div style="font-family:'Playfair Display',serif;font-size:17px;color:#3B1A10;margin-bottom:4px;">${s.nameZh||''}</div>
+            <div style="font-size:11px;color:#7A6A5A;margin-bottom:4px;font-weight:300;">${s.nameEn||''}</div>
+            <div style="font-size:10px;color:rgba(122,106,90,0.6);letter-spacing:1px;margin-bottom:14px;">${s.code||''}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">${tags}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    grid.innerHTML = renderCards(sold.slice(0, SHOW_LIMIT));
+
+    if (!showAll) {
+      const moreBtn = document.createElement('div');
+      moreBtn.style.cssText = 'grid-column:1/-1;text-align:center;padding:24px;';
+      moreBtn.innerHTML = `<button onclick="this.parentElement.previousElementSibling ? null : null; showAllSold()" style="background:none;border:1px solid rgba(181,115,58,0.3);color:#B5733A;padding:10px 28px;border-radius:4px;font-size:12px;letter-spacing:2px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">展開全部 ${sold.length} 筆記錄 ↓</button>`;
+      grid.after(moreBtn);
+      window._allSoldSnakes = sold;
+      window.showAllSold = function() {
+        grid.innerHTML = renderCards(sold);
+        moreBtn.remove();
+      };
+    }
+
+    // dummy line to avoid breaking rest of code
+    if (false) sold.map(s => {
       const tags = (s.tags||[]).map(t => `<span style="font-size:10px;letter-spacing:0.5px;color:#7A5230;background:rgba(181,115,58,0.1);padding:3px 10px;border-radius:1px;">${t}</span>`).join('');
       return `
         <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:hidden;">
