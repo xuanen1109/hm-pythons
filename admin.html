@@ -1,75 +1,39 @@
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>後台管理 — hm.pythons</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brown: #3B1A10;
+  --copper: #B5733A;
+  --copper-light: #D4A06A;
+  --copper-pale: #EDD4A8;
+  --cream: #F5EFE4;
+  --silver: #F2F4F6;
+  --muted: #7A6A5A;
+  --red: #8B0000;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var(--brown); }
 
-// 1. 更新管理員名單
-const ADMIN_EMAILS = ['jim540888894@gmail.com', 'lin19880209@gmail.com', 'neilchen03@gmail.com']; 
-const CLOUDINARY_CLOUD = 'dzfnc1h7k';
-const CLOUDINARY_PRESET = 'hm_pythons';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAnH6a_WrFdVlSEWvW-jLq2cTQElrQ4po0",
-  authDomain: "hm-pythons-5ecff.firebaseapp.com",
-  projectId: "hm-pythons-5ecff",
-  storageBucket: "hm-pythons-5ecff.firebasestorage.app",
-  messagingSenderId: "883526808218",
-  appId: "1:883526808218:web:72d5b49e4dd9296e222523"
-};
-
-// 2. 優化實例初始化
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-
-let allSnakes = [];
-let currentFilter = 'all';
-let editingId = null;
-let newStatus = null;
-let currentTags = [];
-
-// --- 以下功能邏輯保持不變，但已套用上述優化 ---
-
-// Auth 監聽
-onAuthStateChanged(auth, user => {
-  if (user && ADMIN_EMAILS.includes(user.email)) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-ui').style.display = 'block';
-    document.getElementById('user-name').textContent = user.displayName;
-    loadSnakes();
-  } else if (user) {
-    signOut(auth);
-    document.getElementById('access-denied').style.display = 'block';
-  }
-});
-
-// ... (省略中間重複的登入/登出函數)
-
-// 匯入預覽優化
-window.previewImport = async () => {
-    // ... 前段 fetch 邏輯不變
-    previewData = json.table.rows
-        .filter(row => row && row.c && row.c[1] && row.c[1].v)
-        .map(row => {
-            const get = (i) => (row.c[i] && row.c[i].v != null) ? String(row.c[i].v).trim() : '';
-            return {
-                code: get(1),
-                speciesRaw: get(2),
-                species: SPECIES_MAP_IMPORT[get(2)] || 'ball_python',
-                morph: get(3),
-                nameZh: get(3) + '（' + (get(4) === 'F' ? '女生' : get(4) === 'M' ? '男生' : get(4)) + '）',
-                nameEn: get(3) + ' ' + (get(4) === 'F' ? 'Female' : get(4) === 'M' ? 'Male' : get(4)),
-                gender: get(4),
-                // 3. 標籤自動拆解優化
-                tags: get(3).split(/[\s+/]+/).map(t => t.trim()).filter(t => t.length > 1),
-                status: 'sold',
-                price: get(9) ? 'NT$' + get(9) : '',
-                imgUrl: '',
-            };
-        });
-    // ... 後續 render 邏輯不變
-};
-
-// ... (後續函數保持不變)
-</script>
+/* LOGIN SCREEN */
+#login-screen {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(135deg, #F2F4F6 0%, #DDD8D0 100%);
+}
+.login-box {
+  background:white; border:1px solid rgba(181,115,58,0.2);
+  border-radius:12px; padding:48px; text-align:center; width:360px;
+  box-shadow:0 8px 32px rgba(59,26,16,0.1);
+}
+.login-logo { width:80px; height:80px; border-radius:50%; margin:0 auto 20px; display:block; object-fit:contain; }
+.login-title { font-family:'Playfair Display',serif; font-size:24px; color:var(--brown); margin-bottom:6px; }
+.login-sub { font-size:12px; color:var(--muted); letter-spacing:1px; margin-bottom:32px; }
+.google-btn {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; padding:12px; border:1px solid rgba(59,26,16,0.2);
+  border-radius:6px; background:white; cursor:pointer;
+  font-size:14px; font-weight:500; color:var(--
