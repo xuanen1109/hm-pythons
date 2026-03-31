@@ -202,6 +202,53 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
   border:none; border-radius:4px; font-size:13px;
   cursor:pointer; font-family:'Noto Sans TC',sans-serif;
 }
+/* IM TABLE */
+.im-table { width:100%; border-collapse:collapse; font-size:12px; }
+.im-table th { padding:9px 12px; text-align:left; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border-bottom:1px solid rgba(181,115,58,0.12); background:var(--cream); white-space:nowrap; }
+.im-table td { padding:9px 12px; border-bottom:1px solid rgba(181,115,58,0.07); vertical-align:middle; }
+.im-table tr:last-child td { border-bottom:none; }
+.im-table tr:hover td { background:rgba(181,115,58,0.03); }
+/* IM TAGS */
+.im-tag { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; border:1px solid; white-space:nowrap; margin:1px; }
+.im-tag-m { color:#4a7fb5; border-color:#c5d9ef; background:#eef4fb; }
+.im-tag-f { color:#b54a7f; border-color:#efc5d9; background:#fbeef4; }
+.im-tag-safe { color:#2a6b3a; border-color:#b4d9be; background:#edf7f0; }
+.im-tag-iso { color:#8b5e10; border-color:#e8c97a; background:#fdf5e0; }
+.im-tag-avail { color:#2a6b3a; border-color:#b4d9be; background:#edf7f0; }
+.im-tag-sold { color:var(--muted); border-color:#ddd; background:#f5f5f5; }
+.im-tag-ship { color:#1a5a8b; border-color:#a8cce0; background:#e8f3f9; }
+.im-owner { font-size:10px; padding:2px 6px; border-radius:3px; border:1px solid; font-weight:600; }
+.im-owner-yg { background:#eef4fb; color:#4a7fb5; border-color:#c5d9ef; }
+.im-owner-xe { background:#f5eef9; color:#8b4ab5; border-color:#d9c5ef; }
+.im-owner-neil { background:#edf7f0; color:#2a6b3a; border-color:#b4d9be; }
+/* IM KPI */
+.im-kpi { background:white; border:1px solid rgba(181,115,58,0.12); border-radius:8px; padding:16px 18px; }
+.im-kpi-label { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+.im-kpi-value { font-size:22px; font-weight:700; color:var(--brown); margin:4px 0; }
+.im-kpi-sub { font-size:11px; color:var(--muted); }
+/* IM MODAL */
+.im-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; display:none; align-items:center; justify-content:center; padding:20px; }
+.im-modal-overlay.show { display:flex; }
+.im-modal { background:white; border-radius:8px; padding:28px; max-width:560px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+.im-modal-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--brown); margin-bottom:20px; }
+.im-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.im-form-full { grid-column:1/-1; }
+.im-form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; border-top:1px solid rgba(181,115,58,0.12); padding-top:16px; }
+.im-btn-cancel { padding:8px 16px; border:1px solid rgba(181,115,58,0.25); background:none; border-radius:4px; color:var(--muted); cursor:pointer; font-size:12px; font-family:'Noto Sans TC',sans-serif; }
+.im-btn-cancel:hover { color:var(--brown); }
+/* IM NUMBER INPUT */
+input.im-num { width:70px; padding:4px 8px; border:1px solid rgba(181,115,58,0.25); border-radius:4px; text-align:center; font-size:13px; color:var(--brown); background:white; outline:none; }
+input.im-num:focus { border-color:var(--copper); }
+/* IM ALERT */
+.im-alert { background:#fdf5e0; border:1px solid #e8c97a; border-radius:6px; padding:10px 14px; margin-bottom:14px; font-size:12px; color:#8b5e10; display:flex; align-items:center; gap:8px; }
+/* IM FOOD BLOCK */
+.im-food-block { background:white; border:1px solid rgba(181,115,58,0.12); border-radius:8px; overflow:hidden; margin-bottom:16px; }
+.im-food-header { padding:12px 16px; border-bottom:1px solid rgba(181,115,58,0.12); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+/* IM PROG */
+.im-prog { background:#eee; border-radius:3px; height:5px; overflow:hidden; width:60px; display:inline-block; vertical-align:middle; margin-left:6px; }
+.im-prog-fill { height:100%; border-radius:3px; }
+/* IM CONFIRM */
+.im-confirm-msg { color:var(--brown); margin-bottom:20px; line-height:1.8; font-size:13px; }
 </style>
 </head>
 <body>
@@ -266,6 +313,31 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
         </button>
         <button class="sidebar-btn" onclick="filterSnakes('sold'); showPage('list', document.querySelector('.sidebar-btn'))">
           <span class="sidebar-icon">📦</span> 已售出
+        </button>
+      </div>
+
+      <div class="sidebar-section" style="margin-top:16px;">
+        <div class="sidebar-label">內部管理</div>
+        <button class="sidebar-btn" onclick="showPage('im-dashboard', this)">
+          <span class="sidebar-icon">📊</span> 總覽
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-males', this); imLoadAndRender('males')">
+          <span class="sidebar-icon">♂</span> 公蛇
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-females', this); imLoadAndRender('females')">
+          <span class="sidebar-icon">♀</span> 母蛇
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-sales', this); imLoadAndRender('sales')">
+          <span class="sidebar-icon">💰</span> 銷售記錄
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-breeding', this); imLoadAndRender('breeding')">
+          <span class="sidebar-icon">🐍</span> 交配紀錄
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-food', this); imRenderFood()">
+          <span class="sidebar-icon">🐭</span> 鼠量庫存
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-seed', this)">
+          <span class="sidebar-icon">📦</span> 匯入初始資料
         </button>
       </div>
     </div>
@@ -411,6 +483,164 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
           <button class="submit-btn" id="submit-btn" onclick="submitSnake()">新增個體</button>
         </div>
       </div>
+
+      <!-- IM: DASHBOARD -->
+      <div class="page" id="page-im-dashboard">
+        <div class="page-title">內部管理總覽</div>
+        <div class="page-sub">蛇隻、銷售、交配、鼠量概況</div>
+        <div id="im-kpi-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;"></div>
+        <div id="im-dash-alerts"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+          <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:hidden">
+            <div style="padding:12px 16px;border-bottom:1px solid rgba(181,115,58,0.12);font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase">待售蛇</div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px" id="im-dash-avail"></table>
+          </div>
+          <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:hidden">
+            <div style="padding:12px 16px;border-bottom:1px solid rgba(181,115,58,0.12);font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase">隔離中</div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px" id="im-dash-iso"></table>
+          </div>
+          <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:hidden">
+            <div style="padding:12px 16px;border-bottom:1px solid rgba(181,115,58,0.12);font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase">最新交配</div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px" id="im-dash-breed"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- IM: MALES -->
+      <div class="page" id="page-im-males">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="page-title">公蛇</div>
+          <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenForm('males',null)">＋ 新增公蛇</button>
+        </div>
+        <div class="page-sub" id="im-males-sub"></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <input class="form-input" style="width:200px;padding:7px 10px" placeholder="搜尋基因、物種…" id="im-q-males" oninput="imRenderTable('males')">
+          <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-males-species" onchange="imRenderTable('males')"><option value="">全部物種</option><option>球蟒</option><option>紅尾蚺</option><option>玉米蛇</option><option>王蛇</option><option>豹紋守宮</option></select>
+          <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-males-owner" onchange="imRenderTable('males')"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
+          <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-males-status" onchange="imRenderTable('males')"><option value="">全部狀態</option><option>安全穩定</option><option>隔離中</option></select>
+        </div>
+        <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
+          <table class="im-table" id="im-table-males"></table>
+        </div>
+      </div>
+
+      <!-- IM: FEMALES -->
+      <div class="page" id="page-im-females">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="page-title">母蛇</div>
+          <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenForm('females',null)">＋ 新增母蛇</button>
+        </div>
+        <div class="page-sub" id="im-females-sub"></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <input class="form-input" style="width:200px;padding:7px 10px" placeholder="搜尋基因、物種…" id="im-q-females" oninput="imRenderTable('females')">
+          <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-females-species" onchange="imRenderTable('females')"><option value="">全部物種</option><option>球蟒</option><option>紅尾蚺</option><option>玉米蛇</option><option>王蛇</option><option>豹紋守宮</option></select>
+          <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-females-owner" onchange="imRenderTable('females')"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
+        </div>
+        <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
+          <table class="im-table" id="im-table-females"></table>
+        </div>
+      </div>
+
+      <!-- IM: SALES -->
+      <div class="page" id="page-im-sales">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="page-title">銷售記錄</div>
+          <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenForm('sales',null)">＋ 新增</button>
+        </div>
+        <div class="page-sub" id="im-sales-sub"></div>
+        <div id="im-sales-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <input class="form-input" style="width:200px;padding:7px 10px" placeholder="搜尋編號、基因、買家…" id="im-q-sales" oninput="imRenderTable('sales')">
+          <select class="form-select" style="width:160px;padding:7px 10px" id="im-f-sales-status" onchange="imRenderTable('sales')"><option value="">全部狀態</option><option>待售</option><option>到貨、結案</option><option>出貨中、面交 (已收款)</option></select>
+          <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-sales-owner" onchange="imRenderTable('sales')"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
+        </div>
+        <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
+          <table class="im-table" id="im-table-sales"></table>
+        </div>
+      </div>
+
+      <!-- IM: BREEDING -->
+      <div class="page" id="page-im-breeding">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="page-title">交配紀錄</div>
+          <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenForm('breeding',null)">＋ 新增</button>
+        </div>
+        <div class="page-sub" id="im-breeding-sub"></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <input class="form-input" style="width:200px;padding:7px 10px" placeholder="搜尋公蛇、母蛇…" id="im-q-breeding" oninput="imRenderTable('breeding')">
+        </div>
+        <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
+          <table class="im-table" id="im-table-breeding"></table>
+        </div>
+      </div>
+
+      <!-- IM: FOOD -->
+      <div class="page" id="page-im-food">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="page-title">鼠量庫存</div>
+          <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenFoodForm(null,null)">＋ 新增規格</button>
+        </div>
+        <div class="page-sub">點擊數字直接修改庫存</div>
+        <div id="im-food-panels"></div>
+      </div>
+
+      <!-- IM: SEED -->
+      <div class="page" id="page-im-seed">
+        <div class="page-title">匯入初始資料</div>
+        <div class="page-sub">將 CSV 原始資料一次寫入 Firestore，僅需執行一次</div>
+        <div class="form-card" style="max-width:640px">
+          <div style="background:rgba(181,115,58,0.08);border:1px solid rgba(181,115,58,0.2);border-radius:6px;padding:16px 20px;margin-bottom:24px;font-size:12px;color:var(--muted);line-height:1.9">
+            <div style="font-weight:600;color:var(--brown);margin-bottom:6px">⚠️ 執行前請確認</div>
+            · 這會將所有初始蛇隻、銷售、交配、鼠量資料寫入 Firestore<br>
+            · <strong>若 Firestore 已有資料，重複執行會產生重複記錄</strong><br>
+            · 建議只在全新空白資料庫時執行一次<br>
+            · 執行完成後此按鈕就不需要再用了
+          </div>
+          <div id="im-seed-preview" style="margin-bottom:20px">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+              <div style="background:var(--cream);border-radius:6px;padding:14px;text-align:center">
+                <div style="font-size:22px;font-weight:700;color:var(--brown)">34</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">公蛇</div>
+              </div>
+              <div style="background:var(--cream);border-radius:6px;padding:14px;text-align:center">
+                <div style="font-size:22px;font-weight:700;color:var(--brown)">30</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">母蛇</div>
+              </div>
+              <div style="background:var(--cream);border-radius:6px;padding:14px;text-align:center">
+                <div style="font-size:22px;font-weight:700;color:var(--brown)">30</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">銷售記錄</div>
+              </div>
+              <div style="background:var(--cream);border-radius:6px;padding:14px;text-align:center">
+                <div style="font-size:22px;font-weight:700;color:var(--brown)">20</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">交配紀錄</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
+              <div style="background:var(--cream);border-radius:6px;padding:14px;text-align:center">
+                <div style="font-size:22px;font-weight:700;color:var(--brown)">8</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">鼠種規格</div>
+              </div>
+              <div style="background:var(--cream);border-radius:6px;padding:14px;text-align:center">
+                <div style="font-size:22px;font-weight:700;color:var(--brown)">3</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">鼠量參數組</div>
+              </div>
+              <div style="background:var(--cream);border-radius:6px;padding:14px;text-align:center">
+                <div style="font-size:22px;font-weight:700;color:var(--brown)">共 125 筆</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">寫入 Firestore</div>
+              </div>
+            </div>
+          </div>
+          <div id="im-seed-progress" style="display:none;margin-bottom:16px">
+            <div style="font-size:13px;color:var(--brown);margin-bottom:8px" id="im-seed-status">準備中...</div>
+            <div style="background:#eee;border-radius:4px;height:8px;overflow:hidden">
+              <div id="im-seed-bar" style="height:100%;background:var(--copper);border-radius:4px;transition:width .2s;width:0%"></div>
+            </div>
+          </div>
+          <div id="im-seed-result" style="display:none"></div>
+          <button class="submit-btn" id="im-seed-btn" onclick="imRunSeed()">📦 開始匯入初始資料</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -438,7 +668,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const ADMIN_EMAILS = ['jim540888894@gmail.com', 'neilchen03@gmail.com', 'lin19880209@gmail.com'];
+const ADMIN_EMAILS = ['jim540888894@gmail.com']; // 在這裡新增管理員 email
 const CLOUDINARY_CLOUD = 'dzfnc1h7k';
 const CLOUDINARY_PRESET = 'hm_pythons';
 
@@ -979,5 +1209,818 @@ function showToast(msg) {
   </div>
 </div>
 
+<!-- IM MODAL -->
+<div class="im-modal-overlay" id="im-modal-overlay" onclick="if(event.target===this)imCloseModal()">
+  <div class="im-modal" id="im-modal-body"></div>
+</div>
+
+<script type="module">
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+// Reuse the already-initialized app from the first script block
+const db2 = getFirestore(getApp('admin-app'));
+
+// ────────────────────────────────────────────────
+// COLLECTIONS: males, females, im_sales, breeding, food_rows, food_params
+// ────────────────────────────────────────────────
+const COL = {
+  males:    'im_males',
+  females:  'im_females',
+  sales:    'im_sales',
+  breeding: 'im_breeding',
+  foodRows: 'im_food_rows',
+  foodParams:'im_food_params',
+};
+
+let IM = { males:[], females:[], sales:[], breeding:[], foodRows:[], foodParams:{} };
+
+// ── LOAD ALL ─────────────────────────────────────
+async function imLoadAll() {
+  const load = async (col) => {
+    const snap = await getDocs(collection(db2, col));
+    return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+  };
+  [IM.males, IM.females, IM.sales, IM.breeding, IM.foodRows] = await Promise.all([
+    load(COL.males), load(COL.females), load(COL.sales), load(COL.breeding), load(COL.foodRows)
+  ]);
+  // food params
+  const pSnap = await getDocs(collection(db2, COL.foodParams));
+  IM.foodParams = {};
+  pSnap.docs.forEach(d => { IM.foodParams[d.id] = d.data(); });
+  // defaults
+  ['宣恩','有剛','Neil'].forEach(o => {
+    if (!IM.foodParams[o]) IM.foodParams[o] = {保險庫存週:4, 多叫數量週:3, 冰箱容量:30, 盤點日期:''};
+  });
+}
+
+window.imLoadAndRender = async (section) => {
+  await imLoadAll();
+  if (section === 'males') imRenderTable('males');
+  else if (section === 'females') imRenderTable('females');
+  else if (section === 'sales') imRenderTable('sales');
+  else if (section === 'breeding') imRenderTable('breeding');
+};
+
+// ── HELPERS ──────────────────────────────────────
+function ownerSpan(o) {
+  const cls = {有剛:'im-owner-yg', 宣恩:'im-owner-xe', Neil:'im-owner-neil'}[o]||'';
+  return `<span class="im-owner ${cls}">${o}</span>`;
+}
+function sexSpan(s) { return s==='M'?`<span class="im-tag im-tag-m">♂ 公</span>`:`<span class="im-tag im-tag-f">♀ 母</span>`; }
+function statusSpan(s) {
+  if (s==='安全穩定') return `<span class="im-tag im-tag-safe">安全穩定</span>`;
+  if (s==='隔離中') return `<span class="im-tag im-tag-iso">隔離中</span>`;
+  return `<span class="im-tag im-tag-sold">${s||''}</span>`;
+}
+function saleStatusSpan(s) {
+  if (s==='待售') return `<span class="im-tag im-tag-avail">待售</span>`;
+  if (s==='到貨、結案') return `<span class="im-tag im-tag-sold">結案</span>`;
+  if (s==='出貨中、面交 (已收款)') return `<span class="im-tag im-tag-ship">出貨中</span>`;
+  return `<span class="im-tag im-tag-sold">${s||''}</span>`;
+}
+function fmtMoney(n) { return n!=null&&n!==''?'NT$'+Number(n).toLocaleString():'—'; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;'); }
+function isLow(r, p) { return r.weeklyUse>0 && r.stock < p.保險庫存週*r.weeklyUse; }
+function needQty(r, p) {
+  if (r.weeklyUse<=0) return 0;
+  return Math.max(0, Math.ceil(p.保險庫存週*r.weeklyUse + p.多叫數量週*r.weeklyUse - r.stock));
+}
+
+// ── RENDER TABLES ────────────────────────────────
+window.imRenderTable = (section) => {
+  if (section === 'males') {
+    const q = (document.getElementById('im-q-males')||{}).value?.toLowerCase()||'';
+    const sp = (document.getElementById('im-f-males-species')||{}).value||'';
+    const ow = (document.getElementById('im-f-males-owner')||{}).value||'';
+    const st = (document.getElementById('im-f-males-status')||{}).value||'';
+    const rows = IM.males.filter(r => {
+      const txt = (r.gene+r.species+r.owner+r.source+'').toLowerCase();
+      return (!q||txt.includes(q))&&(!sp||r.species===sp)&&(!ow||r.owner===ow)&&(!st||r.status===st);
+    });
+    document.getElementById('im-males-sub').textContent = `共 ${rows.length} 筆`;
+    document.getElementById('im-table-males').innerHTML = `<thead><tr>
+      <th>所有人</th><th>基因/品系</th><th>物種</th><th>出生年</th><th>成本</th><th>來源</th><th>狀態</th><th>操作</th>
+    </tr></thead><tbody>${rows.map(r=>`<tr>
+      <td>${ownerSpan(r.owner)}</td>
+      <td style="font-size:12px;max-width:260px">${r.gene||''}</td>
+      <td style="color:var(--muted)">${r.species||''}</td>
+      <td>${r.year||''}</td>
+      <td>${fmtMoney(r.cost)}</td>
+      <td style="color:var(--muted);font-size:11px">${r.source||''}</td>
+      <td>${statusSpan(r.status)}</td>
+      <td style="white-space:nowrap">
+        <button class="action-btn" onclick="imOpenForm('males','${r._id}')">編輯</button>
+        <button class="action-btn danger" onclick="imConfirmDelete('males','${r._id}','${esc(r.gene)}')">刪除</button>
+      </td>
+    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+  }
+  else if (section === 'females') {
+    const q = (document.getElementById('im-q-females')||{}).value?.toLowerCase()||'';
+    const sp = (document.getElementById('im-f-females-species')||{}).value||'';
+    const ow = (document.getElementById('im-f-females-owner')||{}).value||'';
+    const rows = IM.females.filter(r => {
+      const txt = (r.gene+r.species+r.owner+r.source+(r.pairPri||'')+'').toLowerCase();
+      return (!q||txt.includes(q))&&(!sp||r.species===sp)&&(!ow||r.owner===ow);
+    });
+    document.getElementById('im-females-sub').textContent = `共 ${rows.length} 筆`;
+    document.getElementById('im-table-females').innerHTML = `<thead><tr>
+      <th>所有人</th><th>基因/品系</th><th>物種</th><th>出生年</th><th>成本</th><th>來源</th><th>優先配對公蛇</th><th>狀態</th><th>操作</th>
+    </tr></thead><tbody>${rows.map(r=>`<tr>
+      <td>${ownerSpan(r.owner)}</td>
+      <td style="font-size:12px;max-width:240px">${r.gene||''}</td>
+      <td style="color:var(--muted)">${r.species||''}</td>
+      <td>${r.year||''}</td>
+      <td>${fmtMoney(r.cost)}</td>
+      <td style="color:var(--muted);font-size:11px">${r.source||''}</td>
+      <td style="color:var(--copper);font-size:11px;max-width:180px">${r.pairPri||'—'}</td>
+      <td>${statusSpan(r.status)}</td>
+      <td style="white-space:nowrap">
+        <button class="action-btn" onclick="imOpenForm('females','${r._id}')">編輯</button>
+        <button class="action-btn danger" onclick="imConfirmDelete('females','${r._id}','${esc(r.gene)}')">刪除</button>
+      </td>
+    </tr>`).join('')||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+  }
+  else if (section === 'sales') {
+    const q = (document.getElementById('im-q-sales')||{}).value?.toLowerCase()||'';
+    const st = (document.getElementById('im-f-sales-status')||{}).value||'';
+    const ow = (document.getElementById('im-f-sales-owner')||{}).value||'';
+    const rows = IM.sales.filter(r => {
+      const txt = ((r.saleId||'')+r.gene+r.owner+(r.buyer||'')+'').toLowerCase();
+      return (!q||txt.includes(q))&&(!st||r.status===st)&&(!ow||r.owner===ow);
+    });
+    document.getElementById('im-sales-sub').textContent = `共 ${rows.length} 筆`;
+    const total = rows.reduce((s,r)=>s+(r.price||0),0);
+    const profit = rows.reduce((s,r)=>s+(r.price||0)-(r.cost||0),0);
+    const funds = rows.reduce((s,r)=>s+(r.fund||0),0);
+    const avail = rows.filter(r=>r.status==='待售').length;
+    document.getElementById('im-sales-kpi').innerHTML = [
+      {l:'篩選總售額', v:fmtMoney(total)},
+      {l:'毛利合計', v:fmtMoney(profit), c:profit>=0?'#2a6b3a':'#8b0000'},
+      {l:'公基金(10%)', v:fmtMoney(funds)},
+      {l:'待售筆數', v:avail+' 筆'},
+    ].map(k=>`<div class="im-kpi"><div class="im-kpi-label">${k.l}</div><div class="im-kpi-value" style="font-size:18px;${k.c?'color:'+k.c:''}">${k.v}</div></div>`).join('');
+
+    document.getElementById('im-table-sales').innerHTML = `<thead><tr>
+      <th>所有人</th><th>產品編號</th><th>基因</th><th>性別</th><th>售價</th><th>公基金</th><th>狀態</th><th>買家</th><th>出貨日</th><th>操作</th>
+    </tr></thead><tbody>${rows.map(r=>`<tr>
+      <td>${ownerSpan(r.owner)}</td>
+      <td style="font-size:10px;color:var(--muted);white-space:nowrap">${r.saleId||''}</td>
+      <td style="font-size:11px;max-width:200px">${r.gene||''}</td>
+      <td>${sexSpan(r.sex)}</td>
+      <td style="color:var(--copper);font-weight:600">${fmtMoney(r.price)}</td>
+      <td style="color:var(--muted)">${r.fund?fmtMoney(r.fund):'—'}</td>
+      <td>${saleStatusSpan(r.status)}</td>
+      <td style="font-size:11px">${r.buyer||'—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.ship||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="action-btn" onclick="imOpenForm('sales','${r._id}')">編輯</button>
+        <button class="action-btn danger" onclick="imConfirmDelete('sales','${r._id}','${esc(r.gene)}')">刪除</button>
+      </td>
+    </tr>`).join('')||'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+  }
+  else if (section === 'breeding') {
+    const q = (document.getElementById('im-q-breeding')||{}).value?.toLowerCase()||'';
+    const rows = IM.breeding.filter(r => (r.male+r.female+'').toLowerCase().includes(q));
+    document.getElementById('im-breeding-sub').textContent = `共 ${rows.length} 筆`;
+    document.getElementById('im-table-breeding').innerHTML = `<thead><tr>
+      <th>#</th><th>日期</th><th>公蛇</th><th></th><th>母蛇</th><th>備注</th><th>操作</th>
+    </tr></thead><tbody>${rows.map((r,i)=>`<tr>
+      <td style="color:var(--muted)">${String(i+1).padStart(2,'0')}</td>
+      <td style="white-space:nowrap;font-size:12px">${r.date||''}</td>
+      <td style="color:#4a7fb5;font-size:12px">${r.male||''}</td>
+      <td style="color:var(--copper)">×</td>
+      <td style="color:#b54a7f;font-size:12px">${r.female||''}</td>
+      <td style="color:var(--muted);font-size:11px">${r.note||''}</td>
+      <td style="white-space:nowrap">
+        <button class="action-btn" onclick="imOpenForm('breeding','${r._id}')">編輯</button>
+        <button class="action-btn danger" onclick="imConfirmDelete('breeding','${r._id}','${esc((r.male||'')+'×'+(r.female||''))}')">刪除</button>
+      </td>
+    </tr>`).join('')}</tbody>`;
+  }
+};
+
+// ── FOOD RENDER ──────────────────────────────────
+window.imRenderFood = async () => {
+  await imLoadAll();
+  const owners = ['宣恩','有剛','Neil'];
+  let html = '';
+  owners.forEach(name => {
+    const p = IM.foodParams[name] || {保險庫存週:4,多叫數量週:3,冰箱容量:30,盤點日期:''};
+    const rows = IM.foodRows.filter(r => r.owner === name);
+    const lowRows = rows.filter(r => isLow(r, p));
+    const totalNeed = rows.reduce((s,r)=>s+needQty(r,p)*r.price,0);
+    html += `<div class="im-food-block">
+      <div class="im-food-header">
+        <span style="font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase">${ownerSpan(name)} 鼠量庫存</span>
+        <span style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--muted)">
+          <span>盤點：<b style="color:var(--brown)">${p.盤點日期||'—'}</b></span>
+          <span>冰箱：<b style="color:var(--brown)">${p.冰箱容量}包</b></span>
+          <span>保險庫存：<b style="color:var(--brown)">${p.保險庫存週}週</b></span>
+          ${totalNeed>0?`<span style="color:#8b5e10">需叫：<b>${fmtMoney(totalNeed)}</b></span>`:''}
+          <button class="action-btn" style="padding:3px 10px;font-size:11px" onclick="imOpenFoodParams('${name}')">調整參數</button>
+          <button class="action-btn" style="padding:3px 10px;font-size:11px" onclick="imOpenFoodForm('${name}',null)">＋ 新增</button>
+        </span>
+      </div>
+      ${lowRows.length?`<div class="im-alert" style="margin:10px 14px 0">⚠️ ${lowRows.map(r=>r.type+' '+r.size).join('、')} 低於保險庫存</div>`:''}
+      <div style="overflow-x:auto">
+      <table class="im-table">
+        <thead><tr><th>種類</th><th>規格</th><th>重量(g)</th><th>每週用量(包)</th><th>目前庫存(包)</th><th>可用週數</th><th>單包金額</th><th>狀態</th><th>建議補貨</th><th>操作</th></tr></thead>
+        <tbody>${rows.map(r=>{
+          const low = isLow(r,p);
+          const need = needQty(r,p);
+          const weeks = r.weeklyUse>0?(r.stock/r.weeklyUse).toFixed(1):'∞';
+          const pct = r.weeklyUse>0?Math.min(100,(r.stock/(p.保險庫存週*r.weeklyUse))*100):100;
+          const bc = low?'#c0392b':'#2a6b3a';
+          return `<tr>
+            <td>${r.type||''}</td>
+            <td>${r.size||''}</td>
+            <td style="color:var(--muted)">${r.grams||''}</td>
+            <td><input type="number" min="0" step="0.1" class="im-num" value="${r.weeklyUse||0}" onchange="imUpdateFoodField('${r._id}','weeklyUse',parseFloat(this.value)||0)"></td>
+            <td>
+              <input type="number" min="0" class="im-num" value="${r.stock||0}" onchange="imUpdateFoodField('${r._id}','stock',parseInt(this.value)||0)">
+              <span class="im-prog"><span class="im-prog-fill" style="width:${pct}%;background:${bc};display:block"></span></span>
+            </td>
+            <td style="color:${low?'#c0392b':'#2a6b3a'};font-weight:600">${weeks}週</td>
+            <td><input type="number" min="0" class="im-num" value="${r.price||0}" onchange="imUpdateFoodField('${r._id}','price',parseInt(this.value)||0)"></td>
+            <td>${low?`<span class="im-tag im-tag-iso">低庫存</span>`:`<span class="im-tag im-tag-safe">正常</span>`}</td>
+            <td style="color:${need>0?'#8b5e10':'var(--muted)'}">${need>0?need+'包 ('+fmtMoney(need*r.price)+')':'—'}</td>
+            <td style="white-space:nowrap">
+              <button class="action-btn" onclick="imOpenFoodForm('${name}','${r._id}')">編輯</button>
+              <button class="action-btn danger" onclick="imConfirmDeleteFood('${r._id}','${esc(r.type+' '+r.size)}')">刪除</button>
+            </td>
+          </tr>`;
+        }).join('')||`<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">沒有資料</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+  });
+  document.getElementById('im-food-panels').innerHTML = html;
+};
+
+window.imUpdateFoodField = async (id, field, val) => {
+  await updateDoc(doc(db2, COL.foodRows, id), { [field]: val });
+  const r = IM.foodRows.find(x => x._id===id);
+  if (r) r[field] = val;
+  imRenderFood();
+  imRenderDashboard();
+};
+
+// ── DASHBOARD ────────────────────────────────────
+window.imRenderDashboard = async () => {
+  if (!IM.males.length && !IM.females.length) await imLoadAll();
+  const isoAll = [...IM.males,...IM.females].filter(r=>r.status==='隔離中');
+  const sold = IM.sales.filter(r=>r.status==='到貨、結案');
+  const avail = IM.sales.filter(r=>r.status==='待售');
+  const rev = sold.reduce((s,r)=>s+(r.price||0),0);
+  const fund = IM.sales.reduce((s,r)=>s+(r.fund||0),0);
+
+  document.getElementById('im-kpi-row').innerHTML = [
+    {l:'公蛇',v:IM.males.length,s:'隻'},
+    {l:'母蛇',v:IM.females.length,s:'隻'},
+    {l:'隔離中',v:isoAll.length,s:'等待解除'},
+    {l:'已結案銷售額',v:fmtMoney(rev),s:`公基金累計 ${fmtMoney(fund)}`},
+  ].map(k=>`<div class="im-kpi"><div class="im-kpi-label">${k.l}</div><div class="im-kpi-value">${k.v}</div><div class="im-kpi-sub">${k.s}</div></div>`).join('');
+
+  // alerts
+  const lowAlerts = [];
+  Object.entries(IM.foodParams).forEach(([owner,p]) => {
+    IM.foodRows.filter(r=>r.owner===owner).forEach(r=>{ if(isLow(r,p)) lowAlerts.push(`${owner}：${r.type} ${r.size}`); });
+  });
+  document.getElementById('im-dash-alerts').innerHTML = lowAlerts.length
+    ? `<div class="im-alert">⚠️ 低庫存：${lowAlerts.join('、')}</div>` : '';
+
+  document.getElementById('im-dash-avail').innerHTML = `<thead><tr style="background:var(--cream)"><th style="padding:8px 12px;color:var(--muted);font-size:11px">所有人</th><th style="padding:8px 12px;color:var(--muted);font-size:11px">基因</th><th style="padding:8px 12px;color:var(--muted);font-size:11px">售價</th></tr></thead>
+  <tbody>${avail.map(r=>`<tr style="border-bottom:1px solid rgba(181,115,58,0.07)">
+    <td style="padding:8px 12px">${ownerSpan(r.owner)}</td>
+    <td style="padding:8px 12px;font-size:11px;max-width:140px;overflow:hidden">${r.gene||''}</td>
+    <td style="padding:8px 12px;color:var(--copper);font-weight:600">${fmtMoney(r.price)}</td>
+  </tr>`).join('')||'<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--muted)">無</td></tr>'}</tbody>`;
+
+  document.getElementById('im-dash-iso').innerHTML = `<thead><tr style="background:var(--cream)"><th style="padding:8px 12px;color:var(--muted);font-size:11px">所有人</th><th style="padding:8px 12px;color:var(--muted);font-size:11px">基因</th><th style="padding:8px 12px;color:var(--muted);font-size:11px">解隔日</th></tr></thead>
+  <tbody>${isoAll.map(r=>`<tr style="border-bottom:1px solid rgba(181,115,58,0.07)">
+    <td style="padding:8px 12px">${ownerSpan(r.owner)}</td>
+    <td style="padding:8px 12px;font-size:11px">${r.gene||''}</td>
+    <td style="padding:8px 12px;font-size:11px;color:#8b5e10">${r.isoEnd||'—'}</td>
+  </tr>`).join('')||'<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--muted)">無</td></tr>'}</tbody>`;
+
+  const recent = [...IM.breeding].reverse().slice(0,8);
+  document.getElementById('im-dash-breed').innerHTML = `<thead><tr style="background:var(--cream)"><th style="padding:8px 12px;color:var(--muted);font-size:11px">日期</th><th style="padding:8px 12px;color:var(--muted);font-size:11px">公</th><th style="padding:8px 12px;color:var(--muted);font-size:11px">母</th></tr></thead>
+  <tbody>${recent.map(r=>`<tr style="border-bottom:1px solid rgba(181,115,58,0.07)">
+    <td style="padding:8px 12px;font-size:11px;white-space:nowrap">${r.date||''}</td>
+    <td style="padding:8px 12px;font-size:11px;color:#4a7fb5">${(r.male||'').substring(0,16)}${(r.male||'').length>16?'…':''}</td>
+    <td style="padding:8px 12px;font-size:11px;color:#b54a7f">${(r.female||'').substring(0,16)}${(r.female||'').length>16?'…':''}</td>
+  </tr>`).join('')}</tbody>`;
+};
+
+// ── FORMS ─────────────────────────────────────────
+window.imOpenForm = async (section, id) => {
+  await imLoadAll();
+  const isNew = !id;
+  let r = {};
+  if (!isNew) {
+    r = IM[section].find(x=>x._id===id) || {};
+  }
+
+  let html = '';
+  if (section === 'males') {
+    html = `<div class="im-modal-title">${isNew?'新增公蛇':'編輯公蛇'}</div>
+    <div class="im-form-grid">
+      <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">物種 *</label><select class="form-select" id="im-f-species">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
+      <div class="form-group"><label class="form-label">出生年</label><input class="form-input" id="im-f-year" type="number" value="${r.year||''}"></div>
+      <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}"></div>
+      <div class="form-group"><label class="form-label">來源</label><input class="form-input" id="im-f-source" value="${esc(r.source||'')}"></div>
+      <div class="form-group"><label class="form-label">飼養狀況</label><select class="form-select" id="im-f-status"><option ${(r.status||'安全穩定')==='安全穩定'?'selected':''}>安全穩定</option><option ${r.status==='隔離中'?'selected':''}>隔離中</option></select></div>
+      <div class="form-group"><label class="form-label">解除隔離日期</label><input class="form-input" id="im-f-isoEnd" value="${esc(r.isoEnd||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
+      <div class="form-group"><label class="form-label">優先配對母數</label><input class="form-input" id="im-f-pairCount" type="number" value="${r.pairCount||0}"></div>
+      <div class="form-group"><label class="form-label">備注</label><input class="form-input" id="im-f-note" value="${esc(r.note||'')}"></div>
+    </div>
+    <div class="im-form-actions">
+      <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+      <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSave('males','${id||''}')">儲存</button>
+    </div>`;
+  }
+  else if (section === 'females') {
+    const maleGenes = [...new Set(IM.males.map(m=>m.gene))].sort();
+    html = `<div class="im-modal-title">${isNew?'新增母蛇':'編輯母蛇'}</div>
+    <div class="im-form-grid">
+      <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">物種 *</label><select class="form-select" id="im-f-species">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
+      <div class="form-group"><label class="form-label">出生年</label><input class="form-input" id="im-f-year" type="number" value="${r.year||''}"></div>
+      <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}"></div>
+      <div class="form-group"><label class="form-label">來源</label><input class="form-input" id="im-f-source" value="${esc(r.source||'')}"></div>
+      <div class="form-group"><label class="form-label">飼養狀況</label><select class="form-select" id="im-f-status"><option ${(r.status||'安全穩定')==='安全穩定'?'selected':''}>安全穩定</option><option ${r.status==='隔離中'?'selected':''}>隔離中</option></select></div>
+      <div class="form-group"><label class="form-label">解除隔離日期</label><input class="form-input" id="im-f-isoEnd" value="${esc(r.isoEnd||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">優先配對公蛇</label>
+        <input class="form-input" id="im-f-pairPri" value="${esc(r.pairPri||'')}" list="im-male-list" placeholder="輸入或選擇">
+        <datalist id="im-male-list">${maleGenes.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
+      </div>
+      <div class="form-group im-form-full"><label class="form-label">備用配對公蛇</label><input class="form-input" id="im-f-pairAlt" value="${esc(r.pairAlt||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">備注</label><input class="form-input" id="im-f-note" value="${esc(r.note||'')}"></div>
+    </div>
+    <div class="im-form-actions">
+      <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+      <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSave('females','${id||''}')">儲存</button>
+    </div>`;
+  }
+  else if (section === 'sales') {
+    html = `<div class="im-modal-title">${isNew?'新增銷售':'編輯銷售'}</div>
+    <div class="im-form-grid">
+      <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">產品編號</label><input class="form-input" id="im-f-saleId" value="${esc(r.saleId||'')}"></div>
+      <div class="form-group"><label class="form-label">物種</label><select class="form-select" id="im-f-species">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="im-f-sex"><option value="M" ${(r.sex||'M')==='M'?'selected':''}>♂ 公</option><option value="F" ${r.sex==='F'?'selected':''}>♀ 母</option></select></div>
+      <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
+      <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}"></div>
+      <div class="form-group"><label class="form-label">售價 (NT$) *</label><input class="form-input" id="im-f-price" type="number" value="${r.price||''}" oninput="imAutoFund()"></div>
+      <div class="form-group"><label class="form-label">公基金10% (NT$)</label><input class="form-input" id="im-f-fund" type="number" value="${r.fund||0}"></div>
+      <div class="form-group"><label class="form-label">交付狀態</label><select class="form-select" id="im-f-delivery" onchange="imAutoFundDelivery()">${['','免交付','未交付','已交付'].map(x=>`<option ${(r.delivery||'')==x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">銷售狀態</label><select class="form-select" id="im-f-status">${['待售','出貨中、面交 (已收款)','到貨、結案'].map(x=>`<option ${(r.status||'待售')===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">來源</label><select class="form-select" id="im-f-source">${['品牌自繁','內部出清','外部代售'].map(x=>`<option ${(r.source||'品牌自繁')===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">銷售管道</label><input class="form-input" id="im-f-channel" value="${esc(r.channel||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">買家資訊</label><input class="form-input" id="im-f-buyer" value="${esc(r.buyer||'')}"></div>
+      <div class="form-group"><label class="form-label">出貨日期</label><input class="form-input" id="im-f-ship" value="${esc(r.ship||'')}"></div>
+      <div class="form-group"><label class="form-label">出生/進貨日期</label><input class="form-input" id="im-f-birth" value="${esc(r.birth||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
+    </div>
+    <div class="im-form-actions">
+      <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+      <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSave('sales','${id||''}')">儲存</button>
+    </div>`;
+  }
+  else if (section === 'breeding') {
+    const maleGenes = [...new Set(IM.males.map(m=>m.gene))].sort();
+    const femGenes  = [...new Set(IM.females.map(f=>f.gene))].sort();
+    html = `<div class="im-modal-title">${isNew?'新增交配紀錄':'編輯交配紀錄'}</div>
+    <div class="im-form-grid">
+      <div class="form-group"><label class="form-label">日期 *</label><input class="form-input" id="im-f-date" value="${esc(r.date||'')}"></div>
+      <div class="form-group"><label class="form-label">備注</label><input class="form-input" id="im-f-note" value="${esc(r.note||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">公蛇基因 *</label>
+        <input class="form-input" id="im-f-male" value="${esc(r.male||'')}" list="im-ml2" placeholder="輸入或選擇">
+        <datalist id="im-ml2">${maleGenes.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
+      </div>
+      <div class="form-group im-form-full"><label class="form-label">母蛇基因 *</label>
+        <input class="form-input" id="im-f-female" value="${esc(r.female||'')}" list="im-fl2" placeholder="輸入或選擇">
+        <datalist id="im-fl2">${femGenes.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
+      </div>
+    </div>
+    <div class="im-form-actions">
+      <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+      <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSave('breeding','${id||''}')">儲存</button>
+    </div>`;
+  }
+
+  document.getElementById('im-modal-body').innerHTML = html;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
+window.imAutoFund = () => {
+  const p = parseFloat(document.getElementById('im-f-price').value)||0;
+  const d = document.getElementById('im-f-delivery')?.value||'';
+  document.getElementById('im-f-fund').value = d==='免交付'?0:Math.round(p*0.1);
+};
+window.imAutoFundDelivery = () => {
+  const d = document.getElementById('im-f-delivery').value;
+  if (d==='免交付') { document.getElementById('im-f-fund').value=0; }
+  else { const p=parseFloat(document.getElementById('im-f-price')?.value)||0; document.getElementById('im-f-fund').value=Math.round(p*0.1); }
+};
+
+window.imSave = async (section, id) => {
+  const g = id => document.getElementById(id);
+  let data = {};
+
+  if (section==='males') {
+    const gene = g('im-f-gene').value.trim();
+    if (!gene) { showToast('❌ 請填寫基因/品系'); return; }
+    data = { owner:g('im-f-owner').value, species:g('im-f-species').value, gene, sex:'M',
+      year:parseInt(g('im-f-year').value)||0, cost:parseInt(g('im-f-cost').value)||0,
+      source:g('im-f-source').value, status:g('im-f-status').value,
+      isoEnd:g('im-f-isoEnd').value, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
+      pairCount:parseInt(g('im-f-pairCount').value)||0, note:g('im-f-note').value };
+  }
+  else if (section==='females') {
+    const gene = g('im-f-gene').value.trim();
+    if (!gene) { showToast('❌ 請填寫基因/品系'); return; }
+    data = { owner:g('im-f-owner').value, species:g('im-f-species').value, gene, sex:'F',
+      year:parseInt(g('im-f-year').value)||0, cost:parseInt(g('im-f-cost').value)||0,
+      source:g('im-f-source').value, status:g('im-f-status').value,
+      isoEnd:g('im-f-isoEnd').value, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
+      pairPri:g('im-f-pairPri').value, pairAlt:g('im-f-pairAlt').value, note:g('im-f-note').value };
+  }
+  else if (section==='sales') {
+    const gene = g('im-f-gene').value.trim();
+    if (!gene) { showToast('❌ 請填寫基因/品系'); return; }
+    const delivery = g('im-f-delivery').value;
+    const price = parseInt(g('im-f-price').value)||0;
+    data = { owner:g('im-f-owner').value, saleId:g('im-f-saleId').value,
+      species:g('im-f-species').value, gene, sex:g('im-f-sex').value,
+      birth:g('im-f-birth').value, cost:parseInt(g('im-f-cost').value)||0,
+      price, fund: delivery==='免交付'?0:parseInt(g('im-f-fund').value)||0,
+      source:g('im-f-source').value, status:g('im-f-status').value,
+      channel:g('im-f-channel').value, buyer:g('im-f-buyer').value,
+      ship:g('im-f-ship').value, delivery, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value };
+  }
+  else if (section==='breeding') {
+    const male=g('im-f-male').value.trim(), female=g('im-f-female').value.trim(), date=g('im-f-date').value.trim();
+    if (!male||!female||!date) { showToast('❌ 請填寫日期、公蛇和母蛇'); return; }
+    data = { male, female, date, note:g('im-f-note').value };
+  }
+
+  try {
+    const col = COL[section];
+    if (id) {
+      await updateDoc(doc(db2, col, id), data);
+      const idx = IM[section].findIndex(x=>x._id===id);
+      if (idx>-1) IM[section][idx] = {...IM[section][idx], ...data};
+    } else {
+      const ref = await addDoc(collection(db2, col), {...data, createdAt: serverTimestamp()});
+      IM[section].push({_id: ref.id, ...data});
+    }
+    showToast('✅ 儲存成功！');
+    imCloseModal();
+    imRenderTable(section);
+    imRenderDashboard();
+  } catch(e) { showToast('❌ 儲存失敗：'+e.message); }
+};
+
+// ── FOOD FORMS ────────────────────────────────────
+window.imOpenFoodForm = (owner, id) => {
+  const r = id ? IM.foodRows.find(x=>x._id===id) : {};
+  const isNew = !id;
+  const ownerOpts = ['宣恩','有剛','Neil'];
+  document.getElementById('im-modal-body').innerHTML = `<div class="im-modal-title">${isNew?'新增鼠種規格':'編輯鼠種規格'}</div>
+  <div class="im-form-grid">
+    ${isNew?`<div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-food-owner">${ownerOpts.map(x=>`<option ${x===owner?'selected':''}>${x}</option>`).join('')}</select></div>`:''}
+    <div class="form-group"><label class="form-label">種類</label><select class="form-select" id="im-f-food-type"><option ${(r?.type||'小白鼠')==='小白鼠'?'selected':''}>小白鼠</option><option ${r?.type==='大白鼠'?'selected':''}>大白鼠</option><option ${r?.type==='其他'?'selected':''}>其他</option></select></div>
+    <div class="form-group"><label class="form-label">規格名稱 *</label><input class="form-input" id="im-f-food-size" value="${esc(r?.size||'')}"></div>
+    <div class="form-group"><label class="form-label">重量範圍(g)</label><input class="form-input" id="im-f-food-grams" value="${esc(r?.grams||'')}"></div>
+    <div class="form-group"><label class="form-label">每包隻數</label><input class="form-input" id="im-f-food-perPkg" type="number" value="${r?.perPkg||10}"></div>
+    <div class="form-group"><label class="form-label">每週用量(包)</label><input class="form-input" id="im-f-food-weeklyUse" type="number" step="0.1" value="${r?.weeklyUse||0}"></div>
+    <div class="form-group"><label class="form-label">目前庫存(包)</label><input class="form-input" id="im-f-food-stock" type="number" value="${r?.stock||0}"></div>
+    <div class="form-group"><label class="form-label">單包金額(NT$)</label><input class="form-input" id="im-f-food-price" type="number" value="${r?.price||0}"></div>
+  </div>
+  <div class="im-form-actions">
+    <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+    <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSaveFoodRow('${owner||''}','${id||''}')">儲存</button>
+  </div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
+window.imSaveFoodRow = async (owner, id) => {
+  const g = x => document.getElementById(x);
+  const ownerVal = owner || g('im-f-food-owner')?.value || '有剛';
+  const data = {
+    owner: ownerVal,
+    type: g('im-f-food-type').value,
+    size: g('im-f-food-size').value,
+    grams: g('im-f-food-grams').value,
+    perPkg: parseInt(g('im-f-food-perPkg').value)||10,
+    weeklyUse: parseFloat(g('im-f-food-weeklyUse').value)||0,
+    stock: parseInt(g('im-f-food-stock').value)||0,
+    price: parseInt(g('im-f-food-price').value)||0,
+  };
+  try {
+    if (id) {
+      await updateDoc(doc(db2, COL.foodRows, id), data);
+      const idx = IM.foodRows.findIndex(x=>x._id===id);
+      if (idx>-1) IM.foodRows[idx] = {...IM.foodRows[idx], ...data};
+    } else {
+      const ref = await addDoc(collection(db2, COL.foodRows), {...data, createdAt: serverTimestamp()});
+      IM.foodRows.push({_id: ref.id, ...data});
+    }
+    showToast('✅ 儲存成功！');
+    imCloseModal();
+    imRenderFood();
+  } catch(e) { showToast('❌ 儲存失敗：'+e.message); }
+};
+
+window.imOpenFoodParams = (owner) => {
+  const p = IM.foodParams[owner] || {保險庫存週:4,多叫數量週:3,冰箱容量:30,盤點日期:''};
+  document.getElementById('im-modal-body').innerHTML = `<div class="im-modal-title">${owner} — 庫存參數</div>
+  <div class="im-form-grid">
+    <div class="form-group"><label class="form-label">保險庫存(週)</label><input class="form-input" id="im-fp-safe" type="number" value="${p.保險庫存週}"></div>
+    <div class="form-group"><label class="form-label">多叫數量(週)</label><input class="form-input" id="im-fp-extra" type="number" value="${p.多叫數量週}"></div>
+    <div class="form-group"><label class="form-label">冰箱容量(包)</label><input class="form-input" id="im-fp-fridge" type="number" value="${p.冰箱容量}"></div>
+    <div class="form-group"><label class="form-label">盤點日期</label><input class="form-input" id="im-fp-date" value="${p.盤點日期||''}"></div>
+  </div>
+  <div class="im-form-actions">
+    <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+    <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSaveFoodParams('${owner}')">儲存</button>
+  </div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
+window.imSaveFoodParams = async (owner) => {
+  const g = x => document.getElementById(x);
+  const data = { 保險庫存週:parseInt(g('im-fp-safe').value)||4, 多叫數量週:parseInt(g('im-fp-extra').value)||3, 冰箱容量:parseInt(g('im-fp-fridge').value)||30, 盤點日期:g('im-fp-date').value };
+  try {
+    await setDoc(doc(db2, COL.foodParams, owner), data);
+    IM.foodParams[owner] = data;
+    showToast('✅ 儲存成功！');
+    imCloseModal();
+    imRenderFood();
+  } catch(e) { showToast('❌ 儲存失敗：'+e.message); }
+};
+
+// ── DELETE ────────────────────────────────────────
+window.imConfirmDelete = (section, id, label) => {
+  document.getElementById('im-modal-body').innerHTML = `<div class="im-modal-title" style="color:#8b0000">確認刪除</div>
+  <p class="im-confirm-msg">確定要刪除 <strong>${label}</strong> 嗎？<br>此動作無法復原。</p>
+  <div class="im-form-actions">
+    <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+    <button class="submit-btn" style="width:auto;padding:8px 24px;background:#8b0000" onclick="imDoDelete('${section}','${id}')">確認刪除</button>
+  </div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
+window.imDoDelete = async (section, id) => {
+  try {
+    await deleteDoc(doc(db2, COL[section], id));
+    IM[section] = IM[section].filter(x=>x._id!==id);
+    showToast('🗑️ 已刪除');
+    imCloseModal();
+    imRenderTable(section);
+    imRenderDashboard();
+  } catch(e) { showToast('❌ 刪除失敗：'+e.message); }
+};
+
+window.imConfirmDeleteFood = (id, label) => {
+  document.getElementById('im-modal-body').innerHTML = `<div class="im-modal-title" style="color:#8b0000">確認刪除</div>
+  <p class="im-confirm-msg">確定要刪除 <strong>${label}</strong> 嗎？</p>
+  <div class="im-form-actions">
+    <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+    <button class="submit-btn" style="width:auto;padding:8px 24px;background:#8b0000" onclick="imDoDeleteFood('${id}')">確認刪除</button>
+  </div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+window.imDoDeleteFood = async (id) => {
+  try {
+    await deleteDoc(doc(db2, COL.foodRows, id));
+    IM.foodRows = IM.foodRows.filter(x=>x._id!==id);
+    showToast('🗑️ 已刪除');
+    imCloseModal();
+    imRenderFood();
+  } catch(e) { showToast('❌ 刪除失敗：'+e.message); }
+};
+
+// ── SEED DATA ────────────────────────────────────
+window.imRunSeed = async () => {
+  const btn = document.getElementById('im-seed-btn');
+  const prog = document.getElementById('im-seed-progress');
+  const bar = document.getElementById('im-seed-bar');
+  const statusEl = document.getElementById('im-seed-status');
+  const resultEl = document.getElementById('im-seed-result');
+
+  btn.disabled = true;
+  prog.style.display = 'block';
+  resultEl.style.display = 'none';
+
+  const setStatus = (msg, pct) => { statusEl.textContent = msg; bar.style.width = pct+'%'; };
+
+  const MALES_DATA = [
+    {owner:"有剛",gene:"Cypress Enchi het OG (Proven)",species:"球蟒",sex:"M",year:2022,cost:4500,source:"Pythian",status:"安全穩定",pairCount:2,sireA:"Unknown",damB:"Unknown"},
+    {owner:"有剛",gene:"Banana het Clown (FM)",species:"球蟒",sex:"M",year:2023,cost:3250,source:"陳勁良",status:"安全穩定",pairCount:2,sireA:"Unknown",damB:"Unknown"},
+    {owner:"有剛",gene:"Scaleless Head Pastel th Tsk axanthic Clown Pied",species:"球蟒",sex:"M",year:2023,cost:8000,source:"VET",status:"安全穩定",pairCount:5,sireA:"Unknown",damB:"Unknown"},
+    {owner:"有剛",gene:"Spotnose Phantom het Clown",species:"球蟒",sex:"M",year:2024,cost:2800,source:"鼠樂寶",status:"安全穩定",pairCount:2,sireA:"Unknown",damB:"Unknown"},
+    {owner:"有剛",gene:"Black Head het Piebald",species:"球蟒",sex:"M",year:2024,cost:2500,source:"玩蟒人生",status:"安全穩定",pairCount:1,sireA:"Unknown",damB:"Unknown"},
+    {owner:"有剛",gene:"Clown",species:"球蟒",sex:"M",year:2024,cost:3000,source:"玩蟒人生",status:"安全穩定",pairCount:0,sireA:"Unknown",damB:"Unknown"},
+    {owner:"有剛",gene:"Leopard Spotnose (YB) dh DG Clown 50%het Hypo",species:"球蟒",sex:"M",year:2024,cost:6000,source:"PD",status:"安全穩定",pairCount:6,sireA:"Spotnose Fire YB DG het Hypo",damB:"Leopard Clown"},
+    {owner:"有剛",gene:"Leopard Ultramel het Pied",species:"球蟒",sex:"M",year:2024,cost:15000,source:"KINOVA",status:"安全穩定",pairCount:4,sireA:"Unknown",damB:"Unknown"},
+    {owner:"有剛",gene:"Fire dh Sunset Clown",species:"球蟒",sex:"M",year:2024,cost:10000,source:"Pythian",status:"安全穩定",pairCount:5,sireA:"Fire Leopard het Sunset",damB:"Normal het Sunset Clown Pied"},
+    {owner:"有剛",gene:"Cypress Enchi OG",species:"球蟒",sex:"M",year:2025,cost:0,source:"有剛自繁",status:"安全穩定",pairCount:0,sireA:"Cypress Enchi het OG",damB:"Enchi het OG",selfBreedId:"GPR250604#1-03"},
+    {owner:"有剛",gene:"Super Asphalt",species:"球蟒",sex:"M",year:2025,cost:12000,source:"Pythian",status:"隔離中",pairCount:0,isoIn:"2025/08/23",isoEnd:"2025/10/22"},
+    {owner:"有剛",gene:"OD Chocolate Clown 66% het DG",species:"球蟒",sex:"M",year:2025,cost:20000,source:"玩蟒人生",status:"隔離中",pairCount:2,isoIn:"2025/09/28",isoEnd:"2025/11/27"},
+    {owner:"有剛",gene:"(lipstick) Super Hypo Kahl albino (super sunglow)",species:"紅尾蚺",sex:"M",year:2024,cost:11275,source:"Eyes of Ball",status:"安全穩定",pairCount:1},
+    {owner:"宣恩",gene:"Pastel Leopard DG het TSK AX (RGI)",species:"球蟒",sex:"M",year:2025,cost:5000,source:"台灣角蛙農場",status:"安全穩定",pairCount:4},
+    {owner:"宣恩",gene:"Pastel Leopard DG (RGI)",species:"球蟒",sex:"M",year:2025,cost:5000,source:"台灣角蛙農場",status:"安全穩定",pairCount:4},
+    {owner:"宣恩",gene:"Pastel OD het DG",species:"球蟒",sex:"M",year:2022,cost:2000,source:"有球必應",status:"安全穩定",pairCount:0},
+    {owner:"宣恩",gene:"Pastel Spider het DG",species:"球蟒",sex:"M",year:2022,cost:2000,source:"有球必應",status:"安全穩定",pairCount:0},
+    {owner:"宣恩",gene:"Pastel Fire OD Butter Clown",species:"球蟒",sex:"M",year:2024,cost:5000,source:"好寵國際",status:"安全穩定",pairCount:4},
+    {owner:"宣恩",gene:"Black Pastel Enchi het DG",species:"球蟒",sex:"M",year:2024,cost:4000,source:"Lee Cheng En",status:"安全穩定",pairCount:0},
+    {owner:"宣恩",gene:"Purple Passion (Mojave + Phantom)",species:"球蟒",sex:"M",year:2024,cost:1700,source:"蘇米奇",status:"安全穩定",pairCount:2},
+    {owner:"宣恩",gene:"Super Banana Pastel Fire",species:"球蟒",sex:"M",year:2024,cost:7300,source:"蘇米奇",status:"安全穩定",pairCount:0},
+    {owner:"宣恩",gene:"OD Lavender Pied",species:"球蟒",sex:"M",year:2025,cost:25600,source:"追求極致(歐洲進口)",status:"安全穩定",pairCount:3},
+    {owner:"宣恩",gene:"DG Crypton",species:"球蟒",sex:"M",year:2025,cost:18000,source:"Vortex",status:"安全穩定",pairCount:4},
+    {owner:"宣恩",gene:"OG het Pied",species:"球蟒",sex:"M",year:2025,cost:6000,source:"追求極致",status:"安全穩定",pairCount:1},
+    {owner:"宣恩",gene:"Suma Pied pos Blackhead",species:"球蟒",sex:"M",year:2025,cost:36000,source:"JK",status:"隔離中",isoIn:"2025/12/17",isoEnd:"2026/02/15"},
+    {owner:"宣恩",gene:"Pastel Acid het Clown",species:"球蟒",sex:"M",year:2024,cost:8000,source:"Vet",status:"隔離中",isoIn:"2025/12/17",isoEnd:"2026/02/15"},
+    {owner:"宣恩",gene:"DG Pied 50% het Cryptic",species:"球蟒",sex:"M",year:2024,cost:28500,source:"追求極致",status:"安全穩定"},
+    {owner:"宣恩",gene:"Albino Tessera",species:"玉米蛇",sex:"M",year:2023,cost:0,source:"林煜恩",status:"安全穩定"},
+    {owner:"Neil",gene:"Mahogany het clown",species:"球蟒",sex:"M",year:2021,cost:24000,source:"蘇米奇",status:"安全穩定",pairCount:1},
+    {owner:"Neil",gene:"Black Pastel Pied",species:"球蟒",sex:"M",year:2023,cost:18000,source:"Ray Reptiles",status:"安全穩定",pairCount:2},
+    {owner:"Neil",gene:"Banana Clown 66%het pied",species:"球蟒",sex:"M",year:2023,cost:4900,source:"爬蟲樂園",status:"安全穩定",pairCount:1},
+    {owner:"Neil",gene:"Red Stripe th clown dg hypo",species:"球蟒",sex:"M",year:2024,cost:6000,source:"追球極致",status:"安全穩定",pairCount:2},
+    {owner:"Neil",gene:"Mahogany Pied het Lavender",species:"球蟒",sex:"M",year:2025,cost:21000,source:"禁忌球2.0",status:"安全穩定",pairCount:1},
+    {owner:"Neil",gene:"(lipstick) Hypo Kahl albino pos jungle pos super",species:"紅尾蚺",sex:"M",year:2022,cost:15000,source:"Ray Reptiles",status:"安全穩定",pairCount:3},
+  ];
+  const FEMALES_DATA = [
+    {owner:"有剛",gene:"Super Pastel HRA(種母)",species:"球蟒",sex:"F",year:2010,cost:3000,source:"玩蟒人生",status:"安全穩定",pairPri:"Banana het Clown (FM)"},
+    {owner:"有剛",gene:"Super Pastel Spider het Clown(種母)",species:"球蟒",sex:"F",year:2021,cost:4100,source:"Pythian",status:"安全穩定",pairPri:"Scaleless Head Pastel th Tsk axanthic Clown Pied"},
+    {owner:"有剛",gene:"Enchi Fire Loepard(種母)",species:"球蟒",sex:"F",year:2021,cost:6000,source:"臉書社團個人(前手自爬屋)",status:"安全穩定",pairPri:"Leopard Ultramel het Pied"},
+    {owner:"有剛",gene:"Enchi het OG (Proven)",species:"球蟒",sex:"F",year:2021,cost:4000,source:"Pythian",status:"安全穩定",pairPri:"Cypress Enchi het OG"},
+    {owner:"有剛",gene:"Super Pastel Cinnamon GHI Calico",species:"球蟒",sex:"F",year:2021,cost:8000,source:"Pythian",status:"安全穩定",pairPri:"Black Head het Piebald"},
+    {owner:"有剛",gene:"Pied",species:"球蟒",sex:"F",year:2021,cost:12000,source:"Pythian",status:"安全穩定",pairPri:"Leopard Ultramel het Pied"},
+    {owner:"有剛",gene:"Clown 50% het Tsk axanthic",species:"球蟒",sex:"F",year:2022,cost:15000,source:"Pythian",status:"安全穩定",pairPri:"Scaleless Head Pastel th Tsk axanthic Clown Pied"},
+    {owner:"有剛",gene:"Normal dh Sunset Ultramel (RGI)",species:"球蟒",sex:"F",year:2022,cost:17000,source:"玩蟒人生",status:"安全穩定",pairPri:"Fire dh Sunset Clown"},
+    {owner:"有剛",gene:"Yellow Billy het OG",species:"球蟒",sex:"F",year:2022,cost:3100,source:"Pythian",status:"安全穩定",pairPri:"Cypress Enchi het OG"},
+    {owner:"有剛",gene:"Butter Granite Clown",species:"球蟒",sex:"F",year:2023,cost:7000,source:"玩蟒人生",status:"安全穩定",pairPri:"Leopard Spotnose (YB) dh DG Clown 50%het Hypo"},
+    {owner:"有剛",gene:"Normal het Pied het Ghost",species:"球蟒",sex:"F",year:2021,cost:4000,source:"Pythian",status:"安全穩定",pairPri:"Pastel Fire OD Butter Clown"},
+    {owner:"有剛",gene:"Leopard het DG",species:"球蟒",sex:"F",year:2022,cost:3500,source:"有球必應",status:"安全穩定",pairPri:"Pastel Spider het DG"},
+    {owner:"有剛",gene:"Normal het DG",species:"球蟒",sex:"F",year:2022,cost:2000,source:"自繁",status:"安全穩定",pairPri:"Pastel Spider het DG"},
+    {owner:"有剛",gene:"Pastel Enchi het DG",species:"球蟒",sex:"F",year:2022,cost:4500,source:"自繁",status:"安全穩定",pairPri:"Pastel Spider het DG"},
+    {owner:"有剛",gene:"Spotnose Leopard Cinnamon YB het Clown",species:"球蟒",sex:"F",year:2023,cost:9000,source:"玩蟒人生",status:"安全穩定",pairPri:"Pastel Fire OD Butter Clown"},
+    {owner:"有剛",gene:"Super Banana Pastel Fire",species:"球蟒",sex:"F",year:2023,cost:8000,source:"玩蟒人生",status:"安全穩定",pairPri:"Pastel Fire OD Butter Clown"},
+    {owner:"有剛",gene:"Super Orange Dream Leopard Fire Clown",species:"球蟒",sex:"F",year:2023,cost:11000,source:"Pythian",status:"安全穩定",pairPri:"Pastel Fire OD Butter Clown"},
+    {owner:"宣恩",gene:"Normal het Pied het Ghost",species:"球蟒",sex:"F",year:2021,cost:3000,source:"Pythian",status:"安全穩定"},
+    {owner:"宣恩",gene:"Leopard het DG",species:"球蟒",sex:"F",year:2022,cost:2500,source:"有球必應",status:"安全穩定",pairPri:"Pastel Leopard DG (RGI)"},
+    {owner:"宣恩",gene:"Normal het DG",species:"球蟒",sex:"F",year:2022,cost:1500,source:"自繁",status:"安全穩定",pairPri:"Pastel OD het DG"},
+    {owner:"宣恩",gene:"Pastel Enchi het DG",species:"球蟒",sex:"F",year:2022,cost:4000,source:"自繁",status:"安全穩定",pairPri:"Pastel Spider het DG"},
+    {owner:"宣恩",gene:"Pastel Spider het DG",species:"球蟒",sex:"F",year:2021,cost:3500,source:"Pythian",status:"安全穩定"},
+    {owner:"宣恩",gene:"Banana Pastel het DG",species:"球蟒",sex:"F",year:2023,cost:6000,source:"蘇米奇",status:"安全穩定"},
+    {owner:"宣恩",gene:"Super Pastel Butter YB",species:"球蟒",sex:"F",year:2024,cost:5000,source:"追求極致",status:"安全穩定"},
+    {owner:"宣恩",gene:"Leopard het TSKax het DG",species:"球蟒",sex:"F",year:2023,cost:3000,source:"台灣角蛙農場",status:"安全穩定",pairPri:"Pastel Leopard DG het TSK AX (RGI)"},
+    {owner:"Neil",gene:"Banana cinnamon het pied",species:"球蟒",sex:"F",year:2022,cost:8000,source:"Ray Reptiles",status:"安全穩定",pairPri:"Black Pastel Pied"},
+    {owner:"Neil",gene:"Mystic het pied",species:"球蟒",sex:"F",year:2022,cost:5000,source:"爬蟲樂園",status:"安全穩定"},
+    {owner:"Neil",gene:"Cinnamon het pied",species:"球蟒",sex:"F",year:2023,cost:4000,source:"爬蟲樂園",status:"安全穩定"},
+    {owner:"Neil",gene:"Banana het clown",species:"球蟒",sex:"F",year:2022,cost:7000,source:"蘇米奇",status:"安全穩定",pairPri:"Mahogany het clown"},
+    {owner:"Neil",gene:"Normal het Lavender het Pied",species:"球蟒",sex:"F",year:2023,cost:6000,source:"禁忌球2.0",status:"安全穩定",pairPri:"Mahogany Pied het Lavender"},
+  ];
+  const SALES_DATA = [
+    {owner:"有剛",saleId:"GPR250604#1-01",species:"球蟒",gene:"Cypress 66% het OG",sex:"M",birth:"2025/06/04",sireA:"Cypress Enchi het OG",damB:"Enchi het OG",cost:0,price:2500,source:"品牌自繁",status:"到貨、結案",channel:"官方line",buyer:"Bruce Lee 0916055996",ship:"2025/08/01",fund:250,delivery:"免交付"},
+    {owner:"有剛",saleId:"GPR250604#1-02",species:"球蟒",gene:"Super Enchi Cypress 66% het OG",sex:"M",birth:"2025/06/04",sireA:"Cypress Enchi het OG",damB:"Enchi het OG",cost:0,price:2600,source:"品牌自繁",status:"到貨、結案",channel:"line群競標",buyer:"王楷鈞 0975151350",ship:"2025/08/01",fund:260,delivery:"免交付"},
+    {owner:"有剛",saleId:"OPR240000#0-01",species:"球蟒",gene:"Clown",sex:"M",birth:"",sireA:"",damB:"",cost:3000,price:5000,source:"內部出清",status:"待售",channel:"",buyer:"",ship:"",fund:500,delivery:""},
+    {owner:"有剛",saleId:"OPR240000#1-01",species:"球蟒",gene:"Normal het Clown 50% het Albino (RGI)",sex:"F",birth:"",sireA:"",damB:"",cost:3500,price:5000,source:"內部出清",status:"待售",channel:"",buyer:"",ship:"",fund:500,delivery:""},
+    {owner:"有剛",saleId:"OBC240000#0-01",species:"紅尾蚺",gene:"(lipstick) Super Hypo Kahl albino (super sunglow)",sex:"M",birth:"",sireA:"",damB:"",cost:11275,price:15000,source:"內部出清",status:"待售",channel:"",buyer:"",ship:"",fund:1500,delivery:""},
+    {owner:"宣恩",saleId:"CPR250716#1-01",species:"球蟒",gene:"Enchi 66% het DG",sex:"M",birth:"2025/07/16",sireA:"Pastel Enchi het DG",damB:"Pastel Spider het DG",cost:0,price:600,source:"品牌自繁",status:"到貨、結案",channel:"官方line",buyer:"",ship:"2025/10/30",fund:60,delivery:"未交付"},
+    {owner:"宣恩",saleId:"CPR250716#1-02",species:"球蟒",gene:"Pastel Enchi 66% het DG",sex:"M",birth:"2025/07/16",sireA:"Pastel Enchi het DG",damB:"Pastel Spider het DG",cost:0,price:1000,source:"品牌自繁",status:"到貨、結案",channel:"官方line",buyer:"媚 09855298998",ship:"2025/9/7",fund:100,delivery:"免交付"},
+    {owner:"宣恩",saleId:"CPR250716#1-03",species:"球蟒",gene:"Pastel Spider 66% het DG",sex:"M",birth:"2025/07/16",sireA:"Pastel Enchi het DG",damB:"Pastel Spider het DG",cost:0,price:2200,source:"品牌自繁",status:"到貨、結案",channel:"私下詢問(宣恩)",buyer:"陳冠中",ship:"2025/8/16",fund:220,delivery:"免交付"},
+    {owner:"宣恩",saleId:"CPR250716#1-04",species:"球蟒",gene:"Pastel Enchi Spider DG",sex:"F",birth:"2025/07/16",sireA:"Pastel Enchi het DG",damB:"Pastel Spider het DG",cost:0,price:16000,source:"品牌自繁",status:"到貨、結案",channel:"私下詢問(宣恩)",buyer:"羽",ship:"2025/9/3",fund:1600,delivery:"免交付"},
+    {owner:"宣恩",saleId:"CPR250716#1-05",species:"球蟒",gene:"Super Pastel 66% het DG",sex:"F",birth:"2025/07/16",sireA:"Pastel Enchi het DG",damB:"Pastel Spider het DG",cost:0,price:1800,source:"品牌自繁",status:"到貨、結案",channel:"官方IG",buyer:"",ship:"",fund:180,delivery:"未交付"},
+    {owner:"宣恩",saleId:"CPR250716#1-06",species:"球蟒",gene:"Super Pastel 66% het DG",sex:"F",birth:"2025/07/16",sireA:"Pastel Enchi het DG",damB:"Pastel Spider het DG",cost:0,price:2500,source:"品牌自繁",status:"待售",channel:"",buyer:"",ship:"",fund:250,delivery:""},
+    {owner:"宣恩",saleId:"OPR250903#1-01",species:"球蟒",gene:"Pastel Leopard DG",sex:"M",birth:"2025/09/03",sireA:"Super Pastel Leopard het DG het TSK AX",damB:"Leopard het TSKax het DG",cost:7800,price:5000,source:"內部出清",status:"出貨中、面交 (已收款)",channel:"line群競標",buyer:"KAI 0975151350",ship:"2025/12/17",fund:500,delivery:"免交付"},
+    {owner:"宣恩",saleId:"OPR250204#1-01",species:"球蟒",gene:"Black Pastel Enchi het DG",sex:"M",birth:"2025/02/04",sireA:"",damB:"",cost:4000,price:5000,source:"內部出清",status:"待售",channel:"",buyer:"",ship:"",fund:500,delivery:""},
+    {owner:"宣恩",saleId:"OPR251106#1-02",species:"球蟒",gene:"Super Pastel Super Butter pos YB",sex:"F",birth:"2025/11/06",sireA:"Super Pastel Butter YB",damB:"Super Pastel Butter YB",cost:5000,price:8500,source:"內部出清",status:"待售",channel:"",buyer:"",ship:"",fund:850,delivery:""},
+    {owner:"宣恩",saleId:"OPR251106#1-01",species:"球蟒",gene:"Super Pastel Ivory pos Butter",sex:"F",birth:"2025/11/06",sireA:"Super Pastel Butter YB",damB:"Super Pastel Butter YB",cost:4000,price:1800,source:"外部代售",status:"到貨、結案",channel:"line群競標",buyer:"柔",ship:"2025/12/6",fund:180,delivery:"未交付"},
+    {owner:"宣恩",saleId:"CPR251023#1-01",species:"球蟒",gene:"DG",sex:"F",birth:"2025/10/23",sireA:"Normal het DG",damB:"Pastel Spider het DG",cost:0,price:8000,source:"品牌自繁",status:"待售",channel:"",buyer:"",ship:"",fund:800,delivery:""},
+    {owner:"宣恩",saleId:"CPR251023#1-02",species:"球蟒",gene:"Normal 66% het DG",sex:"M",birth:"2025/10/23",sireA:"Normal het DG",damB:"Pastel Spider het DG",cost:0,price:500,source:"品牌自繁",status:"到貨、結案",channel:"官方line",buyer:"",ship:"",fund:50,delivery:"未交付"},
+    {owner:"宣恩",saleId:"CPR251023#1-03",species:"球蟒",gene:"Pastel 66% het DG-1",sex:"M",birth:"2025/10/23",sireA:"Normal het DG",damB:"Pastel Spider het DG",cost:0,price:500,source:"品牌自繁",status:"到貨、結案",channel:"官方line",buyer:"",ship:"",fund:50,delivery:"未交付"},
+    {owner:"宣恩",saleId:"CPR251023#1-04",species:"球蟒",gene:"Pastel 66% het DG-2",sex:"M",birth:"2025/10/23",sireA:"Normal het DG",damB:"Pastel Spider het DG",cost:0,price:500,source:"品牌自繁",status:"到貨、結案",channel:"官方line",buyer:"",ship:"",fund:50,delivery:"未交付"},
+    {owner:"宣恩",saleId:"CPR251023#1-05",species:"球蟒",gene:"Pastel Spider 66% het DG",sex:"M",birth:"2025/10/23",sireA:"Normal het DG",damB:"Pastel Spider het DG",cost:0,price:1800,source:"品牌自繁",status:"出貨中、面交 (已收款)",channel:"官方IG",buyer:"黑田",ship:"",fund:180,delivery:"未交付"},
+    {owner:"宣恩",saleId:"CKS251121#1",species:"王蛇",gene:"墨西哥黑王蛇(公)",sex:"M",birth:"2025/12/18",sireA:"墨西哥黑王蛇(公)",damB:"墨西哥黑王蛇(母)",cost:2500,price:1000,source:"外部代售",status:"到貨、結案",channel:"官方line",buyer:"",ship:"",fund:100,delivery:"未交付"},
+    {owner:"宣恩",saleId:"CKS251121#2",species:"王蛇",gene:"墨西哥黑王蛇(母)",sex:"F",birth:"2025/12/18",sireA:"墨西哥黑王蛇(公)",damB:"墨西哥黑王蛇(母)",cost:2500,price:1000,source:"外部代售",status:"到貨、結案",channel:"官方line",buyer:"",ship:"",fund:100,delivery:"未交付"},
+    {owner:"Neil",saleId:"NPR250917#1-01",species:"球蟒",gene:"Black pastel Cinnamon het pied",sex:"F",birth:"2025/09/17",sireA:"Black pastel pied",damB:"Banana cinnamon het pied",cost:0,price:40000,source:"品牌自繁",status:"待售",channel:"",buyer:"",ship:"",fund:4000,delivery:"免交付"},
+    {owner:"Neil",saleId:"NPR250917#1-02",species:"球蟒",gene:"Banana cinnamon het pied",sex:"F",birth:"2025/09/17",sireA:"Black pastel pied",damB:"Banana cinnamon het pied",cost:0,price:6500,source:"品牌自繁",status:"到貨、結案",channel:"官方IG",buyer:"PAN HEN",ship:"12/14",fund:650,delivery:"未交付"},
+    {owner:"Neil",saleId:"NPR250917#1-03",species:"球蟒",gene:"Banana cinnamon het pied",sex:"F",birth:"2025/09/17",sireA:"Black pastel pied",damB:"Banana cinnamon het pied",cost:0,price:6500,source:"品牌自繁",status:"到貨、結案",channel:"私下詢問(Neil)",buyer:"金名",ship:"2025/11/29",fund:650,delivery:"未交付"},
+    {owner:"Neil",saleId:"NPR250917#1-04",species:"球蟒",gene:"Banana Black pastel het pied（ng)",sex:"F",birth:"2025/09/17",sireA:"Black pastel pied",damB:"Banana cinnamon het pied",cost:0,price:4000,source:"品牌自繁",status:"待售",channel:"",buyer:"",ship:"",fund:400,delivery:"免交付"},
+  ];
+  const BREEDING_DATA = [
+    {male:"Pastel Fire OD Butter Clown",female:"Normal het Pied het Ghost",date:"2025/11/2"},
+    {male:"Pastel Fire OD Butter Clown",female:"Normal het Pied het Ghost",date:"2025/11/24"},
+    {male:"Pastel Fire OD Butter Clown",female:"Normal het Pied het Ghost",date:"2025/12/14"},
+    {male:"Pastel Fire OD Butter Clown",female:"Normal het Pied het Ghost",date:"2025/12/25"},
+    {male:"Pastel Spider het DG",female:"Leopard het DG",date:"2026/1/2"},
+    {male:"Pastel Fire OD Butter Clown",female:"Normal",date:"2026/1/6"},
+    {male:"Pastel Spider het DG",female:"Normal het DG",date:"2026/1/21"},
+    {male:"Pastel Fire OD Butter Clown",female:"Spotnose Leopard Cinnamon YB het Clown",date:"2026/1/21"},
+    {male:"Pastel Spider het DG",female:"Pastel Enchi het DG",date:"2026/1/24"},
+    {male:"Pastel Fire OD Butter Clown",female:"Normal",date:"2026/1/26"},
+    {male:"Pastel Spider het DG",female:"Leopard het DG",date:"2026/2/7"},
+    {male:"Pastel Fire OD Butter Clown",female:"Normal",date:"2026/2/7"},
+    {male:"Pastel Fire OD Butter Clown",female:"Normal het Pied het Ghost",date:"2026/2/20"},
+    {male:"Pastel Fire OD Butter Clown",female:"Super Banana Pastel Fire",date:"2026/2/27"},
+    {male:"Pastel Spider het DG",female:"Leopard het DG",date:"2026/2/27"},
+    {male:"Pastel Fire OD Butter Clown",female:"Super Pastel Orange Dream Leopard Fire Clown",date:"2026/3/3"},
+    {male:"Pastel Fire OD Butter Clown",female:"Spotnose Leopard Cinnamon YB het Clown",date:"2026/3/9"},
+    {male:"Pastel Spider het DG",female:"Normal het DG",date:"2026/3/9"},
+    {male:"Pastel Fire OD Butter Clown",female:"Super Banana Pastel Fire",date:"2026/3/18"},
+    {male:"Pastel Spider het DG",female:"Pastel Enchi het DG",date:"2026/3/18"},
+  ];
+  const FOOD_ROWS_DATA = [
+    {owner:"宣恩",type:"小白鼠",size:"跳跳",grams:"10-15",perPkg:10,unitPrice:1.4,weeklyUse:2,stock:7,price:135},
+    {owner:"宣恩",type:"大白鼠",size:"24+",grams:"24-35",perPkg:10,unitPrice:1.0,weeklyUse:2,stock:4,price:240},
+    {owner:"有剛",type:"大白鼠",size:"24+",grams:"24-35",perPkg:10,unitPrice:1.0,weeklyUse:4,stock:1,price:240},
+    {owner:"Neil",type:"小白鼠",size:"跳跳",grams:"10-15",perPkg:10,unitPrice:1.4,weeklyUse:0.3,stock:50,price:135},
+    {owner:"Neil",type:"小白鼠",size:"亞成",grams:"16-23",perPkg:10,unitPrice:1.1,weeklyUse:0.3,stock:50,price:180},
+    {owner:"Neil",type:"大白鼠",size:"91+",grams:"91-120",perPkg:5,unitPrice:0.7,weeklyUse:0.3,stock:50,price:330},
+  ];
+  const FOOD_PARAMS_DATA = {
+    宣恩:{保險庫存週:4,多叫數量週:3,冰箱容量:28,盤點日期:"2026/3/30"},
+    有剛:{保險庫存週:4,多叫數量週:4,冰箱容量:35,盤點日期:"2026/3/30"},
+    Neil:{保險庫存週:4,多叫數量週:4,冰箱容量:30,盤點日期:"2026/3/30"},
+  };
+
+  try {
+    let done = 0;
+    const total = MALES_DATA.length + FEMALES_DATA.length + SALES_DATA.length + BREEDING_DATA.length + FOOD_ROWS_DATA.length + 3;
+
+    const tick = (msg) => { done++; setStatus(msg, Math.round(done/total*100)); };
+
+    setStatus('寫入公蛇資料...', 0);
+    for (const d of MALES_DATA) {
+      await addDoc(collection(db2, COL.males), {...d, createdAt: serverTimestamp()});
+      tick(`公蛇 ${done}/${MALES_DATA.length}`);
+    }
+    setStatus('寫入母蛇資料...', Math.round(MALES_DATA.length/total*100));
+    for (const d of FEMALES_DATA) {
+      await addDoc(collection(db2, COL.females), {...d, createdAt: serverTimestamp()});
+      tick(`母蛇 ${done - MALES_DATA.length}/${FEMALES_DATA.length}`);
+    }
+    setStatus('寫入銷售記錄...', 60);
+    for (const d of SALES_DATA) {
+      await addDoc(collection(db2, COL.sales), {...d, createdAt: serverTimestamp()});
+      tick('銷售記錄...');
+    }
+    setStatus('寫入交配紀錄...', 80);
+    for (const d of BREEDING_DATA) {
+      await addDoc(collection(db2, COL.breeding), {...d, createdAt: serverTimestamp()});
+      tick('交配紀錄...');
+    }
+    setStatus('寫入鼠量資料...', 90);
+    for (const d of FOOD_ROWS_DATA) {
+      await addDoc(collection(db2, COL.foodRows), {...d, createdAt: serverTimestamp()});
+      tick('鼠量...');
+    }
+    for (const [owner, params] of Object.entries(FOOD_PARAMS_DATA)) {
+      await setDoc(doc(db2, COL.foodParams, owner), params);
+      tick('鼠量參數...');
+    }
+
+    setStatus('✅ 完成！', 100);
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `<div style="background:rgba(42,61,46,0.08);border:1px solid rgba(42,61,46,0.2);border-radius:6px;padding:16px 20px;text-align:center;margin-top:12px">
+      <div style="font-size:20px;margin-bottom:8px">✅</div>
+      <div style="font-size:14px;font-weight:500;color:var(--brown)">匯入完成！</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">
+        公蛇 ${MALES_DATA.length} 筆 · 母蛇 ${FEMALES_DATA.length} 筆 · 銷售 ${SALES_DATA.length} 筆 · 交配 ${BREEDING_DATA.length} 筆 · 鼠量 ${FOOD_ROWS_DATA.length} 筆
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">請到各分頁確認資料是否正確</div>
+    </div>`;
+    showToast('✅ 初始資料匯入完成！');
+    btn.textContent = '✅ 已匯入（請勿重複執行）';
+  } catch(e) {
+    setStatus('❌ 匯入失敗：' + e.message, 0);
+    showToast('❌ 匯入失敗：' + e.message);
+    btn.disabled = false;
+    btn.textContent = '📦 重試匯入';
+  }
+};
+
+window.imCloseModal = () => { document.getElementById('im-modal-overlay').classList.remove('show'); };
+
+// ── INIT HOOK: load dashboard when page shown ────
+const origShowPage = window.showPage;
+window.showPage = (page, btn) => {
+  origShowPage(page, btn);
+  if (page === 'im-dashboard') imRenderDashboard();
+};
+</script>
 </body>
-</html>
