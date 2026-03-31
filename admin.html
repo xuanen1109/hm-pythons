@@ -1129,7 +1129,7 @@ window.showPage = (page, btn) => {
   if (btn) btn.classList.add('active');
 };
 
-function showToast(msg) {
+window.showToast = function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.style.display = 'block';
   setTimeout(() => { t.style.display = 'none'; }, 3000);
@@ -1640,7 +1640,7 @@ window.imSave = async (section, id) => {
 
   if (section==='males') {
     const gene = g('im-f-gene').value.trim();
-    if (!gene) { showToast('❌ 請填寫基因/品系'); return; }
+    if (!gene) { window.showToast('❌ 請填寫基因/品系'); return; }
     data = { owner:g('im-f-owner').value, species:g('im-f-species').value, gene, sex:'M',
       year:parseInt(g('im-f-year').value)||0, cost:parseInt(g('im-f-cost').value)||0,
       source:g('im-f-source').value, status:g('im-f-status').value,
@@ -1649,7 +1649,7 @@ window.imSave = async (section, id) => {
   }
   else if (section==='females') {
     const gene = g('im-f-gene').value.trim();
-    if (!gene) { showToast('❌ 請填寫基因/品系'); return; }
+    if (!gene) { window.showToast('❌ 請填寫基因/品系'); return; }
     data = { owner:g('im-f-owner').value, species:g('im-f-species').value, gene, sex:'F',
       year:parseInt(g('im-f-year').value)||0, cost:parseInt(g('im-f-cost').value)||0,
       source:g('im-f-source').value, status:g('im-f-status').value,
@@ -1658,7 +1658,7 @@ window.imSave = async (section, id) => {
   }
   else if (section==='sales') {
     const gene = g('im-f-gene').value.trim();
-    if (!gene) { showToast('❌ 請填寫基因/品系'); return; }
+    if (!gene) { window.showToast('❌ 請填寫基因/品系'); return; }
     const delivery = g('im-f-delivery').value;
     const price = parseInt(g('im-f-price').value)||0;
     data = { owner:g('im-f-owner').value, saleId:g('im-f-saleId').value,
@@ -1671,12 +1671,13 @@ window.imSave = async (section, id) => {
   }
   else if (section==='breeding') {
     const male=g('im-f-male').value.trim(), female=g('im-f-female').value.trim(), date=g('im-f-date').value.trim();
-    if (!male||!female||!date) { showToast('❌ 請填寫日期、公蛇和母蛇'); return; }
+    if (!male||!female||!date) { window.showToast('❌ 請填寫日期、公蛇和母蛇'); return; }
     data = { male, female, date, note:g('im-f-note').value };
   }
 
   try {
     const col = COL[section];
+    console.log('[imSave] section:', section, 'id:', id, 'col:', col, 'data:', data);
     if (id) {
       await updateDoc(doc(db2, col, id), data);
       const idx = IM[section].findIndex(x=>x._id===id);
@@ -1685,11 +1686,14 @@ window.imSave = async (section, id) => {
       const ref = await addDoc(collection(db2, col), {...data, createdAt: serverTimestamp()});
       IM[section].push({_id: ref.id, ...data});
     }
-    showToast('✅ 儲存成功！');
+    window.showToast('✅ 儲存成功！');
     imCloseModal();
     imRenderTable(section);
     imRenderDashboard();
-  } catch(e) { showToast('❌ 儲存失敗：'+e.message); }
+  } catch(e) {
+    console.error('[imSave] error:', e);
+    window.showToast('❌ 儲存失敗：' + e.code + ' / ' + e.message);
+  }
 };
 
 // ── FOOD FORMS ────────────────────────────────────
@@ -1737,10 +1741,10 @@ window.imSaveFoodRow = async (owner, id) => {
       const ref = await addDoc(collection(db2, COL.foodRows), {...data, createdAt: serverTimestamp()});
       IM.foodRows.push({_id: ref.id, ...data});
     }
-    showToast('✅ 儲存成功！');
+    window.showToast('✅ 儲存成功！');
     imCloseModal();
     imRenderFood();
-  } catch(e) { showToast('❌ 儲存失敗：'+e.message); }
+  } catch(e) { window.showToast('❌ 儲存失敗：'+e.message); }
 };
 
 window.imOpenFoodParams = (owner) => {
@@ -1765,10 +1769,10 @@ window.imSaveFoodParams = async (owner) => {
   try {
     await setDoc(doc(db2, COL.foodParams, owner), data);
     IM.foodParams[owner] = data;
-    showToast('✅ 儲存成功！');
+    window.showToast('✅ 儲存成功！');
     imCloseModal();
     imRenderFood();
-  } catch(e) { showToast('❌ 儲存失敗：'+e.message); }
+  } catch(e) { window.showToast('❌ 儲存失敗：'+e.message); }
 };
 
 // ── DELETE ────────────────────────────────────────
@@ -1786,11 +1790,11 @@ window.imDoDelete = async (section, id) => {
   try {
     await deleteDoc(doc(db2, COL[section], id));
     IM[section] = IM[section].filter(x=>x._id!==id);
-    showToast('🗑️ 已刪除');
+    window.showToast('🗑️ 已刪除');
     imCloseModal();
     imRenderTable(section);
     imRenderDashboard();
-  } catch(e) { showToast('❌ 刪除失敗：'+e.message); }
+  } catch(e) { window.showToast('❌ 刪除失敗：'+e.message); }
 };
 
 window.imConfirmDeleteFood = (id, label) => {
@@ -1806,10 +1810,10 @@ window.imDoDeleteFood = async (id) => {
   try {
     await deleteDoc(doc(db2, COL.foodRows, id));
     IM.foodRows = IM.foodRows.filter(x=>x._id!==id);
-    showToast('🗑️ 已刪除');
+    window.showToast('🗑️ 已刪除');
     imCloseModal();
     imRenderFood();
-  } catch(e) { showToast('❌ 刪除失敗：'+e.message); }
+  } catch(e) { window.showToast('❌ 刪除失敗：'+e.message); }
 };
 
 // ── SEED DATA ────────────────────────────────────
@@ -2004,11 +2008,11 @@ window.imRunSeed = async () => {
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:8px">請到各分頁確認資料是否正確</div>
     </div>`;
-    showToast('✅ 初始資料匯入完成！');
+    window.showToast('✅ 初始資料匯入完成！');
     btn.textContent = '✅ 已匯入（請勿重複執行）';
   } catch(e) {
     setStatus('❌ 匯入失敗：' + e.message, 0);
-    showToast('❌ 匯入失敗：' + e.message);
+    window.showToast('❌ 匯入失敗：' + e.message);
     btn.disabled = false;
     btn.textContent = '📦 重試匯入';
   }
