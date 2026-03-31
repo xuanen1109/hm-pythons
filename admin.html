@@ -1635,7 +1635,7 @@ window.imAutoFundDelivery = () => {
 };
 
 window.imSave = async (section, id) => {
-  const g = id => document.getElementById(id);
+  const g = elId => document.getElementById(elId);
   let data = {};
 
   if (section==='males') {
