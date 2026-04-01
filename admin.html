@@ -1621,7 +1621,7 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">物種</label><select class="form-select" id="im-f-species">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="im-f-sex"><option value="M" ${(r.sex||'M')==='M'?'selected':''}>♂ 公</option><option value="F" ${r.sex==='F'?'selected':''}>♀ 母</option></select></div>
       <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
-      <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}"></div>
+      <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}" oninput="imAutoFund()"></div>
       <div class="form-group"><label class="form-label">售價 (NT$) *</label><input class="form-input" id="im-f-price" type="number" value="${r.price||''}" oninput="imAutoFund()"></div>
       <div class="form-group"><label class="form-label">公基金10% (NT$)</label><input class="form-input" id="im-f-fund" type="number" value="${r.fund||0}"></div>
       <div class="form-group"><label class="form-label">交付狀態</label><select class="form-select" id="im-f-delivery" onchange="imAutoFundDelivery()">${['','免交付','未交付','已交付'].map(x=>`<option ${(r.delivery||'')==x?'selected':''}>${x}</option>`).join('')}</select></div>
@@ -1668,15 +1668,28 @@ window.imOpenForm = async (section, id) => {
   document.getElementById('im-modal-overlay').classList.add('show');
 };
 
+function calcFund(price, cost, delivery) {
+  if (delivery === '免交付') return 0;
+  const profit = price - cost;
+  if (cost > 0) {
+    // 進貨：只算利潤的 10%，利潤 ≤ 0 則公基金為 0
+    return profit > 0 ? Math.round(profit * 0.1) : 0;
+  } else {
+    // 自繁（成本 = 0）：售價 × 10%
+    return Math.round(price * 0.1);
+  }
+}
 window.imAutoFund = () => {
   const p = parseFloat(document.getElementById('im-f-price').value)||0;
+  const c = parseFloat(document.getElementById('im-f-cost').value)||0;
   const d = document.getElementById('im-f-delivery')?.value||'';
-  document.getElementById('im-f-fund').value = d==='免交付'?0:Math.round(p*0.1);
+  document.getElementById('im-f-fund').value = calcFund(p, c, d);
 };
 window.imAutoFundDelivery = () => {
   const d = document.getElementById('im-f-delivery').value;
-  if (d==='免交付') { document.getElementById('im-f-fund').value=0; }
-  else { const p=parseFloat(document.getElementById('im-f-price')?.value)||0; document.getElementById('im-f-fund').value=Math.round(p*0.1); }
+  const p = parseFloat(document.getElementById('im-f-price')?.value)||0;
+  const c = parseFloat(document.getElementById('im-f-cost')?.value)||0;
+  document.getElementById('im-f-fund').value = calcFund(p, c, d);
 };
 
 window.imSave = async (section, id) => {
@@ -1706,9 +1719,10 @@ window.imSave = async (section, id) => {
     if (!gene) { window.showToast('❌ 請填寫基因/品系'); return; }
     const delivery = g('im-f-delivery').value;
     const price = parseInt(g('im-f-price').value)||0;
+    const cost = parseInt(g('im-f-cost').value)||0;
     data = { owner:g('im-f-owner').value, saleId:g('im-f-saleId').value,
       species:g('im-f-species').value, gene, sex:g('im-f-sex').value,
-      birth:g('im-f-birth').value, cost:parseInt(g('im-f-cost').value)||0,
+      birth:g('im-f-birth').value, cost,
       price, fund: delivery==='免交付'?0:parseInt(g('im-f-fund').value)||0,
       source:g('im-f-source').value, status:g('im-f-status').value,
       channel:g('im-f-channel').value, buyer:g('im-f-buyer').value,
