@@ -87,6 +87,116 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
 
 /* CARDS GRID */
 .snake-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+
+/* ── MOBILE RWD ─────────────────────────────────── */
+.hamburger-btn {
+  display:none; background:none; border:none; cursor:pointer;
+  padding:8px; color:var(--copper-pale);
+}
+.hamburger-btn span {
+  display:block; width:22px; height:2px; background:var(--copper-pale);
+  margin:4px 0; transition:all 0.3s;
+}
+.sidebar-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:150;
+}
+.sidebar-overlay.show { display:block; }
+
+@media (max-width: 768px) {
+  /* Navbar */
+  .navbar { padding:0 16px; }
+  .nav-brand { font-size:15px; }
+  .user-name { display:none; }
+  .hamburger-btn { display:block; margin-right:auto; }
+  .nav-right { gap:10px; }
+  .logout-btn { padding:5px 10px; font-size:10px; }
+  .navbar a[href="index.html"] { display:none; }
+
+  /* Sidebar — slide in from left */
+  .main { grid-template-columns:1fr; }
+  .sidebar {
+    position:fixed; top:0; left:-260px; width:260px; height:100vh;
+    z-index:200; overflow-y:auto; transition:left 0.3s ease;
+    box-shadow:4px 0 20px rgba(0,0,0,0.15); padding-top:60px;
+  }
+  .sidebar.open { left:0; }
+
+  /* Content */
+  .content { padding:16px; }
+  .page-title { font-size:20px; margin-bottom:4px; }
+  .page-sub { font-size:12px; margin-bottom:16px; }
+
+  /* Snake grid — 1 column on mobile */
+  .snake-grid { grid-template-columns:1fr; gap:12px; }
+  .snake-card-img { aspect-ratio:4/3; }
+
+  /* Forms */
+  .form-card { padding:16px; }
+  .form-row { grid-template-columns:1fr; }
+  .form-input, .form-select, .form-textarea {
+    font-size:16px !important; /* prevent iOS zoom */
+    padding:12px !important;
+  }
+  .submit-btn { padding:14px; font-size:14px; }
+
+  /* IM tables → card view */
+  .im-table thead { display:none; }
+  .im-table tr {
+    display:block; background:white;
+    border:1px solid rgba(181,115,58,0.12);
+    border-radius:8px; margin-bottom:10px; padding:12px;
+  }
+  .im-table td {
+    display:flex; align-items:flex-start; gap:8px;
+    padding:4px 0; border:none; font-size:13px;
+    border-bottom:1px solid rgba(181,115,58,0.06);
+  }
+  .im-table td:last-child { border-bottom:none; padding-top:10px; }
+  .im-table td::before {
+    content:attr(data-label);
+    font-size:10px; color:var(--muted); letter-spacing:.05em;
+    text-transform:uppercase; min-width:70px; flex-shrink:0; padding-top:2px;
+  }
+  .im-table td[style*="white-space:nowrap"] {
+    flex-wrap:wrap; gap:6px;
+  }
+  .action-btn { padding:7px 12px; font-size:12px; }
+
+  /* IM filters */
+  #page-im-sales .controls,
+  #page-im-males .controls,
+  #page-im-females .controls,
+  #page-im-breeding .controls { flex-direction:column; }
+  .form-input[style*="width:200px"] { width:100% !important; }
+  .form-select[style*="width:"] { width:100% !important; }
+
+  /* IM modal full screen */
+  .im-modal-overlay { align-items:flex-end; padding:0; }
+  .im-modal {
+    max-width:100%; width:100%; border-radius:16px 16px 0 0;
+    max-height:92vh; padding:20px 16px;
+  }
+  .im-form-grid { grid-template-columns:1fr; }
+  .im-form-full { grid-column:1; }
+
+  /* Push to site modal */
+  .modal-overlay { align-items:flex-end; padding:0; }
+  .modal {
+    max-width:100% !important; width:100% !important;
+    border-radius:16px 16px 0 0; max-height:92vh;
+  }
+
+  /* Sales KPI row */
+  #im-sales-kpi { grid-template-columns:1fr 1fr !important; }
+  .im-kpi { padding:10px 12px; }
+  .im-kpi-value { font-size:16px !important; }
+
+  /* num inputs in food */
+  input.im-num { width:60px; }
+
+  /* Seed page */
+  #im-seed-preview > div { grid-template-columns:1fr 1fr !important; }
+}
 .snake-card {
   background:white; border:1px solid rgba(181,115,58,0.12);
   border-radius:8px; overflow:hidden; position:relative;
@@ -275,6 +385,9 @@ input.im-num:focus { border-color:var(--copper); }
 <!-- ADMIN UI -->
 <div id="admin-ui">
   <nav class="navbar">
+    <button class="hamburger-btn" onclick="toggleSidebar()" id="hamburger-btn" aria-label="選單">
+      <span></span><span></span><span></span>
+    </button>
     <div class="nav-brand">hm.pythons 後台</div>
     <div class="nav-right">
       <span class="user-name" id="user-name"></span>
@@ -283,8 +396,10 @@ input.im-num:focus { border-color:var(--copper); }
     </div>
   </nav>
 
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
   <div class="main">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
       <div class="sidebar-section">
         <div class="sidebar-label">管理</div>
         <button class="sidebar-btn active" onclick="showPage('list', this)">
@@ -553,6 +668,7 @@ input.im-num:focus { border-color:var(--copper); }
           <input class="form-input" style="width:200px;padding:7px 10px" placeholder="搜尋編號、基因、買家…" id="im-q-sales" oninput="imRenderTable('sales')">
           <select class="form-select" style="width:160px;padding:7px 10px" id="im-f-sales-status" onchange="imRenderTable('sales')"><option value="">全部狀態</option><option>待售</option><option>到貨、結案</option><option>出貨中、面交 (已收款)</option></select>
           <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-sales-owner" onchange="imRenderTable('sales')"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
+          <select class="form-select" style="width:100px;padding:7px 10px" id="im-f-sales-year" onchange="imRenderTable('sales')"><option value="">全部年份</option></select>
         </div>
         <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
           <table class="im-table" id="im-table-sales"></table>
@@ -916,15 +1032,50 @@ window.handleImageUpload = async (input) => {
 };
 
 // Tags
+// 修飾詞前綴清單：遇到這些詞時，等下一個詞一起組成標籤
+const TAG_PREFIXES = ['Super','Pos','pos','Het','het','66%het','66%','50%het','50%','dh','DH','th','TH','ph','PH'];
+
+function shouldWaitForNext(word) {
+  return TAG_PREFIXES.includes(word);
+}
+
+// 拖曳排序共用邏輯
+let dragSrcIdx = null;
+
+function makeDraggable(chip, idx, tagsArr, rerenderFn) {
+  chip.draggable = true;
+  chip.dataset.idx = idx;
+  chip.style.cursor = 'grab';
+  chip.addEventListener('dragstart', e => {
+    dragSrcIdx = idx;
+    chip.style.opacity = '0.5';
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  chip.addEventListener('dragend', () => { chip.style.opacity = '1'; });
+  chip.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+  chip.addEventListener('drop', e => {
+    e.preventDefault();
+    if (dragSrcIdx === null || dragSrcIdx === idx) return;
+    const moved = tagsArr.splice(dragSrcIdx, 1)[0];
+    tagsArr.splice(idx, 0, moved);
+    dragSrcIdx = null;
+    rerenderFn();
+  });
+}
+
 window.handleTagInput = (e) => {
-  if (e.key === 'Enter') {
+  if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     const val = e.target.value.trim();
-    if (val) {
+    if (!val) return;
+    // 如果上一個標籤是修飾詞前綴，合併
+    if (currentTags.length > 0 && shouldWaitForNext(currentTags[currentTags.length-1])) {
+      currentTags[currentTags.length-1] = currentTags[currentTags.length-1] + ' ' + val;
+    } else {
       currentTags.push(val);
-      renderTags();
-      e.target.value = '';
     }
+    renderTags();
+    e.target.value = '';
   }
 };
 
@@ -935,7 +1086,11 @@ function renderTags() {
   currentTags.forEach((t, i) => {
     const chip = document.createElement('div');
     chip.className = 'tag-chip';
-    chip.innerHTML = `${t} <span class="tag-chip-x" onclick="removeTag(${i})">×</span>`;
+    chip.style.userSelect = 'none';
+    const isPending = shouldWaitForNext(t);
+    chip.innerHTML = `<span style="${isPending?'color:#8b5e10;font-style:italic':''}">${t}</span> <span class="tag-chip-x" onclick="removeTag(${i})">×</span>`;
+    if (isPending) chip.title = '等待下一個詞合併...';
+    makeDraggable(chip, i, currentTags, renderTags);
     wrap.appendChild(chip);
   });
   wrap.appendChild(input);
@@ -943,6 +1098,41 @@ function renderTags() {
 }
 
 window.removeTag = (i) => { currentTags.splice(i,1); renderTags(); };
+
+// Edit modal tags - same logic
+window.handleEditTagInput = (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    const val = e.target.value.trim();
+    if (!val) return;
+    if (editTags.length > 0 && shouldWaitForNext(editTags[editTags.length-1])) {
+      editTags[editTags.length-1] = editTags[editTags.length-1] + ' ' + val;
+    } else {
+      editTags.push(val);
+    }
+    renderEditTags();
+    e.target.value = '';
+  }
+};
+
+function renderEditTags() {
+  const wrap = document.getElementById('edit-tags-wrap');
+  const input = document.getElementById('edit-tags-input');
+  wrap.innerHTML = '';
+  editTags.forEach((t, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'tag-chip';
+    chip.style.userSelect = 'none';
+    const isPending = shouldWaitForNext(t);
+    chip.innerHTML = `<span style="${isPending?'color:#8b5e10;font-style:italic':''}">${t}</span> <span class="tag-chip-x" onclick="removeEditTag(${i})">×</span>`;
+    if (isPending) chip.title = '等待下一個詞合併...';
+    makeDraggable(chip, i, editTags, renderEditTags);
+    wrap.appendChild(chip);
+  });
+  wrap.appendChild(input);
+}
+
+window.removeEditTag = (i) => { editTags.splice(i,1); renderEditTags(); };
 
 // Submit new snake
 window.submitSnake = async () => {
@@ -1054,29 +1244,6 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-modal-overlay').classList.remove('show');
     editingSnakeId = null;
   };
-
-  window.handleEditTagInput = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const val = e.target.value.trim();
-      if (val) { editTags.push(val); renderEditTags(); e.target.value = ''; }
-    }
-  };
-
-  window.removeEditTag = (i) => { editTags.splice(i,1); renderEditTags(); };
-
-  function renderEditTags() {
-    const wrap = document.getElementById('edit-tags-wrap');
-    const input = document.getElementById('edit-tags-input');
-    wrap.innerHTML = '';
-    editTags.forEach((t,i) => {
-      const chip = document.createElement('div');
-      chip.className = 'tag-chip';
-      chip.innerHTML = t + ' <span class="tag-chip-x" onclick="removeEditTag('+i+')">×</span>';
-      wrap.appendChild(chip);
-    });
-    wrap.appendChild(input);
-  }
 
   window.handleEditImageUpload = async (input) => {
     const file = input.files[0];
@@ -1362,9 +1529,23 @@ window.imRenderTable = (section) => {
     const q = (document.getElementById('im-q-sales')||{}).value?.toLowerCase()||'';
     const st = (document.getElementById('im-f-sales-status')||{}).value||'';
     const ow = (document.getElementById('im-f-sales-owner')||{}).value||'';
+    const yr = (document.getElementById('im-f-sales-year')||{}).value||'';
+
+    // populate year dropdown from ship date or birth date
+    const years = [...new Set(IM.sales.map(r => {
+      const d = r.ship || r.birth || '';
+      return d.split('/')[0];
+    }).filter(y => y && y.length === 4))].sort().reverse();
+    const yrSel = document.getElementById('im-f-sales-year');
+    if (yrSel) {
+      const curYr = yrSel.value;
+      yrSel.innerHTML = '<option value="">全部年份</option>' + years.map(y=>`<option ${y===curYr?'selected':''}>${y}</option>`).join('');
+    }
+
     const rows = IM.sales.filter(r => {
       const txt = ((r.saleId||'')+r.gene+r.owner+(r.buyer||'')+'').toLowerCase();
-      return (!q||txt.includes(q))&&(!st||r.status===st)&&(!ow||r.owner===ow);
+      const rowYear = (r.ship || r.birth || '').split('/')[0];
+      return (!q||txt.includes(q))&&(!st||r.status===st)&&(!ow||r.owner===ow)&&(!yr||rowYear===yr);
     });
     document.getElementById('im-sales-sub').textContent = `共 ${rows.length} 筆`;
     const total = rows.reduce((s,r)=>s+(r.price||0),0);
@@ -1381,16 +1562,16 @@ window.imRenderTable = (section) => {
     document.getElementById('im-table-sales').innerHTML = `<thead><tr>
       <th>所有人</th><th>產品編號</th><th>基因</th><th>性別</th><th>售價</th><th>公基金</th><th>狀態</th><th>買家</th><th>出貨日</th><th>操作</th>
     </tr></thead><tbody>${rows.map(r=>`<tr>
-      <td>${ownerSpan(r.owner)}</td>
-      <td style="font-size:10px;color:var(--muted);white-space:nowrap">${r.saleId||''}</td>
-      <td style="font-size:11px;max-width:200px">${r.gene||''}</td>
-      <td>${sexSpan(r.sex)}</td>
-      <td style="color:var(--copper);font-weight:600">${fmtMoney(r.price)}</td>
-      <td style="color:var(--muted)">${r.fund?fmtMoney(r.fund):'—'}</td>
-      <td>${saleStatusSpan(r.status)}</td>
-      <td style="font-size:11px">${r.buyer||'—'}</td>
-      <td style="font-size:11px;color:var(--muted)">${r.ship||'—'}</td>
-      <td style="white-space:nowrap">
+      <td data-label="所有人">${ownerSpan(r.owner)}</td>
+      <td data-label="產品編號" style="font-size:10px;color:var(--muted);white-space:nowrap">${r.saleId||''}</td>
+      <td data-label="基因" style="font-size:11px;max-width:200px">${r.gene||''}</td>
+      <td data-label="性別">${sexSpan(r.sex)}</td>
+      <td data-label="售價" style="color:var(--copper);font-weight:600">${fmtMoney(r.price)}</td>
+      <td data-label="公基金" style="color:var(--muted)">${r.fund?fmtMoney(r.fund):'—'}</td>
+      <td data-label="狀態">${saleStatusSpan(r.status)}</td>
+      <td data-label="買家" style="font-size:11px">${r.buyer||'—'}</td>
+      <td data-label="出貨日" style="font-size:11px;color:var(--muted)">${r.ship||'—'}</td>
+      <td data-label="操作" style="white-space:nowrap">
         <button class="action-btn" onclick="imOpenForm('sales','${r._id}')">編輯</button>
         <button class="action-btn danger" onclick="imConfirmDelete('sales','${r._id}','${esc(r.gene)}')">刪除</button>
         <button class="action-btn" style="color:#2a6b3a;border-color:rgba(42,107,58,0.3)" onclick="imPushToSite('${r._id}')" title="推送到官網展示">🌐 推官網</button>
@@ -1861,6 +2042,10 @@ window.imPushToSite = (id) => {
       <label class="form-label">中文名稱（選填）</label>
       <input class="form-input" id="push-name-zh" placeholder="例：沙漠幽靈（公）" value="${esc((r.gene||'')+'（'+(r.sex==='M'?'公':'母')+'）')}">
     </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">個體年份</label>
+      <input class="form-input" id="push-year" type="number" placeholder="例：2025" value="${r.birth?(r.birth.split('/')[0]):''}">
+    </div>
     <div class="form-group" style="margin-bottom:16px">
       <label class="form-label">競標連結（競標中時填）</label>
       <input class="form-input" id="push-auction-url" placeholder="https://...">
@@ -1878,6 +2063,7 @@ window.imDoPush = async (id) => {
   const status = document.getElementById('push-status').value;
   const nameZh = document.getElementById('push-name-zh').value.trim();
   const auctionUrl = document.getElementById('push-auction-url').value.trim();
+  const year = document.getElementById('push-year').value.trim();
 
   const speciesKey = SPECIES_MAP_PUSH[r.species] || 'ball_python';
   const tags = (r.gene||'').split(' ').filter(t=>t.length>1&&t.length<30);
@@ -1893,6 +2079,7 @@ window.imDoPush = async (id) => {
     status,
     auctionUrl: auctionUrl || '',
     imgUrl: '',
+    year: year || '',
     createdAt: serverTimestamp(),
     fromIM: true,
     imSaleId: id,
@@ -1910,11 +2097,21 @@ window.imDoPush = async (id) => {
         </div>`;
       return;
     }
-    await addDoc(collection(db2, 'snakes'), snakeDoc);
-    window.showToast('✅ 已推送到官網！記得去「所有個體」上傳照片');
-    imCloseModal();
-    // 重新載入官網個體列表
-    if (typeof loadSnakes === 'function') loadSnakes();
+    const ref = await addDoc(collection(db2, 'snakes'), snakeDoc);
+    const newId = ref.id;
+    if (typeof loadSnakes === 'function') await loadSnakes();
+
+    // 顯示成功 + 立即上傳照片按鈕
+    document.getElementById('im-modal-body').innerHTML = `
+      <div class="im-modal-title" style="color:#2a6b3a">✅ 推送成功！</div>
+      <p class="im-confirm-msg" style="margin-bottom:20px">
+        <strong>${r.gene}</strong> 已上架到官網。<br>
+        <span style="font-size:12px;color:var(--muted)">現在要補上照片嗎？</span>
+      </p>
+      <div class="im-form-actions">
+        <button class="im-btn-cancel" onclick="imCloseModal()">稍後再說</button>
+        <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imCloseModal(); showPage('list', document.querySelector('.sidebar-btn')); openEditModal('${newId}')">📷 立即上傳照片</button>
+      </div>`;
   } catch(e) {
     window.showToast('❌ 推送失敗：'+e.message);
     console.error(e);
@@ -2180,10 +2377,21 @@ window.imRunSeed = async () => {
 
 window.imCloseModal = () => { document.getElementById('im-modal-overlay').classList.remove('show'); };
 
-// ── INIT HOOK: load dashboard when page shown ────
+// ── MOBILE SIDEBAR ───────────────────────────────
+window.toggleSidebar = () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+};
+window.closeSidebar = () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+};
+
+// Auto-close sidebar when a page is selected on mobile
 const origShowPage = window.showPage;
 window.showPage = (page, btn) => {
   origShowPage(page, btn);
+  if (window.innerWidth <= 768) closeSidebar();
   if (page === 'im-dashboard') imRenderDashboard();
 };
 </script>
