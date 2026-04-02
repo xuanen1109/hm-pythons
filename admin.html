@@ -1619,10 +1619,14 @@ window.imRenderTable = (section) => {
     });
     document.getElementById('im-males-sub').textContent = `共 ${rows.length} 筆`;
     document.getElementById('im-table-males').innerHTML = `<thead><tr>
-      <th>所有人</th><th>基因/品系</th><th>物種</th><th>出生年</th><th>成本</th><th>來源</th><th>狀態</th><th>操作</th>
+      <th>基因/品系</th><th>物種</th><th>出生年</th><th>成本</th><th>來源</th><th>狀態</th><th>操作</th>
     </tr></thead><tbody>${rows.map(r=>`<tr>
-      <td>${ownerSpan(r.owner)}</td>
-      <td style="font-size:12px;max-width:260px">${r.gene||''}</td>
+      <td style="max-width:280px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${ownerSpan(r.owner)}
+          <span style="font-size:12px;font-weight:500;color:var(--brown)">${r.gene||''}</span>
+        </div>
+      </td>
       <td style="color:var(--muted)">${r.species||''}</td>
       <td>${r.year||''}</td>
       <td>${fmtMoney(r.cost)}</td>
@@ -1632,7 +1636,7 @@ window.imRenderTable = (section) => {
         <button class="action-btn" onclick="imOpenForm('males','${r._id}')">編輯</button>
         <button class="action-btn danger" onclick="imConfirmDelete('males','${r._id}','${esc(r.gene)}')">刪除</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
   }
   else if (section === 'females') {
     const q = (document.getElementById('im-q-females')||{}).value?.toLowerCase()||'';
@@ -1644,10 +1648,14 @@ window.imRenderTable = (section) => {
     });
     document.getElementById('im-females-sub').textContent = `共 ${rows.length} 筆`;
     document.getElementById('im-table-females').innerHTML = `<thead><tr>
-      <th>所有人</th><th>基因/品系</th><th>物種</th><th>出生年</th><th>成本</th><th>來源</th><th>優先配對公蛇</th><th>狀態</th><th>操作</th>
+      <th>基因/品系</th><th>物種</th><th>出生年</th><th>成本</th><th>來源</th><th>優先配對公蛇</th><th>狀態</th><th>操作</th>
     </tr></thead><tbody>${rows.map(r=>`<tr>
-      <td>${ownerSpan(r.owner)}</td>
-      <td style="font-size:12px;max-width:240px">${r.gene||''}</td>
+      <td style="max-width:260px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${ownerSpan(r.owner)}
+          <span style="font-size:12px;font-weight:500;color:var(--brown)">${r.gene||''}</span>
+        </div>
+      </td>
       <td style="color:var(--muted)">${r.species||''}</td>
       <td>${r.year||''}</td>
       <td>${fmtMoney(r.cost)}</td>
@@ -1658,7 +1666,7 @@ window.imRenderTable = (section) => {
         <button class="action-btn" onclick="imOpenForm('females','${r._id}')">編輯</button>
         <button class="action-btn danger" onclick="imConfirmDelete('females','${r._id}','${esc(r.gene)}')">刪除</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
   }
   else if (section === 'sales') {
     const q = (document.getElementById('im-q-sales')||{}).value?.toLowerCase()||'';
@@ -2210,6 +2218,8 @@ window.imOpenForm = async (section, id) => {
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
       <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSave('sales','${id||''}')">儲存</button>
     </div>`;
+  }
+  else if (section === 'breeding') {
     const maleGenes = [...new Set(IM.males.map(m=>m.gene))].sort();
     const femGenes  = [...new Set(IM.females.map(f=>f.gene))].sort();
     html = `<div class="im-modal-title">${isNew?'新增交配紀錄':'編輯交配紀錄'}</div>
@@ -2845,6 +2855,38 @@ window.imRunSeed = async () => {
 
   const setStatus = (msg, pct) => { statusEl.textContent = msg; bar.style.width = pct+'%'; };
 
+  // ── 先備份現有資料 ──────────────────────────────
+  try {
+    setStatus('備份現有資料中...', 5);
+    const backup = {};
+    const colNames = ['males','females','sales','breeding','im_food_rows','im_food_params','snakes','visitors'];
+    for (const col of colNames) {
+      if (col === 'im_food_params') {
+        // food params is a single doc per owner
+        const snap = await getDocs(collection(db2, col));
+        backup[col] = {};
+        snap.forEach(d => { backup[col][d.id] = d.data(); });
+      } else {
+        const snap = await getDocs(collection(db2, col));
+        backup[col] = snap.docs.map(d => ({_id: d.id, ...d.data()}));
+      }
+    }
+    const now = new Date();
+    const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+    const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hm_pythons_備份_${ts}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus('備份完成，開始還原...', 10);
+  } catch(e) {
+    console.error('備份失敗:', e);
+    // 備份失敗仍繼續，但提示
+    setStatus('⚠️ 備份失敗，仍繼續還原...', 10);
+  }
+
   const MALES_DATA = [
     {owner:"有剛",gene:"Cypress Enchi het OG (Proven)",species:"球蟒",sex:"M",year:2022,cost:4500,source:"Pythian",status:"安全穩定",pairCount:2,sireA:"Unknown",damB:"Unknown"},
     {owner:"有剛",gene:"Banana het Clown (FM)",species:"球蟒",sex:"M",year:2023,cost:3250,source:"陳勁良",status:"安全穩定",pairCount:2,sireA:"Unknown",damB:"Unknown"},
@@ -2964,12 +3006,48 @@ window.imRunSeed = async () => {
     {owner:"宣恩",male:"Pastel Spider het DG",female:"Pastel Enchi het DG",date:"2026/3/18"},
   ];
   const FOOD_ROWS_DATA = [
+    // 宣恩 □
     {owner:"宣恩",type:"小白鼠",size:"跳跳",grams:"10-15",perPkg:10,unitPrice:1.4,weeklyUse:2,stock:7,price:135},
+    {owner:"宣恩",type:"小白鼠",size:"亞成",grams:"16-23",perPkg:10,unitPrice:1.1,weeklyUse:0,stock:0,price:180},
+    {owner:"宣恩",type:"小白鼠",size:"成體",grams:"24-32",perPkg:10,unitPrice:1.0,weeklyUse:0,stock:0,price:240},
     {owner:"宣恩",type:"大白鼠",size:"24+",grams:"24-35",perPkg:10,unitPrice:1.0,weeklyUse:2,stock:4,price:240},
+    {owner:"宣恩",type:"大白鼠",size:"36+",grams:"36-50",perPkg:10,unitPrice:0.9,weeklyUse:0,stock:0,price:320},
+    {owner:"宣恩",type:"大白鼠",size:"51+",grams:"51-70",perPkg:5,unitPrice:0.8,weeklyUse:0,stock:0,price:200},
+    {owner:"宣恩",type:"大白鼠",size:"71+",grams:"71-90",perPkg:5,unitPrice:0.8,weeklyUse:0,stock:0,price:270},
+    {owner:"宣恩",type:"大白鼠",size:"91+",grams:"91-120",perPkg:5,unitPrice:0.7,weeklyUse:0,stock:0,price:330},
+    {owner:"宣恩",type:"大白鼠",size:"121+",grams:"121-150",perPkg:5,unitPrice:0.6,weeklyUse:0,stock:0,price:380},
+    {owner:"宣恩",type:"大白鼠",size:"151+",grams:"151-200",perPkg:5,unitPrice:0.6,weeklyUse:0,stock:0,price:430},
+    {owner:"宣恩",type:"大白鼠",size:"201+",grams:"201-275",perPkg:1,unitPrice:0.5,weeklyUse:0,stock:0,price:96},
+    {owner:"宣恩",type:"大白鼠",size:"276+",grams:"276-350",perPkg:1,unitPrice:0.4,weeklyUse:0,stock:0,price:105},
+    {owner:"宣恩",type:"大白鼠",size:"350+",grams:"350+",perPkg:1,unitPrice:0.3,weeklyUse:0,stock:0,price:110},
+    // 有剛 ○
+    {owner:"有剛",type:"小白鼠",size:"跳跳",grams:"10-15",perPkg:10,unitPrice:1.4,weeklyUse:0,stock:0,price:135},
+    {owner:"有剛",type:"小白鼠",size:"亞成",grams:"16-23",perPkg:10,unitPrice:1.1,weeklyUse:0,stock:0,price:180},
+    {owner:"有剛",type:"小白鼠",size:"成體",grams:"24-32",perPkg:10,unitPrice:1.0,weeklyUse:0,stock:0,price:240},
     {owner:"有剛",type:"大白鼠",size:"24+",grams:"24-35",perPkg:10,unitPrice:1.0,weeklyUse:4,stock:1,price:240},
+    {owner:"有剛",type:"大白鼠",size:"36+",grams:"36-50",perPkg:10,unitPrice:0.9,weeklyUse:0,stock:0,price:320},
+    {owner:"有剛",type:"大白鼠",size:"51+",grams:"51-70",perPkg:5,unitPrice:0.8,weeklyUse:0,stock:0,price:200},
+    {owner:"有剛",type:"大白鼠",size:"71+",grams:"71-90",perPkg:5,unitPrice:0.8,weeklyUse:0,stock:0,price:270},
+    {owner:"有剛",type:"大白鼠",size:"91+",grams:"91-120",perPkg:5,unitPrice:0.7,weeklyUse:0,stock:0,price:330},
+    {owner:"有剛",type:"大白鼠",size:"121+",grams:"121-150",perPkg:5,unitPrice:0.6,weeklyUse:0,stock:0,price:380},
+    {owner:"有剛",type:"大白鼠",size:"151+",grams:"151-200",perPkg:5,unitPrice:0.6,weeklyUse:0,stock:0,price:430},
+    {owner:"有剛",type:"大白鼠",size:"201+",grams:"201-275",perPkg:1,unitPrice:0.5,weeklyUse:0,stock:0,price:96},
+    {owner:"有剛",type:"大白鼠",size:"276+",grams:"276-350",perPkg:1,unitPrice:0.4,weeklyUse:0,stock:0,price:105},
+    {owner:"有剛",type:"大白鼠",size:"350+",grams:"350+",perPkg:1,unitPrice:0.3,weeklyUse:0,stock:0,price:110},
+    // Neil △
     {owner:"Neil",type:"小白鼠",size:"跳跳",grams:"10-15",perPkg:10,unitPrice:1.4,weeklyUse:0.3,stock:50,price:135},
     {owner:"Neil",type:"小白鼠",size:"亞成",grams:"16-23",perPkg:10,unitPrice:1.1,weeklyUse:0.3,stock:50,price:180},
+    {owner:"Neil",type:"小白鼠",size:"成體",grams:"24-32",perPkg:10,unitPrice:1.0,weeklyUse:0,stock:0,price:240},
+    {owner:"Neil",type:"大白鼠",size:"24+",grams:"24-35",perPkg:10,unitPrice:1.0,weeklyUse:0,stock:0,price:240},
+    {owner:"Neil",type:"大白鼠",size:"36+",grams:"36-50",perPkg:10,unitPrice:0.9,weeklyUse:0,stock:0,price:320},
+    {owner:"Neil",type:"大白鼠",size:"51+",grams:"51-70",perPkg:5,unitPrice:0.8,weeklyUse:0,stock:0,price:200},
+    {owner:"Neil",type:"大白鼠",size:"71+",grams:"71-90",perPkg:5,unitPrice:0.8,weeklyUse:0,stock:0,price:270},
     {owner:"Neil",type:"大白鼠",size:"91+",grams:"91-120",perPkg:5,unitPrice:0.7,weeklyUse:0.3,stock:50,price:330},
+    {owner:"Neil",type:"大白鼠",size:"121+",grams:"121-150",perPkg:5,unitPrice:0.6,weeklyUse:0,stock:0,price:380},
+    {owner:"Neil",type:"大白鼠",size:"151+",grams:"151-200",perPkg:5,unitPrice:0.6,weeklyUse:0,stock:0,price:430},
+    {owner:"Neil",type:"大白鼠",size:"201+",grams:"201-275",perPkg:1,unitPrice:0.5,weeklyUse:0,stock:0,price:96},
+    {owner:"Neil",type:"大白鼠",size:"276+",grams:"276-350",perPkg:1,unitPrice:0.4,weeklyUse:0,stock:0,price:105},
+    {owner:"Neil",type:"大白鼠",size:"350+",grams:"350+",perPkg:1,unitPrice:0.3,weeklyUse:0,stock:0,price:110},
   ];
   const FOOD_PARAMS_DATA = {
     宣恩:{保險庫存週:4,多叫數量週:3,冰箱容量:28,盤點日期:"2026/3/30"},
@@ -3222,34 +3300,48 @@ window.imRenderKPI = async () => {
     const lockColor = lockEff===null ? 'var(--muted)' : lockEff>=70 ? '#2a6b3a' : lockEff>=40 ? '#8b5e10' : '#8b0000';
 
     html += `<div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;padding:18px;margin-bottom:14px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <!-- 頂部：母蛇資訊 + 按鈕 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--brown)">${f.gene}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${ownerSpan(f.owner)} · ${f.species} · ${f.year||''}年</div>
+          <div style="font-size:14px;font-weight:700;color:var(--brown)">${f.gene}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">${ownerSpan(f.owner)} · ${f.species} · ${f.year||''}年</div>
         </div>
         <button class="action-btn" style="font-size:11px" onclick="imOpenKPIEdit('${f._id}')">填寫成本/蛋況</button>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <!-- 三個 KPI 直列 -->
+      <div style="display:flex;flex-direction:column;gap:8px">
         <!-- KPI 1 -->
-        <div style="background:var(--cream);border-radius:6px;padding:12px">
-          <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">KPI 1 成蛋良率</div>
-          <div style="font-size:22px;font-weight:700;color:${eggColor}">${eggRatio!==null?eggRatio+'%':'—'}</div>
-          <div style="font-size:11px;margin-top:4px">${eggGrade}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:4px">好蛋 ${goodEggs||0} / 總蛋 ${totalEggs||0}，空包彈 ${slugs}</div>
+        <div style="display:flex;align-items:center;background:var(--cream);border-radius:6px;padding:12px 16px;gap:16px">
+          <div style="min-width:110px">
+            <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">KPI 1 成蛋良率</div>
+            <div style="font-size:26px;font-weight:700;color:${eggColor};line-height:1.2;margin-top:2px">${eggRatio!==null?eggRatio+'%':'—'}</div>
+          </div>
+          <div style="flex:1;border-left:1px solid rgba(181,115,58,0.15);padding-left:16px">
+            <div style="font-size:12px;margin-bottom:4px">${eggGrade}</div>
+            <div style="font-size:11px;color:var(--muted)">好蛋 ${goodEggs||0} / 總蛋 ${totalEggs||0}，空包彈 ${slugs}</div>
+          </div>
         </div>
         <!-- KPI 2 -->
-        <div style="background:var(--cream);border-radius:6px;padding:12px">
-          <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">KPI 2 坪效 ROI</div>
-          <div style="font-size:22px;font-weight:700;color:${roiColor}">${roi!==null?roi+'%':'—'}</div>
-          <div style="font-size:11px;margin-top:4px">${roiGrade}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:4px">子代市值 ${fmtMoney(offspringValue)} / 年成本 ${annualCost?fmtMoney(annualCost):'未填'}</div>
+        <div style="display:flex;align-items:center;background:var(--cream);border-radius:6px;padding:12px 16px;gap:16px">
+          <div style="min-width:110px">
+            <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">KPI 2 坪效 ROI</div>
+            <div style="font-size:26px;font-weight:700;color:${roiColor};line-height:1.2;margin-top:2px">${roi!==null?roi+'%':'—'}</div>
+          </div>
+          <div style="flex:1;border-left:1px solid rgba(181,115,58,0.15);padding-left:16px">
+            <div style="font-size:12px;margin-bottom:4px">${roiGrade}</div>
+            <div style="font-size:11px;color:var(--muted)">子代市值 ${fmtMoney(offspringValue)} / 年成本 ${annualCost?fmtMoney(annualCost):'未填'}</div>
+          </div>
         </div>
         <!-- KPI 3 -->
-        <div style="background:var(--cream);border-radius:6px;padding:12px">
-          <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">KPI 3 交配效率</div>
-          <div style="font-size:22px;font-weight:700;color:${lockColor}">${lockEff!==null?lockEff+'%':'—'}</div>
-          <div style="font-size:11px;margin-top:4px">${lockGrade}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:4px">成功 ${successLocks}/${totalLocks} 次，拒絕 ${rejects} 次</div>
+        <div style="display:flex;align-items:center;background:var(--cream);border-radius:6px;padding:12px 16px;gap:16px">
+          <div style="min-width:110px">
+            <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">KPI 3 交配效率</div>
+            <div style="font-size:26px;font-weight:700;color:${lockColor};line-height:1.2;margin-top:2px">${lockEff!==null?lockEff+'%':'—'}</div>
+          </div>
+          <div style="flex:1;border-left:1px solid rgba(181,115,58,0.15);padding-left:16px">
+            <div style="font-size:12px;margin-bottom:4px">${lockGrade}</div>
+            <div style="font-size:11px;color:var(--muted)">成功 ${successLocks}/${totalLocks} 次，拒絕 ${rejects} 次</div>
+          </div>
         </div>
       </div>
     </div>`;
