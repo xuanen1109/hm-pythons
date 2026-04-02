@@ -454,6 +454,15 @@ input.im-num:focus { border-color:var(--copper); }
         <button class="sidebar-btn" onclick="showPage('im-seed', this)">
           <span class="sidebar-icon">🔄</span> 還原初始資料
         </button>
+        <button class="sidebar-btn" onclick="showPage('im-hatch', this)">
+          <span class="sidebar-icon">🥚</span> 新蛇出蛋登記
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-kpi', this); imRenderKPI()">
+          <span class="sidebar-icon">📈</span> 母蛇 KPI
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-profit', this); imRenderProfit()">
+          <span class="sidebar-icon">💵</span> 分潤結算
+        </button>
       </div>
     </div>
 
@@ -700,10 +709,136 @@ input.im-num:focus { border-color:var(--copper); }
       <div class="page" id="page-im-food">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div class="page-title">鼠量庫存</div>
-          <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenFoodForm(null,null)">＋ 新增規格</button>
+          <div style="display:flex;gap:8px">
+            <button class="submit-btn" style="width:auto;padding:8px 16px;background:var(--copper);border:none" onclick="imOpenCombinedFoodReport()">📋 生成訂購報表</button>
+            <button class="submit-btn" style="width:auto;padding:8px 16px" onclick="imOpenFoodForm(null,null)">＋ 新增規格</button>
+          </div>
         </div>
-        <div class="page-sub">點擊數字直接修改庫存</div>
+        <div class="page-sub">點擊數字直接修改庫存 · 「實際訂購」可手動調整</div>
         <div id="im-food-panels"></div>
+      </div>
+
+      <!-- IM: HATCH -->
+      <div class="page" id="page-im-hatch">
+        <div class="page-title">🥚 新蛇出蛋登記</div>
+        <div class="page-sub">填寫出蛋資訊，系統自動產生編碼並批次建立個體</div>
+        <div class="form-card" style="max-width:680px">
+
+          <!-- STEP 1: 基本資訊 -->
+          <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Step 1 — 出蛋基本資訊</div>
+          <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group">
+              <label class="form-label">所有人 *</label>
+              <select class="form-select" id="hatch-owner" onchange="hatchUpdateCode()">
+                <option value="G">G — 有剛</option>
+                <option value="C">C — 宣恩</option>
+                <option value="N">N — 尼爾</option>
+                <option value="X">X — 內部合作</option>
+                <option value="O">O — 外部寄售</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">物種 *</label>
+              <select class="form-select" id="hatch-species" onchange="hatchUpdateCode()">
+                <option value="PR">PR — 球蟒</option>
+                <option value="BC">BC — 紅尾蚺</option>
+                <option value="LG">LG — 豹紋守宮</option>
+                <option value="PG">PG — 玉米蛇</option>
+                <option value="KS">KS — 王蛇</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group">
+              <label class="form-label">出生日期 * (YYYY/MM/DD)</label>
+              <input class="form-input" id="hatch-date" type="date" onchange="hatchUpdateCode()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">胎次 (第幾胎) *</label>
+              <input class="form-input" id="hatch-litter" type="number" min="1" value="1" onchange="hatchUpdateCode()">
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group">
+              <label class="form-label">親代公蛇</label>
+              <input class="form-input" id="hatch-sire" placeholder="基因品系" list="hatch-male-list">
+              <datalist id="hatch-male-list"></datalist>
+            </div>
+            <div class="form-group">
+              <label class="form-label">親代母蛇</label>
+              <input class="form-input" id="hatch-dam" placeholder="基因品系" list="hatch-female-list">
+              <datalist id="hatch-female-list"></datalist>
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:20px">
+            <div class="form-group">
+              <label class="form-label">出蛋數量（含空包彈）*</label>
+              <input class="form-input" id="hatch-count" type="number" min="1" max="30" value="1" onchange="hatchGenRows(); hatchCalcEggKPI()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">編碼預覽</label>
+              <div style="background:var(--cream);border:1px solid rgba(181,115,58,0.25);border-radius:4px;padding:10px 12px;font-family:monospace;font-size:13px;color:var(--copper);letter-spacing:1px" id="hatch-code-preview">—</div>
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:8px">
+            <div class="form-group">
+              <label class="form-label">空包彈數 (Slugs)</label>
+              <input class="form-input" id="hatch-slugs" type="number" min="0" value="0" oninput="hatchCalcEggKPI()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">是否卵泡吸收 (Resorb)</label>
+              <select class="form-select" id="hatch-resorb" onchange="hatchCalcEggKPI()">
+                <option value="no">否</option>
+                <option value="yes">是（直接歸零）</option>
+              </select>
+            </div>
+          </div>
+          <!-- 成蛋良率即時顯示 -->
+          <div id="hatch-egg-kpi" style="background:var(--cream);border:1px solid rgba(181,115,58,0.2);border-radius:6px;padding:10px 16px;margin-bottom:20px;display:flex;align-items:center;gap:16px;font-size:12px">
+            <span style="color:var(--muted)">成蛋良率：</span>
+            <span id="hatch-egg-ratio" style="font-family:monospace;font-weight:700;font-size:16px">—</span>
+            <span id="hatch-egg-grade" style="padding:2px 8px;border-radius:4px;font-size:11px"></span>
+          </div>
+
+          <!-- STEP 2: 逐隻填入 -->
+          <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Step 2 — 逐隻基因 / 性別</div>
+          <div id="hatch-rows" style="margin-bottom:20px"></div>
+
+          <!-- STEP 3: 存入系統 -->
+          <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Step 3 — 存入系統</div>
+          <div style="background:rgba(181,115,58,0.06);border:1px solid rgba(181,115,58,0.15);border-radius:6px;padding:12px 16px;font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.8">
+            · 存入「銷售記錄」：狀態設為「待售」，之後可從銷售頁面推上官網<br>
+            · 存入「公蛇/母蛇清單」：依性別分類，加入種蛇管理
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="submit-btn" style="flex:1;min-width:140px" onclick="hatchSave('sales')">💰 存入銷售記錄</button>
+            <button class="submit-btn" style="flex:1;min-width:140px;background:#4a7fb5;border:none" onclick="hatchSave('snakes')">🐍 存入種蛇清單</button>
+          </div>
+          <div id="hatch-result" style="margin-top:16px;display:none"></div>
+        </div>
+      </div>
+
+      <!-- IM: PROFIT SETTLEMENT -->
+      <div class="page" id="page-im-profit">
+        <div class="page-title">💵 分潤結算</div>
+        <div class="page-sub">跨人配種銷售的分潤統計</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <select class="form-select" style="width:120px;padding:7px 10px" id="profit-f-owner" onchange="imRenderProfit()"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
+          <select class="form-select" style="width:100px;padding:7px 10px" id="profit-f-year" onchange="imRenderProfit()"><option value="">全部年份</option></select>
+          <select class="form-select" style="width:140px;padding:7px 10px" id="profit-f-status" onchange="imRenderProfit()"><option value="">全部狀態</option><option>到貨、結案</option><option>出貨中、面交 (已收款)</option><option>待售</option></select>
+        </div>
+        <div id="im-profit-panels"></div>
+      </div>
+
+      <!-- IM: KPI -->
+      <div class="page" id="page-im-kpi">
+        <div class="page-title">📈 母蛇 KPI 分析</div>
+        <div class="page-sub">成蛋良率 · 坪效 ROI · 交配效率</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <select class="form-select" style="width:120px;padding:7px 10px" id="kpi-f-owner" onchange="imRenderKPI()"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
+          <select class="form-select" style="width:100px;padding:7px 10px" id="kpi-f-year" onchange="imRenderKPI()"><option value="">全部年份</option></select>
+        </div>
+        <div id="im-kpi-panels"></div>
       </div>
 
       <!-- IM: SEED -->
@@ -1560,12 +1695,13 @@ window.imRenderTable = (section) => {
     ].map(k=>`<div class="im-kpi"><div class="im-kpi-label">${k.l}</div><div class="im-kpi-value" style="font-size:18px;${k.c?'color:'+k.c:''}">${k.v}</div></div>`).join('');
 
     document.getElementById('im-table-sales').innerHTML = `<thead><tr>
-      <th>所有人</th><th>產品編號</th><th>基因</th><th>性別</th><th>售價</th><th>公基金</th><th>狀態</th><th>買家</th><th>出貨日</th><th>操作</th>
+      <th>所有人</th><th>產品編號</th><th>基因</th><th>性別</th><th>個性</th><th>售價</th><th>公基金</th><th>狀態</th><th>買家</th><th>出貨日</th><th>操作</th>
     </tr></thead><tbody>${rows.map(r=>`<tr>
       <td data-label="所有人">${ownerSpan(r.owner)}</td>
       <td data-label="產品編號" style="font-size:10px;color:var(--muted);white-space:nowrap">${r.saleId||''}</td>
       <td data-label="基因" style="font-size:11px;max-width:200px">${r.gene||''}</td>
       <td data-label="性別">${sexSpan(r.sex)}</td>
+      <td data-label="個性" style="font-size:11px;color:var(--copper)">${r.nature||'—'}</td>
       <td data-label="售價" style="color:var(--copper);font-weight:600">${fmtMoney(r.price)}</td>
       <td data-label="公基金" style="color:var(--muted)">${r.fund?fmtMoney(r.fund):'—'}</td>
       <td data-label="狀態">${saleStatusSpan(r.status)}</td>
@@ -1575,6 +1711,7 @@ window.imRenderTable = (section) => {
         <button class="action-btn" onclick="imOpenForm('sales','${r._id}')">編輯</button>
         <button class="action-btn danger" onclick="imConfirmDelete('sales','${r._id}','${esc(r.gene)}')">刪除</button>
         <button class="action-btn" style="color:#2a6b3a;border-color:rgba(42,107,58,0.3)" onclick="imPushToSite('${r._id}')" title="推送到官網展示">🌐 推官網</button>
+        <button class="action-btn" style="color:#8b4ab5;border-color:rgba(139,74,181,0.3)" onclick="imOpenPhotoLabel('${r._id}')" title="生成標籤圖">🎨 標籤圖</button>
       </td>
     </tr>`).join('')||'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
   }
@@ -1648,13 +1785,14 @@ window.imRenderFood = async () => {
       ${lowRows.length?`<div class="im-alert" style="margin:10px 14px 0">⚠️ ${lowRows.map(r=>r.type+' '+r.size).join('、')} 低於保險庫存</div>`:''}
       <div style="overflow-x:auto">
       <table class="im-table">
-        <thead><tr><th>種類</th><th>規格</th><th>重量(g)</th><th>每週用量(包)</th><th>目前庫存(包)</th><th>可用週數</th><th>單包金額</th><th>狀態</th><th>建議補貨</th><th>操作</th></tr></thead>
+        <thead><tr><th>種類</th><th>規格</th><th>重量(g)</th><th>每週用量(包)</th><th>目前庫存(包)</th><th>可用週數</th><th>單包金額(NT$)</th><th>狀態</th><th>建議訂購(包)</th><th>實際訂購(包)</th><th>操作</th></tr></thead>
         <tbody>${rows.map(r=>{
           const low = isLow(r,p);
           const need = needQty(r,p);
           const weeks = r.weeklyUse>0?(r.stock/r.weeklyUse).toFixed(1):'∞';
           const pct = r.weeklyUse>0?Math.min(100,(r.stock/(p.保險庫存週*r.weeklyUse))*100):100;
           const bc = low?'#c0392b':'#2a6b3a';
+          const actualOrder = r.actualOrder!=null ? r.actualOrder : need;
           return `<tr>
             <td>${r.type||''}</td>
             <td>${r.size||''}</td>
@@ -1667,15 +1805,27 @@ window.imRenderFood = async () => {
             <td style="color:${low?'#c0392b':'#2a6b3a'};font-weight:600">${weeks}週</td>
             <td><input type="number" min="0" class="im-num" value="${r.price||0}" onchange="imUpdateFoodField('${r._id}','price',parseInt(this.value)||0)"></td>
             <td>${low?`<span class="im-tag im-tag-iso">低庫存</span>`:`<span class="im-tag im-tag-safe">正常</span>`}</td>
-            <td style="color:${need>0?'#8b5e10':'var(--muted)'}">${need>0?need+'包 ('+fmtMoney(need*r.price)+')':'—'}</td>
+            <td style="color:${need>0?'#8b5e10':'var(--muted);'};font-weight:600">${need>0?need:'—'}</td>
+            <td>
+              <input type="number" min="0" class="im-num" style="width:60px" value="${actualOrder}"
+                onchange="imUpdateFoodField('${r._id}','actualOrder',parseInt(this.value)||0)"
+                title="可修改實際要訂的數量">
+              ${actualOrder>0?`<span style="font-size:10px;color:var(--muted);display:block;margin-top:2px">${fmtMoney(actualOrder*(r.price||0))}</span>`:''}
+            </td>
             <td style="white-space:nowrap">
               <button class="action-btn" onclick="imOpenFoodForm('${name}','${r._id}')">編輯</button>
               <button class="action-btn danger" onclick="imConfirmDeleteFood('${r._id}','${esc(r.type+' '+r.size)}')">刪除</button>
             </td>
           </tr>`;
-        }).join('')||`<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">沒有資料</td></tr>`}
+        }).join('')||`<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted)">沒有資料</td></tr>`}
         </tbody>
       </table>
+      </div>
+      <!-- 報表區 -->
+      <div style="padding:14px 16px;border-top:1px solid rgba(181,115,58,0.12);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;color:var(--muted)">
+          本次訂購總金額：<strong style="color:var(--brown)">${fmtMoney(rows.reduce((s,r)=>{const a=r.actualOrder!=null?r.actualOrder:needQty(r,p);return s+a*(r.price||0);},0))}</strong>
+        </div>
       </div>
     </div>`;
   });
@@ -1688,6 +1838,182 @@ window.imUpdateFoodField = async (id, field, val) => {
   if (r) r[field] = val;
   imRenderFood();
   imRenderDashboard();
+};
+
+window.imOpenCombinedFoodReport = () => {
+  // 收集所有規格，合併三人的訂購量
+  const OWNERS = ['宣恩','有剛','Neil'];
+  const SYMBOLS = { '宣恩':'□', '有剛':'○', 'Neil':'△' };
+
+  // 建立規格主表（type + size + grams + price）
+  const allRows = IM.foodRows;
+  const specMap = {}; // key: type+size
+  allRows.forEach(r => {
+    const key = r.type + '|' + r.size;
+    if (!specMap[key]) specMap[key] = { type:r.type, size:r.size, grams:r.grams, price:r.price, orders:{} };
+    const p = IM.foodParams[r.owner] || {保險庫存週:4,多叫數量週:3};
+    const qty = r.actualOrder!=null ? r.actualOrder : needQty(r,p);
+    if (qty > 0) specMap[key].orders[r.owner] = (specMap[key].orders[r.owner]||0) + qty;
+  });
+
+  // 排序：小白鼠先，大白鼠後，依規格大小
+  const sizeOrder = ['跳跳','亞成','成體','大成體','24+','36+','51+','71+','91+','121+','151+','201+','276+','350+'];
+  const specs = Object.values(specMap).sort((a,b) => {
+    const ta = a.type==='小白鼠'?0:1, tb = b.type==='小白鼠'?0:1;
+    if (ta!==tb) return ta-tb;
+    return (sizeOrder.indexOf(a.size)||99) - (sizeOrder.indexOf(b.size)||99);
+  });
+
+  // Calculate totals per owner
+  const ownerTotals = {};
+  OWNERS.forEach(o => {
+    ownerTotals[o] = specs.reduce((s,r) => s + (r.orders[o]||0)*(r.price||0), 0);
+  });
+  const grandTotal = Object.values(ownerTotals).reduce((a,b)=>a+b,0);
+
+  const today = new Date().toLocaleDateString('zh-TW');
+
+  document.getElementById('im-modal-body').innerHTML = `
+    <div class="im-modal-title">📋 合併訂購報表</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
+      ${today} · □ 宣恩 · ○ 有剛 · △ Neil
+    </div>
+
+    <div style="overflow-x:auto;margin-bottom:16px">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:var(--cream)">
+          <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--copper);color:var(--muted)">種類</th>
+          <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--copper);color:var(--muted)">規格</th>
+          <th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--copper);color:var(--muted)">金額(包/元)</th>
+          <th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--copper);color:#8b4ab5;font-size:16px">□</th>
+          <th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--copper);color:#4a7fb5;font-size:16px">○</th>
+          <th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--copper);color:#2a6b3a;font-size:16px">△</th>
+          <th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--copper);color:var(--muted)">金額</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${specs.map((r,i) => {
+          const prevType = i>0?specs[i-1].type:'';
+          const rowTotal = OWNERS.reduce((s,o)=>s+(r.orders[o]||0)*(r.price||0),0);
+          const isHighlight = Object.values(r.orders).some(q=>q>0);
+          return `<tr style="background:${isHighlight?'white':'#fafafa'};border-bottom:1px solid #eee">
+            <td style="padding:7px 10px;color:var(--muted)">${r.type!==prevType?r.type:''}</td>
+            <td style="padding:7px 10px;font-weight:${isHighlight?'600':'400'};color:${isHighlight?'var(--brown)':'var(--muted)'}">${r.size}</td>
+            <td style="padding:7px 10px;text-align:right;color:var(--muted)">${r.price}</td>
+            <td style="padding:7px 10px;text-align:center;font-weight:700;color:#8b4ab5">${r.orders['宣恩']||''}</td>
+            <td style="padding:7px 10px;text-align:center;font-weight:700;color:#4a7fb5">${r.orders['有剛']||''}</td>
+            <td style="padding:7px 10px;text-align:center;font-weight:700;color:#2a6b3a">${r.orders['Neil']||''}</td>
+            <td style="padding:7px 10px;text-align:right;font-weight:${rowTotal>0?'700':'400'};color:${rowTotal>0?'var(--brown)':'var(--muted)'}">${rowTotal>0?rowTotal:'0'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="background:var(--cream);border-top:2px solid var(--copper)">
+          <td colspan="3" style="padding:8px 10px;font-size:11px;color:var(--muted)">加總</td>
+          <td style="padding:8px 10px;text-align:center;font-weight:700;color:#8b4ab5">${fmtMoney(ownerTotals['宣恩'])}</td>
+          <td style="padding:8px 10px;text-align:center;font-weight:700;color:#4a7fb5">${fmtMoney(ownerTotals['有剛'])}</td>
+          <td style="padding:8px 10px;text-align:center;font-weight:700;color:#2a6b3a">${fmtMoney(ownerTotals['Neil'])}</td>
+          <td style="padding:8px 10px;text-align:right;font-weight:700;font-size:14px;color:var(--brown)">${fmtMoney(grandTotal)}</td>
+        </tr>
+        ${grandTotal>=8000?`<tr style="background:#fdf5e0">
+          <td colspan="6" style="padding:6px 10px;text-align:right;font-size:11px;color:#8b5e10">${grandTotal>=15000?'滿15000九折':'滿8000九五折'}</td>
+          <td style="padding:6px 10px;text-align:right;font-weight:700;color:#8b5e10">${grandTotal>=15000?fmtMoney(Math.round(grandTotal*0.9)):fmtMoney(Math.round(grandTotal*0.95))}</td>
+        </tr>`:''}
+      </tfoot>
+    </table>
+    </div>
+
+    <div class="im-form-actions">
+      <button class="im-btn-cancel" onclick="imCloseModal()">關閉</button>
+      <button class="submit-btn" style="width:auto;padding:8px 20px;background:#4a7fb5;border:none" onclick="imPrintCombinedReport()">🖨️ 列印 / 截圖</button>
+    </div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
+window.imPrintCombinedReport = () => {
+  const OWNERS = ['宣恩','有剛','Neil'];
+  const sizeOrder = ['跳跳','亞成','成體','大成體','24+','36+','51+','71+','91+','121+','151+','201+','276+','350+'];
+  const specMap = {};
+  IM.foodRows.forEach(r => {
+    const key = r.type+'|'+r.size;
+    if (!specMap[key]) specMap[key]={type:r.type,size:r.size,grams:r.grams,price:r.price,orders:{}};
+    const p=IM.foodParams[r.owner]||{保險庫存週:4,多叫數量週:3};
+    const qty=r.actualOrder!=null?r.actualOrder:needQty(r,p);
+    if(qty>0) specMap[key].orders[r.owner]=(specMap[key].orders[r.owner]||0)+qty;
+  });
+  const specs=Object.values(specMap).sort((a,b)=>{
+    const ta=a.type==='小白鼠'?0:1,tb=b.type==='小白鼠'?0:1;
+    if(ta!==tb)return ta-tb;
+    return(sizeOrder.indexOf(a.size)||99)-(sizeOrder.indexOf(b.size)||99);
+  });
+  const ownerTotals={};
+  OWNERS.forEach(o=>{ownerTotals[o]=specs.reduce((s,r)=>s+(r.orders[o]||0)*(r.price||0),0);});
+  const grand=Object.values(ownerTotals).reduce((a,b)=>a+b,0);
+  const today=new Date().toLocaleDateString('zh-TW');
+
+  const win=window.open('','_blank');
+  win.document.write(`<html><head><title>hm.pythons 訂購單 ${today}</title>
+  <style>
+    body{font-family:'Noto Sans TC',sans-serif;padding:24px;max-width:700px;margin:0 auto;font-size:13px}
+    h2{color:#3B1A10;margin-bottom:4px}
+    .sub{color:#7A6A5A;font-size:12px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse}
+    th{background:#F5EFE4;padding:8px 10px;border-bottom:2px solid #B5733A;font-size:12px}
+    td{padding:7px 10px;border-bottom:1px solid #eee}
+    .sym-xe{color:#8b4ab5;font-weight:700;text-align:center}
+    .sym-yg{color:#4a7fb5;font-weight:700;text-align:center}
+    .sym-neil{color:#2a6b3a;font-weight:700;text-align:center}
+    .total-row{background:#F5EFE4;border-top:2px solid #B5733A;font-weight:700}
+    .disc{background:#fdf5e0;color:#8b5e10;font-size:11px}
+    .right{text-align:right}
+    .muted{color:#7A6A5A}
+    @media print{button{display:none}}
+  </style></head><body>
+  <h2>hm.pythons 鼠量訂購單</h2>
+  <div class="sub">日期：${today} &nbsp;·&nbsp; □ 宣恩 &nbsp;·&nbsp; ○ 有剛 &nbsp;·&nbsp; △ Neil</div>
+  <table>
+    <thead><tr>
+      <th style="text-align:left">種類</th>
+      <th style="text-align:left">規格</th>
+      <th class="right">金額(包/元)</th>
+      <th style="text-align:center;font-size:16px;color:#8b4ab5">□</th>
+      <th style="text-align:center;font-size:16px;color:#4a7fb5">○</th>
+      <th style="text-align:center;font-size:16px;color:#2a6b3a">△</th>
+      <th class="right">金額</th>
+    </tr></thead>
+    <tbody>
+    ${specs.map((r,i)=>{
+      const prev=i>0?specs[i-1].type:'';
+      const rowTotal=OWNERS.reduce((s,o)=>s+(r.orders[o]||0)*(r.price||0),0);
+      const hi=Object.values(r.orders).some(q=>q>0);
+      return`<tr style="${hi?'':'color:#bbb'}">
+        <td class="muted">${r.type!==prev?r.type:''}</td>
+        <td style="font-weight:${hi?'600':'400'}">${r.size}</td>
+        <td class="right muted">${r.price}</td>
+        <td class="sym-xe">${r.orders['宣恩']||''}</td>
+        <td class="sym-yg">${r.orders['有剛']||''}</td>
+        <td class="sym-neil">${r.orders['Neil']||''}</td>
+        <td class="right" style="font-weight:${rowTotal>0?'700':'400'}">${rowTotal||0}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="3" class="muted" style="font-size:11px">加總</td>
+        <td class="sym-xe">${ownerTotals['宣恩']?'NT$'+ownerTotals['宣恩'].toLocaleString():''}</td>
+        <td class="sym-yg">${ownerTotals['有剛']?'NT$'+ownerTotals['有剛'].toLocaleString():''}</td>
+        <td class="sym-neil">${ownerTotals['Neil']?'NT$'+ownerTotals['Neil'].toLocaleString():''}</td>
+        <td class="right" style="font-size:15px">NT$${grand.toLocaleString()}</td>
+      </tr>
+      ${grand>=15000?`<tr class="disc"><td colspan="6" class="right">滿15000九折</td><td class="right">NT$${Math.round(grand*0.9).toLocaleString()}</td></tr>`:
+        grand>=8000?`<tr class="disc"><td colspan="6" class="right">滿8000九五折</td><td class="right">NT$${Math.round(grand*0.95).toLocaleString()}</td></tr>`:''}
+    </tfoot>
+  </table>
+  <br>
+  <button onclick="window.print()" style="padding:8px 20px;background:#3B1A10;color:#EDD4A8;border:none;border-radius:4px;cursor:pointer;font-size:13px">🖨️ 列印 / 存 PDF</button>
+  </body></html>`);
+  win.document.close();
 };
 
 // ── DASHBOARD ────────────────────────────────────
@@ -1814,13 +2140,76 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">出生/進貨日期</label><input class="form-input" id="im-f-birth" value="${esc(r.birth||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">個性 🎮</label>
+        <select class="form-select" id="im-f-nature">
+          <option value="">未填寫</option>
+          <optgroup label="── 不影響能力值 ──">
+            <option ${(r.nature||'')==='勤奮'?'selected':''}>勤奮</option>
+            <option ${(r.nature||'')==='坦率'?'selected':''}>坦率</option>
+            <option ${(r.nature||'')==='認真'?'selected':''}>認真</option>
+            <option ${(r.nature||'')==='溫順'?'selected':''}>溫順</option>
+            <option ${(r.nature||'')==='慎重'?'selected':''}>慎重</option>
+          </optgroup>
+          <optgroup label="── 活潑系 ──">
+            <option ${(r.nature||'')==='活潑'?'selected':''}>活潑</option>
+            <option ${(r.nature||'')==='爽朗'?'selected':''}>爽朗</option>
+            <option ${(r.nature||'')==='天真'?'selected':''}>天真</option>
+            <option ${(r.nature||'')==='浮躁'?'selected':''}>浮躁</option>
+            <option ${(r.nature||'')==='頑皮'?'selected':''}>頑皮</option>
+          </optgroup>
+          <optgroup label="── 固執系 ──">
+            <option ${(r.nature||'')==='固執'?'selected':''}>固執</option>
+            <option ${(r.nature||'')==='勇敢'?'selected':''}>勇敢</option>
+            <option ${(r.nature||'')==='大膽'?'selected':''}>大膽</option>
+            <option ${(r.nature||'')==='樂天'?'selected':''}>樂天</option>
+            <option ${(r.nature||'')==='淘氣'?'selected':''}>淘氣</option>
+          </optgroup>
+          <optgroup label="── 內斂系 ──">
+            <option ${(r.nature||'')==='內斂'?'selected':''}>內斂</option>
+            <option ${(r.nature||'')==='冷靜'?'selected':''}>冷靜</option>
+            <option ${(r.nature||'')==='溫和'?'selected':''}>溫和</option>
+            <option ${(r.nature||'')==='悠閒'?'selected':''}>悠閒</option>
+            <option ${(r.nature||'')==='馬虎'?'selected':''}>馬虎</option>
+          </optgroup>
+          <optgroup label="── 害羞系 ──">
+            <option ${(r.nature||'')==='害羞'?'selected':''}>害羞</option>
+            <option ${(r.nature||'')==='慢吞吞'?'selected':''}>慢吞吞</option>
+            <option ${(r.nature||'')==='自大'?'selected':''}>自大</option>
+            <option ${(r.nature||'')==='急躁'?'selected':''}>急躁</option>
+            <option ${(r.nature||'')==='膽小'?'selected':''}>膽小</option>
+          </optgroup>
+          <optgroup label="── 怕寂寞系 ──">
+            <option ${(r.nature||'')==='怕寂寞'?'selected':''}>怕寂寞</option>
+            <option ${(r.nature||'')==='開朗'?'selected':''}>開朗</option>
+          </optgroup>
+        </select>
+      </div>
+      <!-- 跨人配種分潤 -->
+      <div class="form-group im-form-full" style="background:rgba(181,115,58,0.05);border:1px solid rgba(181,115,58,0.15);border-radius:6px;padding:12px;margin-top:4px">
+        <label class="form-label" style="margin-bottom:8px;display:block">🔀 跨人配種分潤設定</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">是否跨人配種</label>
+            <select class="form-select" id="im-f-crossbreed" onchange="imToggleCrossbreed()">
+              <option value="no" ${!r.crossbreed?'selected':''}>否（同一人）</option>
+              <option value="yes" ${r.crossbreed?'selected':''}>是（分潤）</option>
+            </select>
+          </div>
+          <div class="form-group" id="im-f-sire-owner-wrap" style="margin:0;display:${r.crossbreed?'block':'none'}">
+            <label class="form-label">公蛇所有人</label>
+            <select class="form-select" id="im-f-sire-owner" onchange="imCalcSplit()">
+              <option value="">選擇</option>
+              ${['有剛','宣恩','Neil'].map(x=>`<option ${(r.sireOwner||'')==x?'selected':''}>${x}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div id="im-f-split-preview" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+      </div>
     </div>
     <div class="im-form-actions">
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
       <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSave('sales','${id||''}')">儲存</button>
     </div>`;
-  }
-  else if (section === 'breeding') {
     const maleGenes = [...new Set(IM.males.map(m=>m.gene))].sort();
     const femGenes  = [...new Set(IM.females.map(f=>f.gene))].sort();
     html = `<div class="im-modal-title">${isNew?'新增交配紀錄':'編輯交配紀錄'}</div>
@@ -1838,6 +2227,27 @@ window.imOpenForm = async (section, id) => {
         <datalist id="im-fl2">${femGenes.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
       </div>
       <div class="form-group im-form-full"><label class="form-label">備注</label><input class="form-input" id="im-f-note" value="${esc(r.note||'')}"></div>
+      <div class="form-group"><label class="form-label">是否成功 Lock</label>
+        <select class="form-select" id="im-f-locked">
+          <option value="">未記錄</option>
+          <option value="true" ${r.locked===true?'selected':''}>✅ 是</option>
+          <option value="false" ${r.locked===false?'selected':''}>❌ 否</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">是否成功排卵</label>
+        <select class="form-select" id="im-f-ovulated">
+          <option value="">未記錄</option>
+          <option value="true" ${r.ovulated===true?'selected':''}>✅ 是</option>
+          <option value="false" ${r.ovulated===false?'selected':''}>❌ 否</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">母蛇是否拒絕</label>
+        <select class="form-select" id="im-f-rejected">
+          <option value="">未記錄</option>
+          <option value="true" ${r.rejected===true?'selected':''}>⚠️ 是</option>
+          <option value="false" ${r.rejected===false?'selected':''}>否</option>
+        </select>
+      </div>
     </div>
     <div class="im-form-actions">
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
@@ -1847,6 +2257,51 @@ window.imOpenForm = async (section, id) => {
 
   document.getElementById('im-modal-body').innerHTML = html;
   document.getElementById('im-modal-overlay').classList.add('show');
+};
+
+// ── CROSS-BREED PROFIT SPLIT ─────────────────────
+window.imToggleCrossbreed = () => {
+  const isCross = document.getElementById('im-f-crossbreed')?.value === 'yes';
+  const wrap = document.getElementById('im-f-sire-owner-wrap');
+  if (wrap) wrap.style.display = isCross ? 'block' : 'none';
+  imCalcSplit();
+};
+
+window.imCalcSplit = () => {
+  const isCross = document.getElementById('im-f-crossbreed')?.value === 'yes';
+  const preview = document.getElementById('im-f-split-preview');
+  if (!preview) return;
+  if (!isCross) { preview.innerHTML = ''; return; }
+
+  const price = parseInt(document.getElementById('im-f-price')?.value)||0;
+  const delivery = document.getElementById('im-f-delivery')?.value||'';
+  const damOwner = document.getElementById('im-f-owner')?.value||'';
+  const sireOwner = document.getElementById('im-f-sire-owner')?.value||'';
+  if (!price || !sireOwner) { preview.innerHTML = '<span style="color:#bbb">填入售價和公蛇所有人後自動計算</span>'; return; }
+
+  const fund = delivery === '免交付' ? 0 : Math.round(price * 0.1);
+  const remaining = price - fund;
+  const damAmt = Math.round(remaining * 0.7);
+  const sireAmt = remaining - damAmt;
+
+  preview.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px">
+      <div style="background:white;border-radius:4px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted)">公基金</div>
+        <div style="font-weight:700;color:var(--copper)">${fmtMoney(fund)}</div>
+        <div style="font-size:10px;color:var(--muted)">${delivery==='免交付'?'免交付':'10%'}</div>
+      </div>
+      <div style="background:white;border-radius:4px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted)">母蛇方（${damOwner}）</div>
+        <div style="font-weight:700;color:#b54a7f">${fmtMoney(damAmt)}</div>
+        <div style="font-size:10px;color:var(--muted)">70%</div>
+      </div>
+      <div style="background:white;border-radius:4px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted)">公蛇方（${sireOwner}）</div>
+        <div style="font-weight:700;color:#4a7fb5">${fmtMoney(sireAmt)}</div>
+        <div style="font-size:10px;color:var(--muted)">30%</div>
+      </div>
+    </div>`;
 };
 
 function calcFund(price, cost, delivery) {
@@ -1865,12 +2320,14 @@ window.imAutoFund = () => {
   const c = parseFloat(document.getElementById('im-f-cost').value)||0;
   const d = document.getElementById('im-f-delivery')?.value||'';
   document.getElementById('im-f-fund').value = calcFund(p, c, d);
+  imCalcSplit();
 };
 window.imAutoFundDelivery = () => {
   const d = document.getElementById('im-f-delivery').value;
   const p = parseFloat(document.getElementById('im-f-price')?.value)||0;
   const c = parseFloat(document.getElementById('im-f-cost')?.value)||0;
   document.getElementById('im-f-fund').value = calcFund(p, c, d);
+  imCalcSplit();
 };
 
 window.imSave = async (section, id) => {
@@ -1907,12 +2364,24 @@ window.imSave = async (section, id) => {
       price, fund: delivery==='免交付'?0:parseInt(g('im-f-fund').value)||0,
       source:g('im-f-source').value, status:g('im-f-status').value,
       channel:g('im-f-channel').value, buyer:g('im-f-buyer').value,
-      ship:g('im-f-ship').value, delivery, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value };
+      ship:g('im-f-ship').value, delivery, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
+      nature:g('im-f-nature')?.value||'',
+      crossbreed: g('im-f-crossbreed')?.value==='yes',
+      sireOwner: g('im-f-crossbreed')?.value==='yes' ? (g('im-f-sire-owner')?.value||'') : '',
+    };
   }
   else if (section==='breeding') {
     const male=g('im-f-male').value.trim(), female=g('im-f-female').value.trim(), date=g('im-f-date').value.trim();
     if (!male||!female||!date) { window.showToast('❌ 請填寫日期、公蛇和母蛇'); return; }
-    data = { owner:g('im-f-owner').value, male, female, date, note:g('im-f-note').value };
+    const lockedVal = g('im-f-locked')?.value;
+    const ovulatedVal = g('im-f-ovulated')?.value;
+    const rejectedVal = g('im-f-rejected')?.value;
+    data = {
+      owner:g('im-f-owner').value, male, female, date, note:g('im-f-note').value,
+      locked: lockedVal===''?undefined:lockedVal==='true',
+      ovulated: ovulatedVal===''?undefined:ovulatedVal==='true',
+      rejected: rejectedVal===''?undefined:rejectedVal==='true',
+    };
   }
 
   try {
@@ -2013,6 +2482,195 @@ window.imSaveFoodParams = async (owner) => {
     imCloseModal();
     imRenderFood();
   } catch(e) { window.showToast('❌ 儲存失敗：'+e.message); }
+};
+
+// ── PHOTO LABEL GENERATOR ────────────────────────
+const HM_LOGO_SRC = document.getElementById('login-logo')?.src || '';
+
+window.imOpenPhotoLabel = (id) => {
+  const r = IM.sales.find(x=>x._id===id);
+  if (!r) return;
+  document.getElementById('im-modal-body').innerHTML = `
+    <div class="im-modal-title">🎨 生成標籤圖</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+      上傳蛇的原始照片，系統自動取色並合成編號、基因標籤
+    </p>
+    <div style="background:var(--cream);border:2px dashed rgba(181,115,58,0.3);border-radius:8px;padding:24px;text-align:center;cursor:pointer;margin-bottom:14px" onclick="document.getElementById('label-img-input').click()">
+      <div id="label-upload-placeholder">
+        <div style="font-size:28px;margin-bottom:6px">📷</div>
+        <div style="font-size:13px;color:var(--muted)">點擊選擇照片</div>
+        <div style="font-size:11px;color:#bbb;margin-top:4px">JPG / PNG，建議正方形</div>
+      </div>
+      <img id="label-preview" style="max-width:100%;max-height:200px;border-radius:4px;display:none">
+    </div>
+    <input type="file" id="label-img-input" accept="image/*" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">
+
+    <div class="form-row" style="margin-bottom:12px">
+      <div class="form-group">
+        <label class="form-label">產品編號</label>
+        <input class="form-input" id="label-code" value="${esc(r.saleId||'')}" oninput="labelRedraw()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">基因品系</label>
+        <input class="form-input" id="label-gene" value="${esc(r.gene||'')} ${r.sex==='M'?'Male':'Female'}" oninput="labelRedraw()">
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <label class="form-label" style="margin-bottom:6px;display:block">預覽</label>
+      <canvas id="label-canvas" style="width:100%;border-radius:6px;display:none;border:1px solid rgba(181,115,58,0.15)"></canvas>
+      <div id="label-canvas-placeholder" style="background:#f5f5f5;border-radius:6px;padding:32px;text-align:center;color:#bbb;font-size:12px">上傳照片後顯示預覽</div>
+    </div>
+
+    <div class="im-form-actions">
+      <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+      <button class="submit-btn" style="width:auto;padding:8px 24px;background:#8b4ab5;border:none" id="label-download-btn" onclick="labelDownload('${esc(r.saleId||'')}')">⬇ 下載標籤圖</button>
+    </div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
+let _labelImg = null;
+
+window.labelLoadImage = (input, code, gene, sex) => {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      _labelImg = img;
+      document.getElementById('label-preview').src = e.target.result;
+      document.getElementById('label-preview').style.display = 'block';
+      document.getElementById('label-upload-placeholder').style.display = 'none';
+      labelDraw(img,
+        document.getElementById('label-code').value,
+        document.getElementById('label-gene').value
+      );
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.labelRedraw = () => {
+  if (!_labelImg) return;
+  labelDraw(_labelImg,
+    document.getElementById('label-code').value,
+    document.getElementById('label-gene').value
+  );
+};
+
+function labelDraw(img, code, gene) {
+  const canvas = document.getElementById('label-canvas');
+  const placeholder = document.getElementById('label-canvas-placeholder');
+  canvas.style.display = 'block';
+  if (placeholder) placeholder.style.display = 'none';
+
+  const SIZE = 1200;
+  const STRIP = 160; // right color strip width
+  canvas.width = SIZE + STRIP;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  // 1. Draw snake photo (square crop)
+  const srcSize = Math.min(img.width, img.height);
+  const srcX = (img.width - srcSize) / 2;
+  const srcY = (img.height - srcSize) / 2;
+  ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, SIZE, SIZE);
+
+  // 2. Extract dominant color from right edge of snake photo for the strip
+  const sampleCanvas = document.createElement('canvas');
+  sampleCanvas.width = img.width;
+  sampleCanvas.height = img.height;
+  const sCtx = sampleCanvas.getContext('2d');
+  sCtx.drawImage(img, 0, 0);
+  const dominantColor = getDominantColor(sCtx, img.width, img.height);
+
+  // 3. Draw right color strip
+  ctx.fillStyle = dominantColor;
+  ctx.fillRect(SIZE, 0, STRIP, SIZE);
+
+  // 4. Bottom-left label area — semi-transparent white bar
+  const BAR_H = 130;
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.fillRect(0, SIZE - BAR_H, SIZE, BAR_H);
+
+  // 5. Logo
+  const logo = new Image();
+  logo.onload = () => {
+    const LOGO_SIZE = 90;
+    const LOGO_X = 24;
+    const LOGO_Y = SIZE - BAR_H + (BAR_H - LOGO_SIZE) / 2;
+    ctx.drawImage(logo, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
+
+    // 6. Text
+    const TEXT_X = LOGO_X + LOGO_SIZE + 16;
+    ctx.fillStyle = '#3B1A10';
+    ctx.font = 'bold 32px "Space Mono", monospace, sans-serif';
+    ctx.fillText(code, TEXT_X, SIZE - BAR_H + 48);
+    ctx.font = '26px "Noto Sans TC", sans-serif';
+    ctx.fillStyle = '#7A6A5A';
+    // wrap gene text if too long
+    const maxW = SIZE - TEXT_X - 16;
+    wrapText(ctx, gene, TEXT_X, SIZE - BAR_H + 84, maxW, 30);
+  };
+  logo.src = HM_LOGO_SRC || document.getElementById('login-logo')?.src || '';
+}
+
+function getDominantColor(ctx, w, h) {
+  // Sample a grid of pixels from the center-right area of the image
+  const samples = [];
+  const startX = Math.floor(w * 0.5);
+  const cols = 8, rows = 8;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = startX + Math.floor((w - startX) * c / cols);
+      const y = Math.floor(h * r / rows);
+      const px = ctx.getImageData(x, y, 1, 1).data;
+      // Skip near-white and near-black pixels
+      const brightness = (px[0] + px[1] + px[2]) / 3;
+      if (brightness > 30 && brightness < 240) {
+        samples.push([px[0], px[1], px[2]]);
+      }
+    }
+  }
+  if (!samples.length) return '#B5733A';
+  // Average
+  const avg = samples.reduce((a,b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]], [0,0,0]);
+  const r = Math.round(avg[0]/samples.length);
+  const g = Math.round(avg[1]/samples.length);
+  const b = Math.round(avg[2]/samples.length);
+  return `rgb(${r},${g},${b})`;
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '';
+  let lineCount = 0;
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, y + lineCount * lineH);
+      line = word;
+      lineCount++;
+      if (lineCount >= 2) break; // max 2 lines
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, y + lineCount * lineH);
+}
+
+window.labelDownload = (code) => {
+  const canvas = document.getElementById('label-canvas');
+  if (!canvas || canvas.style.display === 'none') {
+    window.showToast('❌ 請先上傳照片');
+    return;
+  }
+  const link = document.createElement('a');
+  link.download = `${code||'hm_pythons'}_labeled.jpg`;
+  link.href = canvas.toDataURL('image/jpeg', 0.92);
+  link.click();
 };
 
 // ── PUSH TO WEBSITE ──────────────────────────────
@@ -2377,7 +3035,424 @@ window.imRunSeed = async () => {
 
 window.imCloseModal = () => { document.getElementById('im-modal-overlay').classList.remove('show'); };
 
-// ── MOBILE SIDEBAR ───────────────────────────────
+// ── PROFIT SETTLEMENT ────────────────────────────
+window.imRenderProfit = async () => {
+  await imLoadAll();
+  const ownerF = document.getElementById('profit-f-owner')?.value||'';
+  const yearF  = document.getElementById('profit-f-year')?.value||'';
+  const statusF= document.getElementById('profit-f-status')?.value||'';
+
+  // populate year dropdown
+  const years = [...new Set(IM.sales.map(r=>(r.ship||r.birth||'').split('/')[0]).filter(y=>y&&y.length===4))].sort().reverse();
+  const yrSel = document.getElementById('profit-f-year');
+  if (yrSel) { const cur=yrSel.value; yrSel.innerHTML='<option value="">全部年份</option>'+years.map(y=>`<option ${y===cur?'selected':''}>${y}</option>`).join(''); }
+
+  // filter: only crossbreed sales
+  const rows = IM.sales.filter(r => {
+    if (!r.crossbreed) return false;
+    const yr = (r.ship||r.birth||'').split('/')[0];
+    const involvedOwner = !ownerF || r.owner===ownerF || r.sireOwner===ownerF;
+    return involvedOwner && (!yearF||yr===yearF) && (!statusF||r.status===statusF);
+  });
+
+  if (!rows.length) {
+    document.getElementById('im-profit-panels').innerHTML = '<div style="padding:24px;color:var(--muted);text-align:center">沒有跨人配種的銷售記錄<br><span style="font-size:12px">在銷售記錄編輯時，勾選「跨人配種」並填入公蛇所有人</span></div>';
+    return;
+  }
+
+  // Per-person summary
+  const OWNERS = ['有剛','宣恩','Neil'];
+  const summary = {};
+  OWNERS.forEach(o => { summary[o] = { damAmt:0, sireAmt:0, fund:0, count:0 }; });
+
+  rows.forEach(r => {
+    const price = r.price||0;
+    const delivery = r.delivery||'';
+    const fund = delivery==='免交付'?0:Math.round(price*0.1);
+    const remaining = price - fund;
+    const damAmt = Math.round(remaining*0.7);
+    const sireAmt = remaining - damAmt;
+    if (summary[r.owner]) { summary[r.owner].damAmt+=damAmt; summary[r.owner].fund+=fund; summary[r.owner].count++; }
+    if (r.sireOwner && summary[r.sireOwner]) { summary[r.sireOwner].sireAmt+=sireAmt; }
+  });
+
+  // Summary cards
+  let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+    ${OWNERS.map(o=>{
+      const s=summary[o];
+      const total=s.damAmt+s.sireAmt;
+      return`<div class="im-kpi">
+        <div class="im-kpi-label">${ownerSpan(o)}</div>
+        <div class="im-kpi-value" style="font-size:20px">${fmtMoney(total)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">
+          母蛇方：${fmtMoney(s.damAmt)}<br>
+          公蛇方：${fmtMoney(s.sireAmt)}<br>
+          公基金：${fmtMoney(s.fund)}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // Detail table
+  html += `<div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
+  <table class="im-table">
+    <thead><tr>
+      <th>產品編號</th><th>基因</th><th>售價</th><th>公基金</th>
+      <th>母蛇方</th><th>公蛇方</th><th>狀態</th>
+    </tr></thead>
+    <tbody>${rows.map(r=>{
+      const price=r.price||0;
+      const delivery=r.delivery||'';
+      const fund=delivery==='免交付'?0:Math.round(price*0.1);
+      const remaining=price-fund;
+      const damAmt=Math.round(remaining*0.7);
+      const sireAmt=remaining-damAmt;
+      return`<tr>
+        <td style="font-size:10px;color:var(--muted)">${r.saleId||''}</td>
+        <td style="font-size:11px">${r.gene||''}</td>
+        <td style="font-weight:600;color:var(--copper)">${fmtMoney(price)}</td>
+        <td style="color:var(--muted)">${fund?fmtMoney(fund):'免'}</td>
+        <td>${ownerSpan(r.owner)} <span style="color:#b54a7f;font-weight:600">${fmtMoney(damAmt)}</span></td>
+        <td>${ownerSpan(r.sireOwner||'')} <span style="color:#4a7fb5;font-weight:600">${fmtMoney(sireAmt)}</span></td>
+        <td>${saleStatusSpan(r.status)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>
+  </div>`;
+
+  document.getElementById('im-profit-panels').innerHTML = html;
+};
+
+// ── EGG KPI (即時) ───────────────────────────────
+window.hatchCalcEggKPI = () => {
+  const total = parseInt(document.getElementById('hatch-count')?.value)||0;
+  const slugs = parseInt(document.getElementById('hatch-slugs')?.value)||0;
+  const resorb = document.getElementById('hatch-resorb')?.value === 'yes';
+  const ratioEl = document.getElementById('hatch-egg-ratio');
+  const gradeEl = document.getElementById('hatch-egg-grade');
+  if (!ratioEl) return;
+  if (resorb) {
+    ratioEl.textContent = '0% (卵泡吸收)';
+    ratioEl.style.color = '#8b0000';
+    gradeEl.textContent = '🔴 汰除紅線';
+    gradeEl.style.background = '#fff0f0'; gradeEl.style.color = '#8b0000';
+    return;
+  }
+  if (!total) { ratioEl.textContent = '—'; gradeEl.textContent = ''; return; }
+  const good = Math.max(0, total - slugs);
+  const pct = Math.round(good / total * 100);
+  ratioEl.textContent = `${pct}% (${good}/${total})`;
+  if (pct > 80) {
+    ratioEl.style.color = '#2a6b3a';
+    gradeEl.textContent = '🟢 優秀';
+    gradeEl.style.background = '#edf7f0'; gradeEl.style.color = '#2a6b3a';
+  } else if (pct >= 50) {
+    ratioEl.style.color = '#8b5e10';
+    gradeEl.textContent = '🟡 觀察區';
+    gradeEl.style.background = '#fdf5e0'; gradeEl.style.color = '#8b5e10';
+  } else {
+    ratioEl.style.color = '#8b0000';
+    gradeEl.textContent = '🔴 汰除紅線';
+    gradeEl.style.background = '#fff0f0'; gradeEl.style.color = '#8b0000';
+  }
+};
+
+// ── BREEDING FORM — add lock/ovulation/reject fields ──
+// Override imSave for breeding to include new fields
+const _origImSaveBreeding = null; // handled inside imSave
+
+// ── FEMALE KPI PAGE ───────────────────────────────
+window.imRenderKPI = async () => {
+  await imLoadAll();
+  const ownerF = document.getElementById('kpi-f-owner')?.value||'';
+  const yearF = document.getElementById('kpi-f-year')?.value||'';
+
+  // populate year dropdown from hatch records (via sales saleId year or breeding date)
+  const years = [...new Set([
+    ...IM.sales.map(r=>(r.birth||'').split('/')[0]),
+    ...IM.breeding.map(r=>(r.date||'').split('/')[0])
+  ].filter(y=>y&&y.length===4))].sort().reverse();
+  const yrSel = document.getElementById('kpi-f-year');
+  if (yrSel) {
+    const cur = yrSel.value;
+    yrSel.innerHTML = '<option value="">全部年份</option>'+years.map(y=>`<option ${y===cur?'selected':''}>${y}</option>`).join('');
+  }
+
+  const females = IM.females.filter(r => (!ownerF||r.owner===ownerF));
+  if (!females.length) {
+    document.getElementById('im-kpi-panels').innerHTML = '<div style="padding:24px;color:var(--muted)">沒有母蛇資料</div>';
+    return;
+  }
+
+  let html = '';
+  females.forEach(f => {
+    // KPI 1: 成蛋良率 — from hatch records stored in sales (match by damB)
+    const offspring = IM.sales.filter(r => {
+      const yr = (r.birth||'').split('/')[0];
+      return r.damB === f.gene && (!yearF || yr === yearF);
+    });
+    const totalEggs = offspring.length + (f.slugs||0);
+    const slugs = f.slugs||0;
+    const resorb = f.resorb||false;
+    const goodEggs = totalEggs - slugs;
+    const eggRatio = resorb ? 0 : (totalEggs > 0 ? Math.round(goodEggs/totalEggs*100) : null);
+
+    // KPI 2: ROI — 子代總市值 / 年度飼養成本
+    const offspringValue = offspring.reduce((s,r)=>s+(r.price||0), 0);
+    const annualCost = f.annualCost||0; // 手填
+    const roi = annualCost > 0 ? Math.round(offspringValue/annualCost*100) : null;
+
+    // KPI 3: 交配效率 — from breeding records matching this female
+    const breedRecs = IM.breeding.filter(r => {
+      const yr = (r.date||'').split('/')[0];
+      return r.female === f.gene && (!yearF || yr === yearF);
+    });
+    const totalLocks = breedRecs.length;
+    const successLocks = breedRecs.filter(r=>r.locked===true).length;
+    const rejects = breedRecs.filter(r=>r.rejected===true).length;
+    const lockEff = totalLocks > 0 ? Math.round(successLocks/totalLocks*100) : null;
+
+    // Grade helpers
+    const eggGrade = resorb ? '🔴 卵泡吸收' : eggRatio===null ? '—' : eggRatio>80 ? '🟢 優秀' : eggRatio>=50 ? '🟡 觀察區' : '🔴 汰除紅線';
+    const eggColor = resorb||eggRatio<50 ? '#8b0000' : eggRatio>=80 ? '#2a6b3a' : '#8b5e10';
+    const roiGrade = roi===null ? '—' : roi>=300 ? '🟢 超優' : roi>=100 ? '🟢 正報酬' : roi>0 ? '🟡 微利' : '🔴 虧損';
+    const roiColor = roi===null ? 'var(--muted)' : roi>=100 ? '#2a6b3a' : roi>0 ? '#8b5e10' : '#8b0000';
+    const lockGrade = lockEff===null ? '—' : lockEff>=70 ? '🟢 高效' : lockEff>=40 ? '🟡 普通' : '🔴 低效';
+    const lockColor = lockEff===null ? 'var(--muted)' : lockEff>=70 ? '#2a6b3a' : lockEff>=40 ? '#8b5e10' : '#8b0000';
+
+    html += `<div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;padding:18px;margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--brown)">${f.gene}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${ownerSpan(f.owner)} · ${f.species} · ${f.year||''}年</div>
+        </div>
+        <button class="action-btn" style="font-size:11px" onclick="imOpenKPIEdit('${f._id}')">填寫成本/蛋況</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <!-- KPI 1 -->
+        <div style="background:var(--cream);border-radius:6px;padding:12px">
+          <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">KPI 1 成蛋良率</div>
+          <div style="font-size:22px;font-weight:700;color:${eggColor}">${eggRatio!==null?eggRatio+'%':'—'}</div>
+          <div style="font-size:11px;margin-top:4px">${eggGrade}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">好蛋 ${goodEggs||0} / 總蛋 ${totalEggs||0}，空包彈 ${slugs}</div>
+        </div>
+        <!-- KPI 2 -->
+        <div style="background:var(--cream);border-radius:6px;padding:12px">
+          <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">KPI 2 坪效 ROI</div>
+          <div style="font-size:22px;font-weight:700;color:${roiColor}">${roi!==null?roi+'%':'—'}</div>
+          <div style="font-size:11px;margin-top:4px">${roiGrade}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">子代市值 ${fmtMoney(offspringValue)} / 年成本 ${annualCost?fmtMoney(annualCost):'未填'}</div>
+        </div>
+        <!-- KPI 3 -->
+        <div style="background:var(--cream);border-radius:6px;padding:12px">
+          <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">KPI 3 交配效率</div>
+          <div style="font-size:22px;font-weight:700;color:${lockColor}">${lockEff!==null?lockEff+'%':'—'}</div>
+          <div style="font-size:11px;margin-top:4px">${lockGrade}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">成功 ${successLocks}/${totalLocks} 次，拒絕 ${rejects} 次</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('im-kpi-panels').innerHTML = html || '<div style="padding:24px;color:var(--muted)">沒有資料</div>';
+};
+
+// KPI 補充資料 modal（年度成本、蛋況）
+window.imOpenKPIEdit = (femaleId) => {
+  const f = IM.females.find(x=>x._id===femaleId);
+  if (!f) return;
+  document.getElementById('im-modal-body').innerHTML = `
+    <div class="im-modal-title">補充 KPI 資料 — ${f.gene.substring(0,30)}</div>
+    <div class="im-form-grid">
+      <div class="form-group im-form-full">
+        <label class="form-label">年度飼養成本 NT$ <span style="font-size:10px;color:var(--muted)">（鼠+墊材+電費，約 NT$8,000-15,000）</span></label>
+        <input class="form-input" id="kpi-annual-cost" type="number" value="${f.annualCost||''}" placeholder="例：10000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">今年空包彈數 (Slugs)</label>
+        <input class="form-input" id="kpi-slugs" type="number" min="0" value="${f.slugs||0}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">今年總蛋數（含空包彈）</label>
+        <input class="form-input" id="kpi-total-eggs" type="number" min="0" value="${f.totalEggs||0}">
+      </div>
+      <div class="form-group im-form-full">
+        <label class="form-label">今年是否卵泡吸收 (Resorb)</label>
+        <select class="form-select" id="kpi-resorb">
+          <option value="false" ${!f.resorb?'selected':''}>否</option>
+          <option value="true" ${f.resorb?'selected':''}>是</option>
+        </select>
+      </div>
+    </div>
+    <div class="im-form-actions">
+      <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+      <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSaveKPIData('${femaleId}')">儲存</button>
+    </div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
+window.imSaveKPIData = async (femaleId) => {
+  const data = {
+    annualCost: parseInt(document.getElementById('kpi-annual-cost').value)||0,
+    slugs: parseInt(document.getElementById('kpi-slugs').value)||0,
+    totalEggs: parseInt(document.getElementById('kpi-total-eggs').value)||0,
+    resorb: document.getElementById('kpi-resorb').value === 'true',
+  };
+  try {
+    await updateDoc(doc(db2, COL.females, femaleId), data);
+    const idx = IM.females.findIndex(x=>x._id===femaleId);
+    if (idx>-1) IM.females[idx] = {...IM.females[idx], ...data};
+    window.showToast('✅ 儲存成功！');
+    imCloseModal();
+    imRenderKPI();
+  } catch(e) { window.showToast('❌ 儲存失敗：'+e.message); }
+};
+
+// ── HATCH REGISTRATION ───────────────────────────
+const OWNER_MAP = { G:'有剛', C:'宣恩', N:'Neil', X:'內部合作', O:'外部寄售' };
+const SPECIES_MAP_HATCH = { PR:'球蟒', BC:'紅尾蚺', LG:'豹紋守宮', PG:'玉米蛇', KS:'王蛇' };
+const SPECIES_FULL = { PR:'ball_python', BC:'boa', LG:'leopard_gecko', PG:'corn_snake', KS:'king_snake' };
+
+function hatchGetCode() {
+  const owner = document.getElementById('hatch-owner')?.value||'G';
+  const species = document.getElementById('hatch-species')?.value||'PR';
+  const dateVal = document.getElementById('hatch-date')?.value||'';
+  const litter = document.getElementById('hatch-litter')?.value||'1';
+  if (!dateVal) return null;
+  const d = new Date(dateVal);
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${owner}${species}${yy}${mm}${dd}#${litter}`;
+}
+
+window.hatchUpdateCode = () => {
+  const code = hatchGetCode();
+  const el = document.getElementById('hatch-code-preview');
+  if (el) el.textContent = code ? `${code}-01 ~ -XX` : '請填寫日期';
+  hatchGenRows();
+};
+
+window.hatchGenRows = () => {
+  const count = parseInt(document.getElementById('hatch-count')?.value)||1;
+  const code = hatchGetCode();
+  const container = document.getElementById('hatch-rows');
+  if (!container) return;
+  if (!code) { container.innerHTML = '<div style="color:var(--muted);font-size:12px">請先填寫日期和胎次</div>'; return; }
+
+  let html = `<div style="display:grid;grid-template-columns:120px 1fr 100px 80px;gap:8px;margin-bottom:6px">
+    <div style="font-size:11px;color:var(--muted);padding:0 4px">編碼</div>
+    <div style="font-size:11px;color:var(--muted)">基因表現（可留空稍後填）</div>
+    <div style="font-size:11px;color:var(--muted)">性別</div>
+    <div style="font-size:11px;color:var(--muted)">備注</div>
+  </div>`;
+  for (let i = 1; i <= count; i++) {
+    const id = String(i).padStart(2,'0');
+    html += `<div style="display:grid;grid-template-columns:120px 1fr 100px 80px;gap:8px;margin-bottom:8px;align-items:center">
+      <div style="font-family:monospace;font-size:12px;color:var(--copper);background:var(--cream);padding:8px;border-radius:4px">${code}-${id}</div>
+      <input class="form-input" id="hatch-gene-${i}" placeholder="e.g. Pastel het Clown" style="font-size:12px">
+      <select class="form-select" id="hatch-sex-${i}" style="font-size:12px">
+        <option value="">未知</option>
+        <option value="M">♂ 公</option>
+        <option value="F">♀ 母</option>
+      </select>
+      <input class="form-input" id="hatch-note-${i}" placeholder="備注" style="font-size:12px">
+    </div>`;
+  }
+  container.innerHTML = html;
+};
+
+window.hatchSave = async (target) => {
+  const count = parseInt(document.getElementById('hatch-count')?.value)||1;
+  const code = hatchGetCode();
+  if (!code) { window.showToast('❌ 請填寫完整基本資訊'); return; }
+
+  const owner = document.getElementById('hatch-owner').value;
+  const ownerName = OWNER_MAP[owner];
+  const speciesCode = document.getElementById('hatch-species').value;
+  const speciesName = SPECIES_MAP_HATCH[speciesCode];
+  const dateVal = document.getElementById('hatch-date').value;
+  const sire = document.getElementById('hatch-sire').value.trim();
+  const dam = document.getElementById('hatch-dam').value.trim();
+
+  const resultEl = document.getElementById('hatch-result');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `<div style="color:var(--muted);font-size:12px">存入中...</div>`;
+
+  let saved = 0;
+  try {
+    for (let i = 1; i <= count; i++) {
+      const id = String(i).padStart(2,'0');
+      const saleId = `${code}-${id}`;
+      const gene = document.getElementById(`hatch-gene-${i}`)?.value.trim()||'';
+      const sex = document.getElementById(`hatch-sex-${i}`)?.value||'';
+      const note = document.getElementById(`hatch-note-${i}`)?.value.trim()||'';
+
+      if (target === 'sales') {
+        const price = 0;
+        const data = {
+          owner: ownerName, saleId, species: speciesName,
+          gene: gene||'(待確認)', sex, birth: dateVal,
+          sireA: sire, damB: dam, cost: 0, price, fund: 0,
+          source: '品牌自繁', status: '待售',
+          channel: '', buyer: '', ship: '', delivery: '',
+          note, createdAt: serverTimestamp(),
+        };
+        await addDoc(collection(db2, COL.sales), data);
+        IM.sales.push({_id:'tmp'+i, ...data});
+      } else {
+        // 存入種蛇清單（依性別）
+        const col = sex === 'F' ? COL.females : COL.males;
+        const data = {
+          owner: ownerName, gene: gene||'(待確認)', species: speciesName,
+          sex: sex||'M', year: new Date(dateVal).getFullYear(),
+          cost: 0, source: '品牌自繁', status: '安全穩定',
+          sireA: sire, damB: dam, selfBreedId: saleId, note,
+          createdAt: serverTimestamp(),
+        };
+        await addDoc(collection(db2, col), data);
+      }
+      saved++;
+    }
+
+    resultEl.innerHTML = `<div style="background:rgba(42,107,58,0.08);border:1px solid rgba(42,107,58,0.2);border-radius:6px;padding:14px 16px">
+      <div style="font-size:14px;font-weight:600;color:#2a6b3a;margin-bottom:4px">✅ 成功建立 ${saved} 筆！</div>
+      <div style="font-size:12px;color:var(--muted)">
+        ${target==='sales'?'已存入「銷售記錄」，狀態為待售。可從銷售頁面逐筆編輯補齊資訊或推上官網。':'已存入種蛇清單，可到公蛇/母蛇頁面查看。'}
+      </div>
+    </div>`;
+    window.showToast(`✅ 已建立 ${saved} 筆 ${code}`);
+
+    // reload
+    if (target === 'sales') imRenderTable('sales');
+    else { await imLoadAll(); }
+
+  } catch(e) {
+    resultEl.innerHTML = `<div style="color:#8b0000;font-size:12px">❌ 儲存失敗：${e.message}</div>`;
+    window.showToast('❌ 儲存失敗：'+e.message);
+    console.error(e);
+  }
+};
+
+// Init hatch page — populate parent datalists when page loads
+const origShowPage2 = window.showPage;
+window.showPage = (page, btn) => {
+  origShowPage2(page, btn);
+  if (page === 'im-hatch') {
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    const dateEl = document.getElementById('hatch-date');
+    if (dateEl && !dateEl.value) dateEl.value = today;
+    // Populate parent datalists
+    const maleList = document.getElementById('hatch-male-list');
+    const femaleList = document.getElementById('hatch-female-list');
+    if (maleList) maleList.innerHTML = [...new Set(IM.males.map(m=>m.gene))].sort().map(g=>`<option value="${g}">`).join('');
+    if (femaleList) femaleList.innerHTML = [...new Set(IM.females.map(f=>f.gene))].sort().map(g=>`<option value="${g}">`).join('');
+    hatchUpdateCode();
+  }
+};
+
+window.imCloseModal = () => { document.getElementById('im-modal-overlay').classList.remove('show'); };
 window.toggleSidebar = () => {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-overlay').classList.toggle('show');
