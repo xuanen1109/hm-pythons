@@ -2277,21 +2277,33 @@ window.imOpenForm = async (section, id) => {
     </div>`;
   }
   else if (section === 'breeding') {
-    const maleGenes = [...new Set(IM.males.map(m=>m.gene))].sort();
-    const femGenes  = [...new Set(IM.females.map(f=>f.gene))].sort();
+    const owners = ['有剛','宣恩','Neil'];
+    // 依所有人分組
+    const malesByOwner  = {};
+    const femalesByOwner = {};
+    owners.forEach(o => {
+      malesByOwner[o]   = IM.males.filter(m=>m.owner===o).map(m=>m.gene).sort();
+      femalesByOwner[o] = IM.females.filter(f=>f.owner===o).map(f=>f.gene).sort();
+    });
+    const maleOwner = r.male   ? (IM.males.find(m=>m.gene===r.male)?.owner   || owners[0]) : owners[0];
+    const femOwner  = r.female ? (IM.females.find(f=>f.gene===r.female)?.owner || owners[0]) : owners[0];
     html = `<div class="im-modal-title">${isNew?'新增交配紀錄':'編輯交配紀錄'}</div>
     <div class="im-form-grid">
       <div class="form-group"><label class="form-label">所有人 *</label>
-        <select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${(r.owner||'宣恩')===x?'selected':''}>${x}</option>`).join('')}</select>
+        <select class="form-select" id="im-f-owner">${owners.map(x=>`<option ${(r.owner||'宣恩')===x?'selected':''}>${x}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label class="form-label">日期 * (e.g. 2026/3/18)</label><input class="form-input" id="im-f-date" value="${esc(r.date||'')}"></div>
-      <div class="form-group im-form-full"><label class="form-label">公蛇基因 *</label>
-        <input class="form-input" id="im-f-male" value="${esc(r.male||'')}" list="im-ml2" placeholder="輸入或選擇">
-        <datalist id="im-ml2">${maleGenes.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
+      <div class="form-group"><label class="form-label">公蛇所有人</label>
+        <select class="form-select" id="im-f-male-owner" onchange="imBreedFilterMales()">${owners.map(x=>`<option ${maleOwner===x?'selected':''}>${x}</option>`).join('')}</select>
       </div>
-      <div class="form-group im-form-full"><label class="form-label">母蛇基因 *</label>
-        <input class="form-input" id="im-f-female" value="${esc(r.female||'')}" list="im-fl2" placeholder="輸入或選擇">
-        <datalist id="im-fl2">${femGenes.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
+      <div class="form-group"><label class="form-label">公蛇基因 *</label>
+        <select class="form-select" id="im-f-male">${malesByOwner[maleOwner].map(g=>`<option ${r.male===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">母蛇所有人</label>
+        <select class="form-select" id="im-f-female-owner" onchange="imBreedFilterFemales()">${owners.map(x=>`<option ${femOwner===x?'selected':''}>${x}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">母蛇基因 *</label>
+        <select class="form-select" id="im-f-female">${femalesByOwner[femOwner].map(g=>`<option ${r.female===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
       </div>
       <div class="form-group im-form-full"><label class="form-label">備注</label><input class="form-input" id="im-f-note" value="${esc(r.note||'')}"></div>
       <div class="form-group"><label class="form-label">是否成功 Lock</label>
@@ -3392,6 +3404,21 @@ window.imStep = (id, delta, min=0, step=1) => {
   el.value = Number.isInteger(step) ? next : next.toFixed(1);
 };
 
+window.imBreedFilterMales = () => {
+  const owner = document.getElementById('im-f-male-owner')?.value;
+  const sel = document.getElementById('im-f-male');
+  if (!sel || !owner) return;
+  const genes = IM.males.filter(m=>m.owner===owner).map(m=>m.gene).sort();
+  sel.innerHTML = genes.map(g=>`<option>${g}</option>`).join('');
+};
+window.imBreedFilterFemales = () => {
+  const owner = document.getElementById('im-f-female-owner')?.value;
+  const sel = document.getElementById('im-f-female');
+  if (!sel || !owner) return;
+  const genes = IM.females.filter(f=>f.owner===owner).map(f=>f.gene).sort();
+  sel.innerHTML = genes.map(g=>`<option>${g}</option>`).join('');
+};
+
 window.imCloseModal = () => { document.getElementById('im-modal-overlay').classList.remove('show'); };
 
 // ── PROFIT SETTLEMENT ────────────────────────────
@@ -3551,12 +3578,12 @@ function calcOwnerAnnualCost(owner, year) {
   const elec = p.elec || Array(12).fill(0);
   const snakeCount = calcOwnerSnakeCount(owner) || 1;
   const elecTotal = elec.reduce((s,v)=>s+(v||0),0);
-  const elecPerSnake = Math.round(elecTotal / snakeCount);
   const foodTotal = calcOwnerFoodCost(owner);
   const femaleCount = IM.females.filter(r=>r.owner===owner).length || 1;
+  const elecPerFemale = Math.round(elecTotal / femaleCount);
   return {
-    elecTotal, elecPerSnake, foodTotal,
-    annualCost: elecPerSnake + Math.round(foodTotal / femaleCount),
+    elecTotal, elecPerSnake: elecPerFemale, foodTotal,
+    annualCost: elecPerFemale + Math.round(foodTotal / femaleCount),
     femaleCount, snakeCount,
   };
 }
@@ -3583,16 +3610,16 @@ window.renderCostGrids = function() {
     const foodAnnual = calcOwnerFoodCost(owner);
     const femaleCount = IM.females.filter(r=>r.owner===owner).length;
     const elecTotal = elec.reduce((s,v)=>s+(v||0),0);
-    const elecPerSnake = snakeCount > 0 ? Math.round(elecTotal / snakeCount) : 0;
-    const costPerFemale = femaleCount > 0 ? Math.round((elecPerSnake + Math.round(foodAnnual/femaleCount))) : 0;
+    const elecPerFemale = femaleCount > 0 ? Math.round(elecTotal / femaleCount) : 0;
+    const costPerFemale = femaleCount > 0 ? Math.round((elecPerFemale + Math.round(foodAnnual/femaleCount))) : 0;
 
     html += `<div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;padding:16px;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;font-weight:600;color:var(--brown)">${ownerSpan(owner)} 電費設定</div>
         <div style="font-size:11px;color:var(--muted)">蛇口：${snakeCount}隻（公${IM.males.filter(r=>r.owner===owner).length}+母${femaleCount}）</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
-        ${MONTHS_LABEL.map((m,i)=>`
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+        ${MONTHS_LABEL.map((m,i)=> i%2!==0 ? '' : `
           <div>
             <div style="font-size:10px;color:var(--muted);margin-bottom:3px">${m}</div>
             <input class="form-input" style="padding:6px 8px;font-size:12px" type="number" min="0"
@@ -3619,13 +3646,13 @@ window.renderCostGrids = function() {
 };
 
 window.recalcCostPreview = function(owner, year) {
-  const elec = MONTHS_LABEL.map((_,i) => parseInt(document.getElementById(`cost-elec-${owner}-${i}`)?.value)||0);
+  const elec = MONTHS_LABEL.map((_,i) => i%2!==0 ? 0 : parseInt(document.getElementById(`cost-elec-${owner}-${i}`)?.value)||0);
   const snakeCount = calcOwnerSnakeCount(owner) || 1;
   const femaleCount = IM.females.filter(r=>r.owner===owner).length || 1;
   const foodAnnual = calcOwnerFoodCost(owner);
   const elecTotal = elec.reduce((s,v)=>s+v,0);
-  const elecPerSnake = Math.round(elecTotal / snakeCount);
-  const costPerFemale = elecPerSnake + Math.round(foodAnnual / femaleCount);
+  const elecPerFemale = Math.round(elecTotal / femaleCount);
+  const costPerFemale = elecPerFemale + Math.round(foodAnnual / femaleCount);
 
   // update summary row
   const card = document.getElementById(`cost-elec-${owner}-0`)?.closest('div[style*="background:white"]');
@@ -3640,7 +3667,7 @@ window.imSaveCostParams = async () => {
   const data = {};
   OWNERS_LIST.forEach(owner => {
     data[owner] = {
-      elec: MONTHS_LABEL.map((_,i) => parseInt(document.getElementById(`cost-elec-${owner}-${i}`)?.value)||0)
+      elec: MONTHS_LABEL.map((_,i) => i%2!==0 ? 0 : parseInt(document.getElementById(`cost-elec-${owner}-${i}`)?.value)||0)
     };
   });
   try {
