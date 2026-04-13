@@ -89,6 +89,22 @@ footer {
 .footer-copy { font-size:10px; letter-spacing:1px; color:rgba(255,255,255,0.15); }
 
 #tab-history { display:none; }
+
+@media (max-width: 768px) {
+  .morph-grid,
+  .sold-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .morph-grid,
+  .sold-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
 </style>
 </head>
 <body>
