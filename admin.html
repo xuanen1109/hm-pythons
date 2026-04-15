@@ -614,6 +614,64 @@ input.im-num:focus { border-color:var(--copper); }
             <input class="form-input" id="f-auction-url" placeholder="https://www.auc-tion.com/...">
           </div>
 
+          <div class="form-group">
+            <label class="form-label">結標時間 <span style="font-size:11px;color:var(--muted);">（競標中時填寫，用於前台倒數）</span></label>
+            <input class="form-input" id="f-auction-end" type="datetime-local">
+          </div>
+
+          <div style="border-top:1px solid rgba(181,115,58,0.15);margin:8px 0 20px;"></div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">出生日期</label>
+              <input class="form-input" id="f-birth" placeholder="例：2025/06/04">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">是否接受冷凍</label>
+              <select class="form-select" id="f-frozen">
+                <option value="">未填寫</option>
+                <option value="是">✅ 接受冷凍</option>
+                <option value="否">❌ 不接受冷凍</option>
+                <option value="看心情">😏 看心情</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:16px;">
+            <label class="form-label">親代A（公）</label>
+            <input class="form-input" id="f-sire" placeholder="例：Super Pastel Butter YB">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">親代B（母）</label>
+            <input class="form-input" id="f-dam" placeholder="例：Enchi het OG">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">個性 🎮</label>
+            <select class="form-select" id="f-nature">
+              <option value="">未填寫</option>
+              <optgroup label="── 不影響能力值 ──">
+                <option>勤奮</option><option>坦率</option><option>認真</option><option>溫順</option><option>慎重</option>
+              </optgroup>
+              <optgroup label="── 活潑系 ──">
+                <option>活潑</option><option>爽朗</option><option>天真</option><option>浮躁</option><option>頑皮</option>
+              </optgroup>
+              <optgroup label="── 固執系 ──">
+                <option>固執</option><option>勇敢</option><option>大膽</option><option>樂天</option><option>淘氣</option>
+              </optgroup>
+              <optgroup label="── 內斂系 ──">
+                <option>內斂</option><option>冷靜</option><option>溫和</option><option>悠閒</option><option>馬虎</option>
+              </optgroup>
+              <optgroup label="── 害羞系 ──">
+                <option>害羞</option><option>慢吞吞</option><option>自大</option><option>急躁</option><option>膽小</option>
+              </optgroup>
+              <optgroup label="── 怕寂寞系 ──">
+                <option>怕寂寞</option><option>開朗</option>
+              </optgroup>
+            </select>
+          </div>
+
           <button class="submit-btn" id="submit-btn" onclick="submitSnake()">新增個體</button>
         </div>
       </div>
@@ -1321,8 +1379,14 @@ window.submitSnake = async () => {
   const nameEn = document.getElementById('f-name-en').value.trim();
   const status = document.getElementById('f-status').value;
   const auctionUrl = document.getElementById('f-auction-url').value.trim();
-    const price = document.getElementById('f-price').value.trim();
-    const species = document.getElementById('f-species').value;
+  const auctionEnd = document.getElementById('f-auction-end').value || '';
+  const price = document.getElementById('f-price').value.trim();
+  const species = document.getElementById('f-species').value;
+  const birth = document.getElementById('f-birth').value.trim();
+  const frozen = document.getElementById('f-frozen').value;
+  const sire = document.getElementById('f-sire').value.trim();
+  const dam = document.getElementById('f-dam').value.trim();
+  const nature = document.getElementById('f-nature').value;
 
   if (!imgUrl) { showToast('❌ 請先上傳照片'); return; }
   if (!code || !nameZh) { showToast('❌ 請填寫編號和名稱'); return; }
@@ -1333,7 +1397,8 @@ window.submitSnake = async () => {
   try {
     await addDoc(collection(db, 'snakes'), {
       imgUrl, code, morph, nameZh, nameEn,
-      tags: currentTags, status, auctionUrl, price, species,
+      tags: currentTags, status, auctionUrl, auctionEnd, price, species,
+      birth, frozen, sire, dam, nature,
       createdAt: serverTimestamp()
     });
     showToast('✅ 新增成功！');
@@ -1341,7 +1406,9 @@ window.submitSnake = async () => {
     document.getElementById('img-url').value = '';
     document.getElementById('upload-preview').style.display = 'none';
     document.getElementById('upload-placeholder').style.display = 'block';
-    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-price'].forEach(id => document.getElementById(id).value = '');
+    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-auction-end','f-price','f-birth','f-sire','f-dam'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-frozen').value = '';
+    document.getElementById('f-nature').value = '';
     currentTags = [];
     renderTags();
     await loadSnakes();
@@ -1401,6 +1468,12 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-price').value = snake.price || '';
     document.getElementById('edit-status').value = snake.status || 'sale';
     document.getElementById('edit-auction-url').value = snake.auctionUrl || '';
+    document.getElementById('edit-auction-end').value = snake.auctionEnd || '';
+    document.getElementById('edit-birth').value = snake.birth || '';
+    document.getElementById('edit-frozen').value = snake.frozen || '';
+    document.getElementById('edit-sire').value = snake.sire || '';
+    document.getElementById('edit-dam').value = snake.dam || '';
+    document.getElementById('edit-nature').value = snake.nature || '';
     document.getElementById('edit-img-url').value = snake.imgUrl || '';
 
     const preview = document.getElementById('edit-upload-preview');
@@ -1463,6 +1536,12 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         price: document.getElementById('edit-price').value.trim(),
         status: document.getElementById('edit-status').value,
         auctionUrl: document.getElementById('edit-auction-url').value.trim(),
+        auctionEnd: document.getElementById('edit-auction-end').value || '',
+        birth: document.getElementById('edit-birth').value.trim(),
+        frozen: document.getElementById('edit-frozen').value,
+        sire: document.getElementById('edit-sire').value.trim(),
+        dam: document.getElementById('edit-dam').value.trim(),
+        nature: document.getElementById('edit-nature').value,
         imgUrl: document.getElementById('edit-img-url').value,
       });
       showToast('✅ 儲存成功！');
@@ -1566,6 +1645,58 @@ window.showToast = function showToast(msg) {
       <label class="form-label">競標連結</label>
       <input class="form-input" id="edit-auction-url" placeholder="https://...">
     </div>
+    <div style="margin-bottom:16px;">
+      <label class="form-label">結標時間 <span style="font-size:11px;color:var(--muted);">（用於前台倒數計時）</span></label>
+      <input class="form-input" id="edit-auction-end" type="datetime-local">
+    </div>
+    <div style="border-top:1px solid rgba(181,115,58,0.15);margin:4px 0 16px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div>
+        <label class="form-label">出生日期</label>
+        <input class="form-input" id="edit-birth" placeholder="例：2025/06/04">
+      </div>
+      <div>
+        <label class="form-label">是否接受冷凍</label>
+        <select class="form-select" id="edit-frozen">
+          <option value="">未填寫</option>
+          <option value="是">✅ 接受冷凍</option>
+          <option value="否">❌ 不接受冷凍</option>
+          <option value="看心情">😏 看心情</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">親代A（公）</label>
+      <input class="form-input" id="edit-sire" placeholder="例：Super Pastel Butter YB">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">親代B（母）</label>
+      <input class="form-input" id="edit-dam" placeholder="例：Enchi het OG">
+    </div>
+    <div style="margin-bottom:16px;">
+      <label class="form-label">個性 🎮</label>
+      <select class="form-select" id="edit-nature">
+        <option value="">未填寫</option>
+        <optgroup label="── 不影響能力值 ──">
+          <option>勤奮</option><option>坦率</option><option>認真</option><option>溫順</option><option>慎重</option>
+        </optgroup>
+        <optgroup label="── 活潑系 ──">
+          <option>活潑</option><option>爽朗</option><option>天真</option><option>浮躁</option><option>頑皮</option>
+        </optgroup>
+        <optgroup label="── 固執系 ──">
+          <option>固執</option><option>勇敢</option><option>大膽</option><option>樂天</option><option>淘氣</option>
+        </optgroup>
+        <optgroup label="── 內斂系 ──">
+          <option>內斂</option><option>冷靜</option><option>溫和</option><option>悠閒</option><option>馬虎</option>
+        </optgroup>
+        <optgroup label="── 害羞系 ──">
+          <option>害羞</option><option>慢吞吞</option><option>自大</option><option>急躁</option><option>膽小</option>
+        </optgroup>
+        <optgroup label="── 怕寂寞系 ──">
+          <option>怕寂寞</option><option>開朗</option>
+        </optgroup>
+      </select>
+    </div>
     <button class="modal-save" onclick="saveEdit()" id="edit-save-btn">儲存變更</button>
     <div class="modal-cancel" onclick="closeEditModal()" style="margin-top:10px;">取消</div>
   </div>
@@ -1656,9 +1787,18 @@ window.imRenderTable = (section) => {
     const sp = (document.getElementById('im-f-males-species')||{}).value||'';
     const ow = (document.getElementById('im-f-males-owner')||{}).value||'';
     const st = (document.getElementById('im-f-males-status')||{}).value||'';
+    const OWNER_ORDER = {'有剛':0,'宣恩':1,'Neil':2};
     const rows = IM.males.filter(r => {
       const txt = (r.gene+r.species+r.owner+r.source+'').toLowerCase();
       return (!q||txt.includes(q))&&(!sp||r.species===sp)&&(!ow||r.owner===ow)&&(!st||r.status===st);
+    }).sort((a,b) => {
+      if (!ow) {
+        const od = (OWNER_ORDER[a.owner]??9) - (OWNER_ORDER[b.owner]??9);
+        if (od !== 0) return od;
+      }
+      const ay = parseInt((a.birth||a.year||'0').toString().slice(0,4))||0;
+      const by = parseInt((b.birth||b.year||'0').toString().slice(0,4))||0;
+      return ay - by;
     });
     document.getElementById('im-males-sub').textContent = `共 ${rows.length} 筆`;
     document.getElementById('im-table-males').innerHTML = `<thead><tr>
@@ -1671,12 +1811,13 @@ window.imRenderTable = (section) => {
         </div>
       </td>
       <td style="color:var(--muted)">${r.species||''}</td>
-      <td>${r.year||''}</td>
+      <td>${(r.birth||r.year||'').toString().slice(0,4)||''}</td>
       <td>${fmtMoney(r.cost)}</td>
       <td style="color:var(--muted);font-size:11px">${r.source||''}</td>
       <td>${statusSpan(r.status)}</td>
       <td style="white-space:nowrap">
         <button class="action-btn" onclick="imOpenForm('males','${r._id}')">編輯</button>
+        <button class="action-btn" style="background:rgba(181,115,58,0.12);color:var(--copper)" onclick="imClearOut('males','${r._id}')">出清</button>
         <button class="action-btn danger" onclick="imConfirmDelete('males','${r._id}','${esc(r.gene)}')">刪除</button>
       </td>
     </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
@@ -1685,9 +1826,18 @@ window.imRenderTable = (section) => {
     const q = (document.getElementById('im-q-females')||{}).value?.toLowerCase()||'';
     const sp = (document.getElementById('im-f-females-species')||{}).value||'';
     const ow = (document.getElementById('im-f-females-owner')||{}).value||'';
+    const OWNER_ORDER_F = {'有剛':0,'宣恩':1,'Neil':2};
     const rows = IM.females.filter(r => {
       const txt = (r.gene+r.species+r.owner+r.source+(r.pairPri||'')+'').toLowerCase();
       return (!q||txt.includes(q))&&(!sp||r.species===sp)&&(!ow||r.owner===ow);
+    }).sort((a,b) => {
+      if (!ow) {
+        const od = (OWNER_ORDER_F[a.owner]??9) - (OWNER_ORDER_F[b.owner]??9);
+        if (od !== 0) return od;
+      }
+      const ay = parseInt((a.birth||a.year||'0').toString().slice(0,4))||0;
+      const by = parseInt((b.birth||b.year||'0').toString().slice(0,4))||0;
+      return ay - by;
     });
     document.getElementById('im-females-sub').textContent = `共 ${rows.length} 筆`;
     document.getElementById('im-table-females').innerHTML = `<thead><tr>
@@ -1700,13 +1850,14 @@ window.imRenderTable = (section) => {
         </div>
       </td>
       <td style="color:var(--muted)">${r.species||''}</td>
-      <td>${r.year||''}</td>
+      <td>${(r.birth||r.year||'').toString().slice(0,4)||''}</td>
       <td>${fmtMoney(r.cost)}</td>
       <td style="color:var(--muted);font-size:11px">${r.source||''}</td>
       <td style="color:var(--copper);font-size:11px;max-width:180px">${r.pairPri||'—'}</td>
       <td>${statusSpan(r.status)}</td>
       <td style="white-space:nowrap">
         <button class="action-btn" onclick="imOpenForm('females','${r._id}')">編輯</button>
+        <button class="action-btn" style="background:rgba(181,115,58,0.12);color:var(--copper)" onclick="imClearOut('females','${r._id}')">出清</button>
         <button class="action-btn danger" onclick="imConfirmDelete('females','${r._id}','${esc(r.gene)}')">刪除</button>
       </td>
     </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
@@ -1728,10 +1879,16 @@ window.imRenderTable = (section) => {
       yrSel.innerHTML = '<option value="">全部年份</option>' + years.map(y=>`<option ${y===curYr?'selected':''}>${y}</option>`).join('');
     }
 
+    const STATUS_ORDER = {'出貨中、面交 (已收款)':0,'待售':1,'到貨、結案':2};
+    const OWNER_ORDER_S = {'有剛':0,'宣恩':1,'Neil':2};
     const rows = IM.sales.filter(r => {
       const txt = ((r.saleId||'')+r.gene+r.owner+(r.buyer||'')+'').toLowerCase();
       const rowYear = (r.ship || r.birth || '').split('/')[0];
       return (!q||txt.includes(q))&&(!st||r.status===st)&&(!ow||r.owner===ow)&&(!yr||rowYear===yr);
+    }).sort((a,b) => {
+      const sd = (STATUS_ORDER[a.status]??1) - (STATUS_ORDER[b.status]??1);
+      if (sd !== 0) return sd;
+      return (OWNER_ORDER_S[a.owner]??9) - (OWNER_ORDER_S[b.owner]??9);
     });
     document.getElementById('im-sales-sub').textContent = `共 ${rows.length} 筆`;
     const total = rows.reduce((s,r)=>s+(r.price||0),0);
@@ -2131,6 +2288,7 @@ window.imRenderDashboard = async () => {
 // ── FORMS ─────────────────────────────────────────
 window.imOpenForm = async (section, id) => {
   await imLoadAll();
+  window._imEditingId = id || '';
   const isNew = !id;
   let r = {};
   if (!isNew) {
@@ -2141,11 +2299,21 @@ window.imOpenForm = async (section, id) => {
   if (section === 'males') {
     html = `<div class="im-modal-title">${isNew?'新增公蛇':'編輯公蛇'}</div>
     <div class="im-form-grid">
-      <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">物種 *</label><select class="form-select" id="im-f-species">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner" onchange="imGenCode()">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">物種 *</label><select class="form-select" id="im-f-species" onchange="imGenCode()">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
-      <div class="form-group"><label class="form-label">出生年</label><input class="form-input" id="im-f-year" type="number" value="${r.year||''}"></div>
+      <div class="form-group"><label class="form-label">出生/進貨日期 (YYYYMMDD)</label><input class="form-input" id="im-f-birth" placeholder="例：20251109" value="${esc((r.birth||'').toString().replace(/[#\-].*/,''))}" oninput="imGenCode()"></div>
       <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}"></div>
+      <div class="form-group"><label class="form-label">當天第幾胎 #</label><input class="form-input" id="im-f-litter" type="number" min="0" placeholder="例：1" value="${r.litter??1}" oninput="imGenCode()"></div>
+      <div class="form-group"><label class="form-label">胎內序號</label><input class="form-input" id="im-f-seq" type="number" min="1" placeholder="例：1（空白=自動）" value="${r.seq||''}" oninput="imGenCode()"></div>
+      <div class="form-group im-form-full">
+        <label class="form-label">產品編號</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" id="im-f-saleId" value="${esc(r.saleId||'')}" data-own-id="${r._id||''}" style="flex:1" placeholder="填入或按右側產生">
+          <button type="button" class="im-btn-cancel" style="white-space:nowrap;padding:7px 14px" onclick="imGenCode(true)">⚙ 產生</button>
+        </div>
+        <div id="im-code-preview" style="font-size:11px;color:var(--copper);margin-top:4px"></div>
+      </div>
       <div class="form-group"><label class="form-label">來源</label><input class="form-input" id="im-f-source" value="${esc(r.source||'')}"></div>
       <div class="form-group"><label class="form-label">飼養狀況</label><select class="form-select" id="im-f-status"><option ${(r.status||'安全穩定')==='安全穩定'?'selected':''}>安全穩定</option><option ${r.status==='隔離中'?'selected':''}>隔離中</option></select></div>
       <div class="form-group"><label class="form-label">解除隔離日期</label><input class="form-input" id="im-f-isoEnd" value="${esc(r.isoEnd||'')}"></div>
@@ -2153,6 +2321,58 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
       <div class="form-group"><label class="form-label">優先配對母數</label><input class="form-input" id="im-f-pairCount" type="number" value="${r.pairCount||0}"></div>
       <div class="form-group"><label class="form-label">備注</label><input class="form-input" id="im-f-note" value="${esc(r.note||'')}"></div>
+            <div class="form-group im-form-full"><label class="form-label">是否接受冷凍</label>
+        <select class="form-select" id="im-f-frozen">
+          <option value="" ${!r.frozen?'selected':''}>未填寫</option>
+          <option value="是" ${r.frozen==='是'?'selected':''}>✅ 接受冷凍</option>
+          <option value="否" ${r.frozen==='否'?'selected':''}>❌ 不接受冷凍</option>
+          <option value="看心情" ${r.frozen==='看心情'?'selected':''}>😏 看心情</option>
+        </select>
+      </div>
+      <div class="form-group im-form-full"><label class="form-label">個性 🎮</label>
+        <select class="form-select" id="im-f-nature">
+          <option value="">未填寫</option>
+          <optgroup label="── 不影響能力值 ──">
+            <option ${(r.nature||'')==='勤奮'?'selected':''}>勤奮</option>
+            <option ${(r.nature||'')==='坦率'?'selected':''}>坦率</option>
+            <option ${(r.nature||'')==='認真'?'selected':''}>認真</option>
+            <option ${(r.nature||'')==='溫順'?'selected':''}>溫順</option>
+            <option ${(r.nature||'')==='慎重'?'selected':''}>慎重</option>
+          </optgroup>
+          <optgroup label="── 活潑系 ──">
+            <option ${(r.nature||'')==='活潑'?'selected':''}>活潑</option>
+            <option ${(r.nature||'')==='爽朗'?'selected':''}>爽朗</option>
+            <option ${(r.nature||'')==='天真'?'selected':''}>天真</option>
+            <option ${(r.nature||'')==='浮躁'?'selected':''}>浮躁</option>
+            <option ${(r.nature||'')==='頑皮'?'selected':''}>頑皮</option>
+          </optgroup>
+          <optgroup label="── 固執系 ──">
+            <option ${(r.nature||'')==='固執'?'selected':''}>固執</option>
+            <option ${(r.nature||'')==='勇敢'?'selected':''}>勇敢</option>
+            <option ${(r.nature||'')==='大膽'?'selected':''}>大膽</option>
+            <option ${(r.nature||'')==='樂天'?'selected':''}>樂天</option>
+            <option ${(r.nature||'')==='淘氣'?'selected':''}>淘氣</option>
+          </optgroup>
+          <optgroup label="── 內斂系 ──">
+            <option ${(r.nature||'')==='內斂'?'selected':''}>內斂</option>
+            <option ${(r.nature||'')==='冷靜'?'selected':''}>冷靜</option>
+            <option ${(r.nature||'')==='溫和'?'selected':''}>溫和</option>
+            <option ${(r.nature||'')==='悠閒'?'selected':''}>悠閒</option>
+            <option ${(r.nature||'')==='馬虎'?'selected':''}>馬虎</option>
+          </optgroup>
+          <optgroup label="── 害羞系 ──">
+            <option ${(r.nature||'')==='害羞'?'selected':''}>害羞</option>
+            <option ${(r.nature||'')==='慢吞吞'?'selected':''}>慢吞吞</option>
+            <option ${(r.nature||'')==='自大'?'selected':''}>自大</option>
+            <option ${(r.nature||'')==='急躁'?'selected':''}>急躁</option>
+            <option ${(r.nature||'')==='膽小'?'selected':''}>膽小</option>
+          </optgroup>
+          <optgroup label="── 怕寂寞系 ──">
+            <option ${(r.nature||'')==='怕寂寞'?'selected':''}>怕寂寞</option>
+            <option ${(r.nature||'')==='開朗'?'selected':''}>開朗</option>
+          </optgroup>
+        </select>
+      </div>
     </div>
     <div class="im-form-actions">
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
@@ -2163,15 +2383,24 @@ window.imOpenForm = async (section, id) => {
     const maleGenes = [...new Set(IM.males.map(m=>m.gene))].sort();
     html = `<div class="im-modal-title">${isNew?'新增母蛇':'編輯母蛇'}</div>
     <div class="im-form-grid">
-      <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">物種 *</label><select class="form-select" id="im-f-species">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner" onchange="imGenCode()">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">物種 *</label><select class="form-select" id="im-f-species" onchange="imGenCode()">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
-      <div class="form-group"><label class="form-label">出生年</label><input class="form-input" id="im-f-year" type="number" value="${r.year||''}"></div>
+      <div class="form-group"><label class="form-label">出生/進貨日期 (YYYYMMDD)</label><input class="form-input" id="im-f-birth" placeholder="例：20251109" value="${esc((r.birth||'').toString().replace(/[#\-].*/,''))}" oninput="imGenCode()"></div>
       <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}"></div>
+      <div class="form-group"><label class="form-label">當天第幾胎 #</label><input class="form-input" id="im-f-litter" type="number" min="0" placeholder="例：1" value="${r.litter??1}" oninput="imGenCode()"></div>
+      <div class="form-group"><label class="form-label">胎內序號</label><input class="form-input" id="im-f-seq" type="number" min="1" placeholder="例：1（空白=自動）" value="${r.seq||''}" oninput="imGenCode()"></div>
+      <div class="form-group im-form-full">
+        <label class="form-label">產品編號</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" id="im-f-saleId" value="${esc(r.saleId||'')}" data-own-id="${r._id||''}" style="flex:1" placeholder="填入或按右側產生">
+          <button type="button" class="im-btn-cancel" style="white-space:nowrap;padding:7px 14px" onclick="imGenCode(true)">⚙ 產生</button>
+        </div>
+        <div id="im-code-preview" style="font-size:11px;color:var(--copper);margin-top:4px"></div>
+      </div>
       <div class="form-group"><label class="form-label">來源</label><input class="form-input" id="im-f-source" value="${esc(r.source||'')}"></div>
       <div class="form-group"><label class="form-label">飼養狀況</label><select class="form-select" id="im-f-status"><option ${(r.status||'安全穩定')==='安全穩定'?'selected':''}>安全穩定</option><option ${r.status==='隔離中'?'selected':''}>隔離中</option></select></div>
       <div class="form-group"><label class="form-label">解除隔離日期</label><input class="form-input" id="im-f-isoEnd" value="${esc(r.isoEnd||'')}"></div>
-      <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">優先配對公蛇</label>
         <input class="form-input" id="im-f-pairPri" value="${esc(r.pairPri||'')}" list="im-male-list" placeholder="輸入或選擇">
@@ -2179,6 +2408,58 @@ window.imOpenForm = async (section, id) => {
       </div>
       <div class="form-group im-form-full"><label class="form-label">備用配對公蛇</label><input class="form-input" id="im-f-pairAlt" value="${esc(r.pairAlt||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">備注</label><input class="form-input" id="im-f-note" value="${esc(r.note||'')}"></div>
+            <div class="form-group im-form-full"><label class="form-label">是否接受冷凍</label>
+        <select class="form-select" id="im-f-frozen">
+          <option value="" ${!r.frozen?'selected':''}>未填寫</option>
+          <option value="是" ${r.frozen==='是'?'selected':''}>✅ 接受冷凍</option>
+          <option value="否" ${r.frozen==='否'?'selected':''}>❌ 不接受冷凍</option>
+          <option value="看心情" ${r.frozen==='看心情'?'selected':''}>😏 看心情</option>
+        </select>
+      </div>
+      <div class="form-group im-form-full"><label class="form-label">個性 🎮</label>
+        <select class="form-select" id="im-f-nature">
+          <option value="">未填寫</option>
+          <optgroup label="── 不影響能力值 ──">
+            <option ${(r.nature||'')==='勤奮'?'selected':''}>勤奮</option>
+            <option ${(r.nature||'')==='坦率'?'selected':''}>坦率</option>
+            <option ${(r.nature||'')==='認真'?'selected':''}>認真</option>
+            <option ${(r.nature||'')==='溫順'?'selected':''}>溫順</option>
+            <option ${(r.nature||'')==='慎重'?'selected':''}>慎重</option>
+          </optgroup>
+          <optgroup label="── 活潑系 ──">
+            <option ${(r.nature||'')==='活潑'?'selected':''}>活潑</option>
+            <option ${(r.nature||'')==='爽朗'?'selected':''}>爽朗</option>
+            <option ${(r.nature||'')==='天真'?'selected':''}>天真</option>
+            <option ${(r.nature||'')==='浮躁'?'selected':''}>浮躁</option>
+            <option ${(r.nature||'')==='頑皮'?'selected':''}>頑皮</option>
+          </optgroup>
+          <optgroup label="── 固執系 ──">
+            <option ${(r.nature||'')==='固執'?'selected':''}>固執</option>
+            <option ${(r.nature||'')==='勇敢'?'selected':''}>勇敢</option>
+            <option ${(r.nature||'')==='大膽'?'selected':''}>大膽</option>
+            <option ${(r.nature||'')==='樂天'?'selected':''}>樂天</option>
+            <option ${(r.nature||'')==='淘氣'?'selected':''}>淘氣</option>
+          </optgroup>
+          <optgroup label="── 內斂系 ──">
+            <option ${(r.nature||'')==='內斂'?'selected':''}>內斂</option>
+            <option ${(r.nature||'')==='冷靜'?'selected':''}>冷靜</option>
+            <option ${(r.nature||'')==='溫和'?'selected':''}>溫和</option>
+            <option ${(r.nature||'')==='悠閒'?'selected':''}>悠閒</option>
+            <option ${(r.nature||'')==='馬虎'?'selected':''}>馬虎</option>
+          </optgroup>
+          <optgroup label="── 害羞系 ──">
+            <option ${(r.nature||'')==='害羞'?'selected':''}>害羞</option>
+            <option ${(r.nature||'')==='慢吞吞'?'selected':''}>慢吞吞</option>
+            <option ${(r.nature||'')==='自大'?'selected':''}>自大</option>
+            <option ${(r.nature||'')==='急躁'?'selected':''}>急躁</option>
+            <option ${(r.nature||'')==='膽小'?'selected':''}>膽小</option>
+          </optgroup>
+          <optgroup label="── 怕寂寞系 ──">
+            <option ${(r.nature||'')==='怕寂寞'?'selected':''}>怕寂寞</option>
+            <option ${(r.nature||'')==='開朗'?'selected':''}>開朗</option>
+          </optgroup>
+        </select>
+      </div>
     </div>
     <div class="im-form-actions">
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
@@ -2186,6 +2467,9 @@ window.imOpenForm = async (section, id) => {
     </div>`;
   }
   else if (section === 'sales') {
+    const pre = window._imClearOutPrefill || {};
+    window._imClearOutPrefill = null;
+    if (!isNew) {} else { Object.assign(r, pre); }
     html = `<div class="im-modal-title">${isNew?'新增銷售':'編輯銷售'}</div>
     <div class="im-form-grid">
       <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
@@ -2205,7 +2489,15 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">出生/進貨日期</label><input class="form-input" id="im-f-birth" value="${esc(r.birth||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
-      <div class="form-group im-form-full"><label class="form-label">個性 🎮</label>
+      <div class="form-group im-form-full"><label class="form-label">是否接受冷凍</label>
+        <select class="form-select" id="im-f-frozen">
+          <option value="" ${!r.frozen?'selected':''}>未填寫</option>
+          <option value="是" ${r.frozen==='是'?'selected':''}>✅ 接受冷凍</option>
+          <option value="否" ${r.frozen==='否'?'selected':''}>❌ 不接受冷凍</option>
+          <option value="看心情" ${r.frozen==='看心情'?'selected':''}>😏 看心情</option>
+        </select>
+      </div>
+            <div class="form-group im-form-full"><label class="form-label">個性 🎮</label>
         <select class="form-select" id="im-f-nature">
           <option value="">未填寫</option>
           <optgroup label="── 不影響能力值 ──">
@@ -2417,19 +2709,27 @@ window.imSave = async (section, id) => {
     const gene = g('im-f-gene').value.trim();
     if (!gene) { window.showToast('❌ 請填寫基因/品系'); return; }
     data = { owner:g('im-f-owner').value, species:g('im-f-species').value, gene, sex:'M',
-      year:parseInt(g('im-f-year').value)||0, cost:parseInt(g('im-f-cost').value)||0,
+      birth:g('im-f-birth').value, litter:parseInt(g('im-f-litter')?.value)||1, seq:parseInt(g('im-f-seq')?.value)||1,
+      cost:parseInt(g('im-f-cost').value)||0,
+      saleId:g('im-f-saleId').value,
       source:g('im-f-source').value, status:g('im-f-status').value,
       isoEnd:g('im-f-isoEnd').value, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
-      pairCount:parseInt(g('im-f-pairCount').value)||0, note:g('im-f-note').value };
+      pairCount:parseInt(g('im-f-pairCount').value)||0, note:g('im-f-note').value,
+      frozen:g('im-f-frozen')?.value||'',
+      nature:g('im-f-nature')?.value||'' };
   }
   else if (section==='females') {
     const gene = g('im-f-gene').value.trim();
     if (!gene) { window.showToast('❌ 請填寫基因/品系'); return; }
     data = { owner:g('im-f-owner').value, species:g('im-f-species').value, gene, sex:'F',
-      year:parseInt(g('im-f-year').value)||0, cost:parseInt(g('im-f-cost').value)||0,
+      birth:g('im-f-birth').value, litter:parseInt(g('im-f-litter')?.value)||1, seq:parseInt(g('im-f-seq')?.value)||1,
+      cost:parseInt(g('im-f-cost').value)||0,
+      saleId:g('im-f-saleId').value,
       source:g('im-f-source').value, status:g('im-f-status').value,
       isoEnd:g('im-f-isoEnd').value, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
-      pairPri:g('im-f-pairPri').value, pairAlt:g('im-f-pairAlt').value, note:g('im-f-note').value };
+      pairPri:g('im-f-pairPri').value, pairAlt:g('im-f-pairAlt').value, note:g('im-f-note').value,
+      frozen:g('im-f-frozen')?.value||'',
+      nature:g('im-f-nature')?.value||'' };
   }
   else if (section==='sales') {
     const gene = g('im-f-gene').value.trim();
@@ -2444,6 +2744,7 @@ window.imSave = async (section, id) => {
       source:g('im-f-source').value, status:g('im-f-status').value,
       channel:g('im-f-channel').value, buyer:g('im-f-buyer').value,
       ship:g('im-f-ship').value, delivery, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
+      frozen:g('im-f-frozen')?.value||'',
       nature:g('im-f-nature')?.value||'',
       crossbreed: g('im-f-crossbreed')?.value==='yes',
       sireOwner: g('im-f-crossbreed')?.value==='yes' ? (g('im-f-sire-owner')?.value||'') : '',
@@ -2926,9 +3227,61 @@ window.imPushToSite = (id) => {
       <label class="form-label">個體年份</label>
       <input class="form-input" id="push-year" type="number" placeholder="例：2025" value="${r.birth?(r.birth.split('/')[0]):''}">
     </div>
-    <div class="form-group" style="margin-bottom:16px">
+    <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">競標連結（競標中時填）</label>
       <input class="form-input" id="push-auction-url" placeholder="https://...">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">結標時間（競標中時填）</label>
+      <input class="form-input" id="push-auction-end" type="datetime-local">
+    </div>
+    <div style="border-top:1px solid rgba(181,115,58,0.15);margin:4px 0 16px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">出生日期</label>
+        <input class="form-input" id="push-birth" placeholder="例：2025/06/04" value="${r.birth?r.birth.replace(/\//g,'/').split(' ')[0]:''}">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">是否接受冷凍</label>
+        <select class="form-select" id="push-frozen">
+          <option value="" ${!r.frozen?'selected':''}>未填寫</option>
+          <option value="是" ${r.frozen==='是'?'selected':''}>✅ 接受冷凍</option>
+          <option value="否" ${r.frozen==='否'?'selected':''}>❌ 不接受冷凍</option>
+          <option value="看心情" ${r.frozen==='看心情'?'selected':''}>😏 看心情</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">親代A（公）</label>
+      <input class="form-input" id="push-sire" value="${esc(r.sireA||'')}">
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">親代B（母）</label>
+      <input class="form-input" id="push-dam" value="${esc(r.damB||'')}">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">個性 🎮</label>
+      <select class="form-select" id="push-nature">
+        <option value="" ${!r.nature?'selected':''}>未填寫</option>
+        <optgroup label="── 不影響能力值 ──">
+          <option ${r.nature==='勤奮'?'selected':''}>勤奮</option><option ${r.nature==='坦率'?'selected':''}>坦率</option><option ${r.nature==='認真'?'selected':''}>認真</option><option ${r.nature==='溫順'?'selected':''}>溫順</option><option ${r.nature==='慎重'?'selected':''}>慎重</option>
+        </optgroup>
+        <optgroup label="── 活潑系 ──">
+          <option ${r.nature==='活潑'?'selected':''}>活潑</option><option ${r.nature==='爽朗'?'selected':''}>爽朗</option><option ${r.nature==='天真'?'selected':''}>天真</option><option ${r.nature==='浮躁'?'selected':''}>浮躁</option><option ${r.nature==='頑皮'?'selected':''}>頑皮</option>
+        </optgroup>
+        <optgroup label="── 固執系 ──">
+          <option ${r.nature==='固執'?'selected':''}>固執</option><option ${r.nature==='勇敢'?'selected':''}>勇敢</option><option ${r.nature==='大膽'?'selected':''}>大膽</option><option ${r.nature==='樂天'?'selected':''}>樂天</option><option ${r.nature==='淘氣'?'selected':''}>淘氣</option>
+        </optgroup>
+        <optgroup label="── 內斂系 ──">
+          <option ${r.nature==='內斂'?'selected':''}>內斂</option><option ${r.nature==='冷靜'?'selected':''}>冷靜</option><option ${r.nature==='溫和'?'selected':''}>溫和</option><option ${r.nature==='悠閒'?'selected':''}>悠閒</option><option ${r.nature==='馬虎'?'selected':''}>馬虎</option>
+        </optgroup>
+        <optgroup label="── 害羞系 ──">
+          <option ${r.nature==='害羞'?'selected':''}>害羞</option><option ${r.nature==='慢吞吞'?'selected':''}>慢吞吞</option><option ${r.nature==='自大'?'selected':''}>自大</option><option ${r.nature==='急躁'?'selected':''}>急躁</option><option ${r.nature==='膽小'?'selected':''}>膽小</option>
+        </optgroup>
+        <optgroup label="── 怕寂寞系 ──">
+          <option ${r.nature==='怕寂寞'?'selected':''}>怕寂寞</option><option ${r.nature==='開朗'?'selected':''}>開朗</option>
+        </optgroup>
+      </select>
     </div>
     <div class="im-form-actions">
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
@@ -2943,7 +3296,13 @@ window.imDoPush = async (id) => {
   const status = document.getElementById('push-status').value;
   const nameZh = document.getElementById('push-name-zh').value.trim();
   const auctionUrl = document.getElementById('push-auction-url').value.trim();
+  const auctionEnd = document.getElementById('push-auction-end').value || '';
   const year = document.getElementById('push-year').value.trim();
+  const pushBirth = document.getElementById('push-birth').value.trim();
+  const pushFrozen = document.getElementById('push-frozen').value;
+  const pushSire = document.getElementById('push-sire').value.trim();
+  const pushDam = document.getElementById('push-dam').value.trim();
+  const pushNature = document.getElementById('push-nature').value;
 
   const speciesKey = SPECIES_MAP_PUSH[r.species] || 'ball_python';
   const tags = (r.gene||'').split(' ').filter(t=>t.length>1&&t.length<30);
@@ -2958,8 +3317,14 @@ window.imDoPush = async (id) => {
     price: r.price ? 'NT$'+r.price.toLocaleString() : '洽詢',
     status,
     auctionUrl: auctionUrl || '',
+    auctionEnd: auctionEnd || '',
     imgUrl: '',
     year: year || '',
+    birth: pushBirth || '',
+    frozen: pushFrozen || '',
+    sire: pushSire || '',
+    dam: pushDam || '',
+    nature: pushNature || '',
     createdAt: serverTimestamp(),
     fromIM: true,
     imSaleId: id,
@@ -3417,6 +3782,74 @@ window.imBreedFilterFemales = () => {
   if (!sel || !owner) return;
   const genes = IM.females.filter(f=>f.owner===owner).map(f=>f.gene).sort();
   sel.innerHTML = genes.map(g=>`<option>${g}</option>`).join('');
+};
+
+// 產品編號輔助產生器
+window.imGenCode = (apply=false) => {
+  const OWNER_CODE = {'有剛':'G','宣恩':'C','Neil':'N'};
+  const SPECIES_CODE = {'球蟒':'PR','紅尾蚺':'BC','玉米蛇':'PG','王蛇':'KS','豹紋守宮':'EM'};
+  const owner = (document.getElementById('im-f-owner')||{}).value||'';
+  const species = (document.getElementById('im-f-species')||{}).value||'';
+  const birth = (document.getElementById('im-f-birth')||{}).value.trim()||'';
+  const litterRaw = (document.getElementById('im-f-litter')||{}).value||'';
+  const seqInput = (document.getElementById('im-f-seq')||{}).value.trim();
+  const ownerCode = OWNER_CODE[owner]||'?';
+  const speciesCode = SPECIES_CODE[species]||'??';
+
+  // 日期：取純數字，YYYYMMDD → YYMMDD，沒填補000000
+  const digits = birth.replace(/\D/g,'');
+  let dateCode;
+  if (digits.length === 8) dateCode = digits.slice(2);       // 20251109 → 251109
+  else if (digits.length === 6) dateCode = digits;            // 251109
+  else if (digits.length === 4) dateCode = digits.slice(2) + '0000'; // 2025 → 250000
+  else if (digits.length === 0) dateCode = '000000';
+  else dateCode = digits.padEnd(6,'0').slice(0,6);
+
+  const litter = litterRaw === '' ? 0 : (parseInt(litterRaw)||0);
+  const prefix = `${ownerCode}${speciesCode}${dateCode}#${litter}-`;
+
+  // 序號邏輯：按產生(apply=true)永遠自動算最大+1；seqInput只用於即時預覽
+  let seq;
+  if (apply) {
+    const currentId = window._imEditingId || '';
+    const allRecords = [...(IM.males||[]), ...(IM.females||[])];
+    console.log('editingId:', currentId);
+    console.log('all saleIds:', allRecords.map(r=>r.saleId+' ('+r._id+')'));
+    const existing = allRecords
+      .filter(r => r._id !== currentId)
+      .map(r => r.saleId||'')
+      .filter(id => id.startsWith(prefix))
+      .map(id => parseInt(id.slice(prefix.length))||0);
+    console.log('prefix:', prefix, 'existing:', existing);
+    const autoSeq = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+    seq = String(autoSeq).padStart(2,'0');
+  } else {
+    seq = String(parseInt(seqInput)||1).padStart(2,'0');
+  }
+  const code = `${prefix}${seq}`;
+  const preview = document.getElementById('im-code-preview');
+  if (preview) preview.textContent = `預覽：${code}`;
+  if (apply) {
+    const input = document.getElementById('im-f-saleId');
+    if (input) { input.value = code; if (preview) preview.textContent = ''; }
+  }
+};
+
+window.imClearOut = async (section, id) => {
+  await imLoadAll();
+  const r = IM[section].find(x => x._id === id);
+  if (!r) return;
+  window._imEditingId = '';
+  window._imClearOutPrefill = {
+    owner: r.owner, species: r.species, gene: r.gene,
+    sex: section === 'males' ? 'M' : 'F',
+    saleId: r.saleId || '', cost: r.cost || 0,
+    birth: r.birth || (r.year ? String(r.year) : ''),
+    sireA: r.sireA || '', damB: r.damB || '',
+    frozen: r.frozen || '',
+    nature: r.nature || '', source: '內部出清',
+  };
+  await imOpenForm('sales', null);
 };
 
 window.imCloseModal = () => { document.getElementById('im-modal-overlay').classList.remove('show'); };
