@@ -417,12 +417,6 @@ input.im-num:focus { border-color:var(--copper); }
         </button>
       </div>
       <div class="sidebar-section" style="margin-top:16px;">
-        <div class="sidebar-label">資料匯入</div>
-        <button class="sidebar-btn" onclick="showPage('import', this)">
-          <span class="sidebar-icon">📥</span> 從試算表匯入
-        </button>
-      </div>
-      <div class="sidebar-section" style="margin-top:16px;">
         <div class="sidebar-label">快速篩選</div>
         <button class="sidebar-btn" onclick="filterSnakes('all'); showPage('list', document.querySelector('.sidebar-btn'))">
           <span class="sidebar-icon">📋</span> 全部
@@ -906,8 +900,19 @@ input.im-num:focus { border-color:var(--copper); }
           <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">年份設定</div>
           <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px">
             <select class="form-select" style="width:120px" id="cost-year-sel" onchange="imRenderCostPage()">
-              ${[2024,2025,2026,2027].map(y=>`<option>${y}</option>`).join('')}
             </select>
+            <script>
+              (function(){
+                const sel = document.getElementById('cost-year-sel');
+                const cur = new Date().getFullYear();
+                for(let y = 2024; y <= cur + 2; y++){
+                  const opt = document.createElement('option');
+                  opt.textContent = y;
+                  if(y === cur) opt.selected = true;
+                  sel.appendChild(opt);
+                }
+              })();
+            </script>
             <span style="font-size:12px;color:var(--muted)">選擇年份後填入各月資料</span>
           </div>
 
@@ -1118,6 +1123,7 @@ function renderSnakes() {
         <div class="card-actions">
           <button class="action-btn" onclick="openEditModal('${s.id}')">編輯</button>
           <button class="action-btn" onclick="openStatusModal('${s.id}', '${(s.nameZh||'').replace(/'/g,'&apos;')}', '${s.status}')">狀態</button>
+          <button class="action-btn" onclick="openPostModal('${s.id}')" style="color:var(--copper);border-color:rgba(181,115,58,0.4)">📢 貼文</button>
           <button class="action-btn danger" onclick="deleteSnake('${s.id}')">刪除</button>
         </div>
       </div>
@@ -1562,6 +1568,112 @@ window.deleteSnake = async (id) => {
   await loadSnakes();
 };
 
+// ── POST MODAL ─────────────────────────────────────
+const LINE_INVITE = 'https://line.me/ti/g2/snAAggkOml4oh5TqqSyDUiN6yVpuIjB6-BDUkA?utm_source=invitation&utm_medium=link_copy&utm_campaign=default';
+let _postSnake = null;
+
+window.openPostModal = (id) => {
+  _postSnake = allSnakes.find(s => s.id === id);
+  if (!_postSnake) return;
+
+  // 預帶結標時間（若有）
+  const auctionEnd = _postSnake.auctionEnd || '';
+  let endText = '';
+  if (auctionEnd) {
+    const d = new Date(auctionEnd);
+    const weekdays = ['日','一','二','三','四','五','六'];
+    endText = `${d.getMonth()+1}/${d.getDate()}（週${weekdays[d.getDay()]}）${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  document.getElementById('post-start-price').value = '';
+  document.getElementById('post-end-time').value = endText;
+  document.getElementById('post-platform').value = 'line';
+  document.getElementById('post-copy-msg').style.display = 'none';
+
+  refreshPostDraft();
+  document.getElementById('post-modal-overlay').classList.add('show');
+};
+
+window.refreshPostDraft = () => {
+  if (!_postSnake) return;
+  const s = _postSnake;
+  const startPrice = document.getElementById('post-start-price').value || '0';
+  const endTime = document.getElementById('post-end-time').value || '（待公告）';
+  const platform = document.getElementById('post-platform').value;
+
+  // 年份
+  const year = s.birth ? s.birth.split('/')[0] : (s.year || new Date().getFullYear());
+  // 冷凍描述
+  const frozenMap = {'是':'活體及冷凍都接受', '否':'只接受活體', '看心情':'活體及冷凍都吃的乖寶寶'};
+  const frozenText = frozenMap[s.frozen] || '活體及冷凍都吃的乖寶寶';
+  // 基因標籤文字
+  const tagsText = (s.tags||[]).join(' ');
+
+  let draft = '';
+
+  if (platform === 'line') {
+    draft = `${year}年${s.nameZh || s.morph}
+基因名：
+${year} ${s.morph || tagsText}
+${frozenText}
+適合當寵物或是未來有興趣走繁殖的新手
+(${Number(startPrice).toLocaleString()})元起標
+結標時間：${endTime}
+喜歡可以入群參與競標唷
+您已被邀請加入「hm.pythons 球蟒」！請點選以下連結加入社群！
+${LINE_INVITE}`;
+  } else if (platform === 'ig') {
+    const hashtags = '#球蟒 #ballpython #競標 #hmpythons #reptile #爬蟲 #' + (s.tags||[]).join(' #');
+    draft = `🐍【競標開跑】${s.nameZh || s.morph}
+
+編號｜${s.code || '—'}
+基因｜${s.morph || tagsText}
+${frozenText}
+
+⏳ 結標：${endTime}
+💰 起標：NT$${Number(startPrice).toLocaleString()}
+
+連結在限動 👆
+
+${hashtags}`;
+  } else {
+    // Facebook
+    draft = `🐍 【競標中】${s.nameZh || s.morph}
+
+編號：${s.code || '—'}
+基因：${year} ${s.morph || tagsText}
+${frozenText}，適合寵物或育種新手 🌱
+
+💰 起標：${Number(startPrice).toLocaleString()} 元
+⏰ 結標：${endTime}
+
+想參與競標，歡迎加入我們的 Line 社群：
+${LINE_INVITE}
+
+有問題歡迎私訊 👋 hm.pythons`;
+  }
+
+  document.getElementById('post-draft-text').value = draft;
+};
+
+window.copyPostDraft = () => {
+  const text = document.getElementById('post-draft-text').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const msg = document.getElementById('post-copy-msg');
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 2500);
+  }).catch(() => {
+    // fallback
+    const ta = document.getElementById('post-draft-text');
+    ta.select(); document.execCommand('copy');
+    showToast('✅ 已複製！');
+  });
+};
+
+window.closePostModal = () => {
+  document.getElementById('post-modal-overlay').classList.remove('show');
+  _postSnake = null;
+};
+
 // UI helpers
 window.showPage = (page, btn) => {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1576,6 +1688,46 @@ window.showToast = function showToast(msg) {
   setTimeout(() => { t.style.display = 'none'; }, 3000);
 }
 </script>
+
+<!-- POST MODAL -->
+<div class="modal-overlay" id="post-modal-overlay">
+  <div class="modal" style="width:500px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">📢 社群貼文產生器</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">以下草稿已依個體資料自動填入，可直接修改後複製。</div>
+
+    <!-- 補充欄位 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div>
+        <label class="form-label">起標金額（元）</label>
+        <input class="form-input" id="post-start-price" type="number" placeholder="例：0" oninput="refreshPostDraft()" style="padding:8px 10px;">
+      </div>
+      <div>
+        <label class="form-label">結標時間（顯示文字）</label>
+        <input class="form-input" id="post-end-time" placeholder="例：3/24（週二）21:30" oninput="refreshPostDraft()" style="padding:8px 10px;">
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">平台選擇</label>
+      <select class="form-select" id="post-platform" onchange="refreshPostDraft()" style="padding:8px 10px;">
+        <option value="line">Line 社群</option>
+        <option value="ig">Instagram</option>
+        <option value="fb">Facebook</option>
+      </select>
+    </div>
+
+    <!-- 草稿文字 -->
+    <div style="margin-bottom:12px;">
+      <label class="form-label">貼文草稿 <span style="font-size:11px;color:var(--muted);">（可直接編輯）</span></label>
+      <textarea id="post-draft-text" class="form-textarea" style="min-height:260px;font-size:13px;line-height:1.7;font-family:'Noto Sans TC',sans-serif;"></textarea>
+    </div>
+
+    <div style="display:flex;gap:8px;">
+      <button class="submit-btn" onclick="copyPostDraft()" style="flex:1;">📋 複製貼文</button>
+      <button class="modal-cancel" onclick="closePostModal()" style="flex:0 0 80px;padding:12px;text-align:center;cursor:pointer;border:1px solid rgba(181,115,58,0.2);border-radius:4px;font-size:13px;color:var(--muted);background:none;">取消</button>
+    </div>
+    <div id="post-copy-msg" style="display:none;text-align:center;font-size:12px;color:#2a6b3a;margin-top:8px;">✅ 已複製到剪貼簿！</div>
+  </div>
+</div>
 
 <!-- Edit Modal -->
 <div class="modal-overlay" id="edit-modal-overlay">
