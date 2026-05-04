@@ -1,0 +1,2556 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hm.pythons · Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brown-deep: #2A1510;
+    --brown-mid: #3B1A10;
+    --brown-light: #5A2A1C;
+    --copper: #B5733A;
+    --copper-light: #D4935A;
+    --copper-dim: #8B5A2E;
+    --silver: #A8A29E;
+    --cream: #F5EFE6;
+    --paper: #FAF6EF;
+    --panel: #1A0D08;
+    --panel-light: #241410;
+    --divider: rgba(181, 115, 58, 0.15);
+    --ink: #2A1510;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--brown-deep);
+    color: var(--cream);
+    font-family: 'Noto Sans TC', system-ui, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    font-size: 14px;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    height: 56px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--divider);
+    display: flex;
+    align-items: center;
+    padding: 0 1.25rem;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 10;
+  }
+
+  .brand-mark {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  .brand-mark .top {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--copper-light);
+  }
+
+  .brand-mark .sub {
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--silver);
+    text-transform: uppercase;
+  }
+
+  .divider-v {
+    width: 1px;
+    height: 24px;
+    background: var(--divider);
+  }
+
+  .file-info {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--silver);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .icon-btn {
+    background: transparent;
+    color: var(--cream);
+    border: 1px solid var(--divider);
+    padding: 0.45rem 0.9rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .icon-btn:hover {
+    border-color: var(--copper);
+    color: var(--copper-light);
+  }
+
+  .icon-btn.primary {
+    background: var(--copper);
+    color: white;
+    border-color: var(--copper);
+  }
+
+  .icon-btn.primary:hover {
+    background: var(--copper-light);
+    border-color: var(--copper-light);
+    color: white;
+  }
+
+  .icon-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* LAYOUT */
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    height: calc(100vh - 56px);
+  }
+
+  /* CANVAS AREA */
+  .canvas-area {
+    background:
+      radial-gradient(circle at 50% 50%, var(--brown-mid) 0%, var(--brown-deep) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .canvas-area::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--silver);
+    padding: 2rem;
+    cursor: pointer;
+    border: 2px dashed var(--divider);
+    border-radius: 4px;
+    transition: all 0.3s;
+    min-width: 400px;
+    padding: 3rem;
+  }
+
+  .empty-state:hover, .empty-state.dragover {
+    border-color: var(--copper);
+    background: rgba(181, 115, 58, 0.05);
+  }
+
+  .empty-state .mark {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 3rem;
+    color: var(--copper);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state .title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: var(--cream);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state .hint {
+    font-size: 0.85rem;
+    color: var(--silver);
+  }
+
+  #fileInput { display: none; }
+
+  .canvas-wrapper {
+    max-width: 95%;
+    max-height: 95%;
+    position: relative;
+    display: none;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.5);
+  }
+
+  .canvas-wrapper.visible { display: block; }
+
+  .canvas-wrapper canvas {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100vh - 160px);
+  }
+
+  .canvas-overlay {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 5;
+  }
+
+  .overlay-btn {
+    background: rgba(26, 13, 8, 0.85);
+    backdrop-filter: blur(8px);
+    color: var(--cream);
+    border: 1px solid var(--divider);
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+    font-family: inherit;
+  }
+
+  .overlay-btn:hover {
+    border-color: var(--copper);
+    color: var(--copper-light);
+  }
+
+  .overlay-btn.active {
+    background: var(--copper);
+    border-color: var(--copper);
+    color: white;
+  }
+
+  .status-strip {
+    position: absolute;
+    bottom: 1rem; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(26, 13, 8, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--divider);
+    padding: 0.5rem 1rem;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--silver);
+    display: none;
+  }
+
+  .status-strip.visible { display: block; }
+
+  .processing-overlay {
+    position: absolute; inset: 0;
+    background: rgba(26, 13, 8, 0.75);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+
+  .processing-overlay.visible { display: flex; }
+
+  .processing-content {
+    text-align: center;
+  }
+
+  .processing-content .title {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.5rem;
+    color: var(--copper-light);
+    margin-bottom: 0.5rem;
+  }
+
+  .processing-content .sub {
+    font-size: 0.85rem;
+    color: var(--silver);
+    margin-bottom: 1rem;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--divider);
+    border-top-color: var(--copper);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* PANEL */
+  .panel {
+    background: var(--panel);
+    border-left: 1px solid var(--divider);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel::-webkit-scrollbar { width: 6px; }
+  .panel::-webkit-scrollbar-track { background: var(--panel); }
+  .panel::-webkit-scrollbar-thumb { background: var(--brown-light); border-radius: 3px; }
+
+  .section {
+    border-bottom: 1px solid var(--divider);
+  }
+
+  .section-header {
+    padding: 0.9rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+
+  .section-header:hover {
+    background: var(--panel-light);
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    color: var(--copper-light);
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-title .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--copper-dim);
+    font-style: normal;
+  }
+
+  .section-toggle {
+    color: var(--silver);
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .section.collapsed .section-toggle {
+    transform: rotate(-90deg);
+  }
+
+  .section-body {
+    padding: 0 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .section.collapsed .section-body {
+    display: none;
+  }
+
+  /* SLIDERS */
+  .slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .slider-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .slider-label {
+    font-size: 0.8rem;
+    color: var(--cream);
+  }
+
+  .slider-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--copper-light);
+    cursor: pointer;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .slider-value:hover {
+    color: var(--copper);
+  }
+
+  .slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--brown-light);
+    border-radius: 1px;
+    outline: none;
+    position: relative;
+  }
+
+  .slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--copper);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .slider-input::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+  }
+
+  .slider-input::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--copper);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+
+  /* BACKGROUND PICKER */
+  .bg-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.4rem;
+  }
+
+  .bg-swatch {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-swatch:hover {
+    transform: scale(1.05);
+  }
+
+  .bg-swatch.active {
+    border-color: var(--copper);
+    box-shadow: 0 0 0 1px var(--copper);
+  }
+
+  .bg-swatch.transparent {
+    background-image:
+      linear-gradient(45deg, #e8e2d8 25%, transparent 25%),
+      linear-gradient(-45deg, #e8e2d8 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e8e2d8 75%),
+      linear-gradient(-45deg, transparent 75%, #e8e2d8 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, 4px 0px;
+    background-color: #fff;
+  }
+
+  .bg-swatch.white { background: #ffffff; }
+  .bg-swatch.cream { background: #F5EFE6; }
+  .bg-swatch.brand-deep { background: #3B1A10; }
+  .bg-swatch.brand-grad { background: linear-gradient(135deg, #3B1A10, #B5733A); }
+  .bg-swatch.black { background: #0a0a0a; }
+  .bg-swatch.gray { background: #808080; }
+  .bg-swatch.warm-gray { background: #a89889; }
+  .bg-swatch.charcoal { background: linear-gradient(135deg, #2a2a2a, #1a1a1a); }
+  .bg-swatch.custom {
+    background: conic-gradient(from 0deg, red, yellow, lime, cyan, blue, magenta, red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+  }
+
+  .bg-swatch.custom::after {
+    content: '+';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 0 2px rgba(0,0,0,0.5);
+  }
+
+  .custom-color-row {
+    display: none;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.5rem;
+  }
+
+  .custom-color-row.visible { display: flex; }
+
+  .custom-color-row input[type="color"] {
+    width: 40px;
+    height: 28px;
+    border: 1px solid var(--divider);
+    background: transparent;
+    border-radius: 2px;
+    cursor: pointer;
+    padding: 2px;
+  }
+
+  .custom-color-row input[type="text"] {
+    flex: 1;
+    background: var(--panel-light);
+    border: 1px solid var(--divider);
+    color: var(--cream);
+    padding: 0.4rem 0.6rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  /* SEGMENTED */
+  .segmented {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--panel-light);
+    border: 1px solid var(--divider);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .segmented button {
+    background: transparent;
+    border: none;
+    color: var(--silver);
+    padding: 0.5rem 0.25rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-right: 1px solid var(--divider);
+  }
+
+  .segmented button:last-child { border-right: none; }
+
+  .segmented button:hover {
+    color: var(--cream);
+  }
+
+  .segmented button.active {
+    background: var(--copper);
+    color: white;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .toggle-row label {
+    font-size: 0.85rem;
+    color: var(--cream);
+    cursor: pointer;
+  }
+
+  .switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: var(--brown-light);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .switch.on {
+    background: var(--copper);
+  }
+
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .switch.on::after {
+    transform: translateX(16px);
+  }
+
+  /* PRESETS */
+  .preset-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+  }
+
+  .preset-chip {
+    background: var(--panel-light);
+    border: 1px solid var(--divider);
+    color: var(--cream);
+    padding: 0.5rem 0.4rem;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .preset-chip:hover {
+    border-color: var(--copper);
+    color: var(--copper-light);
+  }
+
+  .preset-chip.active {
+    background: var(--copper);
+    border-color: var(--copper);
+    color: white;
+  }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px dashed var(--divider);
+    color: var(--silver);
+    padding: 0.4rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 2px;
+    transition: all 0.2s;
+    margin-top: 0.25rem;
+  }
+
+  .reset-btn:hover {
+    color: var(--copper-light);
+    border-color: var(--copper-dim);
+  }
+
+  @media (max-width: 900px) {
+    .workspace { grid-template-columns: 1fr; grid-template-rows: 45vh 55vh; }
+    .panel { border-left: none; border-top: 1px solid var(--divider); }
+  }
+
+  /* BRUSH SYSTEM */
+  .brush-mode-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: var(--panel-light);
+    border: 1px solid var(--divider);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+  }
+
+  .brush-mode-tabs button {
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--divider);
+    color: var(--silver);
+    padding: 0.55rem 0.3rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.3;
+  }
+
+  .brush-mode-tabs button:last-child { border-right: none; }
+  .brush-mode-tabs button:hover { color: var(--cream); }
+  .brush-mode-tabs button.active {
+    background: var(--copper);
+    color: white;
+  }
+
+  .brush-mode-tabs button .mode-label {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.85rem;
+    display: block;
+  }
+  .brush-mode-tabs button .mode-hint {
+    font-size: 0.65rem;
+    opacity: 0.7;
+    display: block;
+    margin-top: 0.1rem;
+  }
+
+  .brush-tools-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .tool-btn {
+    background: var(--panel-light);
+    border: 1px solid var(--divider);
+    color: var(--cream);
+    padding: 0.5rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+  }
+  .tool-btn:hover {
+    border-color: var(--copper);
+    color: var(--copper-light);
+  }
+  .tool-btn.active {
+    background: var(--copper);
+    border-color: var(--copper);
+    color: white;
+  }
+  .tool-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .paint-color-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 0.25rem;
+  }
+  .paint-color-row input[type="color"] {
+    width: 40px; height: 30px;
+    border: 1px solid var(--divider);
+    background: transparent;
+    border-radius: 2px;
+    cursor: pointer;
+    padding: 2px;
+  }
+  .paint-color-row .quick-colors {
+    display: flex;
+    gap: 0.25rem;
+    flex: 1;
+    flex-wrap: wrap;
+  }
+  .paint-color-row .quick-colors button {
+    width: 22px; height: 22px;
+    border: 1px solid var(--divider);
+    border-radius: 2px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .paint-color-row .quick-colors button:hover {
+    transform: scale(1.15);
+    border-color: var(--copper-light);
+  }
+
+  .eyedropper-btn {
+    width: 30px; height: 30px;
+    background: var(--panel-light);
+    border: 1px solid var(--divider);
+    border-radius: 2px;
+    cursor: pointer;
+    color: var(--cream);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .eyedropper-btn:hover {
+    border-color: var(--copper);
+    color: var(--copper-light);
+  }
+  .eyedropper-btn.active {
+    background: var(--copper);
+    color: white;
+    border-color: var(--copper);
+  }
+
+  /* Eyedropper crosshair cursor */
+  .eyedrop-cursor {
+    position: absolute;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 7;
+    display: none;
+    width: 60px; height: 60px;
+  }
+  .eyedrop-cursor.visible { display: block; }
+
+  .eyedrop-cursor .ring {
+    position: absolute; inset: 0;
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.6);
+  }
+  .eyedrop-cursor .crosshair-h,
+  .eyedrop-cursor .crosshair-v {
+    position: absolute;
+    background: white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+  }
+  .eyedrop-cursor .crosshair-h {
+    top: 50%; left: 50%;
+    width: 8px; height: 1px;
+    transform: translate(-50%, -50%);
+  }
+  .eyedrop-cursor .crosshair-v {
+    top: 50%; left: 50%;
+    width: 1px; height: 8px;
+    transform: translate(-50%, -50%);
+  }
+  .eyedrop-cursor .swatch {
+    position: absolute;
+    top: -8px; right: -8px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.5);
+    background: #000;
+  }
+  .eyedrop-cursor .hex-label {
+    position: absolute;
+    bottom: -24px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(26, 13, 8, 0.9);
+    color: var(--cream);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+
+  .canvas-wrapper.eyedrop-active canvas {
+    cursor: none;
+  }
+
+  .local-adj-panel {
+    background: var(--panel-light);
+    border: 1px solid var(--divider);
+    border-radius: 2px;
+    padding: 0.75rem;
+    margin-top: 0.4rem;
+    display: none;
+  }
+  .local-adj-panel.visible { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .local-adj-title {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: var(--copper-light);
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .mini-slider {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .mini-slider .head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+  }
+  .mini-slider .head .lbl { color: var(--cream); }
+  .mini-slider .head .val {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--copper-light);
+    font-size: 0.7rem;
+  }
+
+  .mask-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--silver);
+    text-align: center;
+    padding: 0.25rem;
+  }
+
+  /* BRUSH CURSOR on canvas */
+  .brush-cursor {
+    position: absolute;
+    border: 1.5px solid white;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.5);
+    display: none;
+  }
+  .brush-cursor.visible { display: block; }
+  .brush-cursor.erase {
+    border-color: #ff8a65;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.5);
+  }
+
+  .canvas-wrapper.brush-active canvas {
+    cursor: none;
+  }
+
+  /* MASK VISUALIZATION overlay */
+  .mask-overlay-toggle {
+    font-size: 0.7rem;
+    color: var(--silver);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+  }
+  .mask-overlay-toggle input { accent-color: var(--copper); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand-mark">
+    <span class="top">hm.pythons</span>
+    <span class="sub">studio · v1</span>
+  </div>
+  <div class="divider-v"></div>
+  <div class="file-info" id="fileInfo">尚未載入照片</div>
+  <div class="topbar-actions">
+    <button class="icon-btn" id="btnOpen">開啟</button>
+    <button class="icon-btn" id="btnReset" disabled>重置</button>
+    <button class="icon-btn primary" id="btnExport" disabled>匯出</button>
+  </div>
+</div>
+
+<div class="workspace">
+  <div class="canvas-area" id="canvasArea">
+    <label class="empty-state" id="emptyState" for="fileInput">
+      <div class="mark">✦</div>
+      <div class="title">Load a photograph</div>
+      <div class="hint">拖曳照片到這裡，或點擊選擇一張</div>
+    </label>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="canvas"></canvas>
+      <div class="brush-cursor" id="brushCursor"></div>
+      <div class="eyedrop-cursor" id="eyedropCursor">
+        <div class="ring"></div>
+        <div class="crosshair-h"></div>
+        <div class="crosshair-v"></div>
+        <div class="swatch" id="eyedropSwatch"></div>
+        <div class="hex-label" id="eyedropHex">#000000</div>
+      </div>
+      <div class="canvas-overlay">
+        <button class="overlay-btn" id="btnBefore">按住看原圖</button>
+        <button class="overlay-btn" id="btnFit">符合視窗</button>
+      </div>
+    </div>
+
+    <div class="status-strip" id="statusStrip"></div>
+
+    <div class="processing-overlay" id="processingOverlay">
+      <div class="processing-content">
+        <div class="title" id="procTitle">Processing</div>
+        <div class="sub" id="procSub">請稍候</div>
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="panel" id="panel">
+
+    <!-- 01 · PRESETS -->
+    <div class="section" data-section="presets">
+      <div class="section-header">
+        <div class="section-title"><span class="num">01</span>一鍵風格</div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="preset-row">
+          <button class="preset-chip" data-preset="studio">型錄</button>
+          <button class="preset-chip" data-preset="moody">暗調</button>
+          <button class="preset-chip" data-preset="natural">自然</button>
+          <button class="preset-chip" data-preset="warm">暖調</button>
+          <button class="preset-chip" data-preset="crisp">清透</button>
+          <button class="preset-chip" data-preset="none">原始</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 · BACKGROUND -->
+    <div class="section" data-section="bg">
+      <div class="section-header">
+        <div class="section-title"><span class="num">02</span>背景</div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="toggle-row">
+          <label>啟用 AI 去背</label>
+          <div class="switch" id="bgRemoveToggle"></div>
+        </div>
+        <div class="bg-grid" id="bgGrid">
+          <div class="bg-swatch transparent active" data-bg="transparent" title="透明"></div>
+          <div class="bg-swatch white" data-bg="#ffffff" title="純白"></div>
+          <div class="bg-swatch cream" data-bg="#F5EFE6" title="奶油色"></div>
+          <div class="bg-swatch brand-deep" data-bg="#3B1A10" title="品牌深棕"></div>
+          <div class="bg-swatch brand-grad" data-bg="grad-brand" title="品牌漸層"></div>
+          <div class="bg-swatch black" data-bg="#0a0a0a" title="純黑"></div>
+          <div class="bg-swatch gray" data-bg="#808080" title="中灰"></div>
+          <div class="bg-swatch warm-gray" data-bg="#a89889" title="暖灰"></div>
+          <div class="bg-swatch charcoal" data-bg="grad-charcoal" title="炭灰漸層"></div>
+          <div class="bg-swatch custom" data-bg="custom" title="自訂"></div>
+        </div>
+        <div class="custom-color-row" id="customColorRow">
+          <input type="color" id="customColorPicker" value="#3B1A10">
+          <input type="text" id="customColorHex" value="#3B1A10" maxlength="7">
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 · LIGHT -->
+    <div class="section" data-section="light">
+      <div class="section-header">
+        <div class="section-title"><span class="num">03</span>光線</div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body" id="lightControls"></div>
+    </div>
+
+    <!-- 04 · COLOR -->
+    <div class="section" data-section="color">
+      <div class="section-header">
+        <div class="section-title"><span class="num">04</span>色彩</div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body" id="colorControls"></div>
+    </div>
+
+    <!-- 05 · DETAIL -->
+    <div class="section collapsed" data-section="detail">
+      <div class="section-header">
+        <div class="section-title"><span class="num">05</span>細節</div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body" id="detailControls"></div>
+    </div>
+
+    <!-- 06 · BRUSH -->
+    <div class="section collapsed" data-section="brush">
+      <div class="section-header">
+        <div class="section-title"><span class="num">06</span>塗色工具</div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="brush-mode-tabs" id="brushModeTabs">
+          <button data-mode="off" class="active">
+            <span class="mode-label">關閉</span>
+            <span class="mode-hint">不使用筆刷</span>
+          </button>
+          <button data-mode="mask">
+            <span class="mode-label">遮罩</span>
+            <span class="mode-hint">修復去背邊緣</span>
+          </button>
+          <button data-mode="local">
+            <span class="mode-label">局部</span>
+            <span class="mode-hint">局部調整</span>
+          </button>
+          <button data-mode="paint">
+            <span class="mode-label">繪畫</span>
+            <span class="mode-hint">直接上色</span>
+          </button>
+        </div>
+
+        <div class="brush-tools-row">
+          <button class="tool-btn active" id="btnPaintMode" data-op="paint">✎ 塗抹</button>
+          <button class="tool-btn" id="btnEraseMode" data-op="erase">⌫ 橡皮擦</button>
+        </div>
+        <div class="brush-tools-row">
+          <button class="tool-btn" id="btnUndo" disabled>⎌ 復原</button>
+          <button class="tool-btn" id="btnClearBrush">✕ 清除筆刷</button>
+        </div>
+
+        <div id="brushSliders"></div>
+
+        <!-- 遮罩模式：顯示視覺化開關 -->
+        <div class="mask-overlay-toggle" id="maskOverlayRow" style="display:none;">
+          <input type="checkbox" id="showMaskOverlay">
+          <label for="showMaskOverlay">顯示遮罩紅色覆蓋</label>
+        </div>
+
+        <!-- 繪畫模式：顏色選擇 -->
+        <div class="paint-color-row" id="paintColorRow" style="display:none;">
+          <input type="color" id="paintColor" value="#B5733A">
+          <button class="eyedropper-btn" id="btnEyedropper" title="滴管 (按住 Alt 暫時切換)">◎</button>
+          <div class="quick-colors" id="quickColors">
+            <button data-color="#3B1A10" style="background:#3B1A10" title="品牌深棕"></button>
+            <button data-color="#B5733A" style="background:#B5733A" title="品牌銅色"></button>
+            <button data-color="#F5EFE6" style="background:#F5EFE6" title="奶油色"></button>
+            <button data-color="#ffffff" style="background:#ffffff" title="白"></button>
+            <button data-color="#000000" style="background:#000000" title="黑"></button>
+          </div>
+        </div>
+
+        <!-- 局部調整模式：調整面板 -->
+        <div class="local-adj-panel" id="localAdjPanel">
+          <div class="local-adj-title">這個區域的調整</div>
+          <div id="localAdjSliders"></div>
+        </div>
+
+        <div class="mask-status" id="maskStatus">選擇模式開始使用</div>
+      </div>
+    </div>
+
+    <!-- 07 · FRAME -->
+    <div class="section collapsed" data-section="frame">
+      <div class="section-header">
+        <div class="section-title"><span class="num">07</span>構圖</div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="slider-row">
+          <div class="slider-head">
+            <span class="slider-label">裁切比例</span>
+          </div>
+          <div class="segmented" id="cropRatio">
+            <button class="active" data-ratio="original">原始</button>
+            <button data-ratio="1:1">1:1</button>
+            <button data-ratio="4:5">4:5</button>
+            <button data-ratio="3:4">3:4</button>
+          </div>
+        </div>
+        <div id="frameControls"></div>
+      </div>
+    </div>
+
+    <!-- 08 · BRAND -->
+    <div class="section collapsed" data-section="brand">
+      <div class="section-header">
+        <div class="section-title"><span class="num">08</span>浮水印</div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="toggle-row">
+          <label>顯示浮水印</label>
+          <div class="switch" id="watermarkToggle"></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-head">
+            <span class="slider-label">位置</span>
+          </div>
+          <div class="segmented" id="watermarkPos">
+            <button data-pos="tl">左上</button>
+            <button data-pos="tr">右上</button>
+            <button data-pos="bl">左下</button>
+            <button class="active" data-pos="br">右下</button>
+          </div>
+        </div>
+        <div id="brandControls"></div>
+      </div>
+    </div>
+
+    <button class="reset-btn" id="fullResetBtn" style="margin:1rem 1.25rem;">重置所有調整</button>
+  </aside>
+</div>
+
+<script type="module">
+  import { removeBackground } from 'https://esm.sh/@imgly/background-removal@1.4.5';
+
+  // ============ STATE ============
+  const state = {
+    originalImg: null,      // HTMLImageElement of original upload
+    originalBitmap: null,   // ImageBitmap for fast draw
+    transparentBitmap: null, // ImageBitmap after bg removal (may be null)
+    fileName: '',
+    bgRemoved: false,
+    bgChoice: 'transparent',
+    customColor: '#3B1A10',
+    adjustments: defaultAdjustments(),
+    cropRatio: 'original',
+    watermark: { on: false, pos: 'br', size: 30, opacity: 70 },
+    showingOriginal: false,
+
+    // BRUSH SYSTEM
+    brushMode: 'off',          // 'off' | 'mask' | 'local' | 'paint'
+    brushOp: 'paint',          // 'paint' | 'erase'
+    brush: {
+      size: 50,
+      hardness: 60,
+      opacity: 80,
+      paintColor: '#B5733A',
+    },
+    // maskCanvas: black/white canvas for bg removal mask repair (white=visible, black=hidden)
+    // Only created when image loaded, starts as copy of transparent bitmap alpha
+    maskCanvas: null,
+    // localMaskCanvas: grayscale mask for local adjustments (white=apply, black=none)
+    localMaskCanvas: null,
+    localAdj: { exposure: 0, contrast: 0, saturation: 0, temp: 0 },
+    // paintCanvas: transparent canvas where user paints colors
+    paintCanvas: null,
+    // History stacks for undo (per layer)
+    history: { mask: [], local: [], paint: [] },
+    showMaskOverlay: false,
+    isDrawing: false,
+    lastDrawPoint: null,
+    // EYEDROPPER
+    eyedropActive: false,     // button-toggled (sticky)
+    eyedropTemporary: false,  // Alt-key held (temporary)
+  };
+
+  function defaultAdjustments() {
+    return {
+      exposure: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0,
+      contrast: 0, clarity: 0,
+      temp: 0, tint: 0, vibrance: 0, saturation: 0,
+      sharpness: 0, noise: 0,
+      padding: 0,
+    };
+  }
+
+  // ============ SLIDER DEFINITIONS ============
+  const sliderDefs = {
+    light: [
+      { key: 'exposure', label: '曝光', min: -100, max: 100 },
+      { key: 'contrast', label: '對比', min: -100, max: 100 },
+      { key: 'highlights', label: '亮部', min: -100, max: 100 },
+      { key: 'shadows', label: '陰影', min: -100, max: 100 },
+      { key: 'whites', label: '白色', min: -100, max: 100 },
+      { key: 'blacks', label: '黑色', min: -100, max: 100 },
+      { key: 'clarity', label: '清晰度', min: -100, max: 100 },
+    ],
+    color: [
+      { key: 'temp', label: '色溫', min: -100, max: 100 },
+      { key: 'tint', label: '色調', min: -100, max: 100 },
+      { key: 'vibrance', label: '自然飽和度', min: -100, max: 100 },
+      { key: 'saturation', label: '飽和度', min: -100, max: 100 },
+    ],
+    detail: [
+      { key: 'sharpness', label: '銳利化', min: 0, max: 100 },
+      { key: 'noise', label: '降噪', min: 0, max: 100 },
+    ],
+    frame: [
+      { key: 'padding', label: '邊框留白 %', min: 0, max: 30 },
+    ],
+    brand: [
+      { key: 'size', label: '浮水印大小', min: 10, max: 80, target: 'watermark' },
+      { key: 'opacity', label: '浮水印透明度', min: 10, max: 100, target: 'watermark' },
+    ],
+  };
+
+  // ============ PRESETS ============
+  const presets = {
+    studio: { exposure: 10, contrast: 15, highlights: -20, shadows: 25, whites: 10, blacks: -5, clarity: 15, temp: 0, tint: 0, vibrance: 10, saturation: 0, sharpness: 25, noise: 10, padding: 0 },
+    moody: { exposure: -10, contrast: 25, highlights: -40, shadows: -15, whites: -10, blacks: -25, clarity: 20, temp: -10, tint: 5, vibrance: -5, saturation: -10, sharpness: 15, noise: 0, padding: 0 },
+    natural: { exposure: 5, contrast: 8, highlights: -10, shadows: 15, whites: 5, blacks: 0, clarity: 5, temp: 5, tint: 0, vibrance: 8, saturation: 0, sharpness: 15, noise: 5, padding: 0 },
+    warm: { exposure: 8, contrast: 10, highlights: -15, shadows: 20, whites: 8, blacks: -5, clarity: 10, temp: 20, tint: 5, vibrance: 12, saturation: 5, sharpness: 20, noise: 5, padding: 0 },
+    crisp: { exposure: 15, contrast: 20, highlights: -25, shadows: 20, whites: 15, blacks: -10, clarity: 25, temp: -5, tint: 0, vibrance: 15, saturation: 5, sharpness: 35, noise: 15, padding: 0 },
+    none: defaultAdjustments(),
+  };
+
+  // ============ DOM REFS ============
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const emptyState = document.getElementById('emptyState');
+  const canvasWrapper = document.getElementById('canvasWrapper');
+  const fileInput = document.getElementById('fileInput');
+  const fileInfo = document.getElementById('fileInfo');
+  const btnOpen = document.getElementById('btnOpen');
+  const btnReset = document.getElementById('btnReset');
+  const btnExport = document.getElementById('btnExport');
+  const btnBefore = document.getElementById('btnBefore');
+  const btnFit = document.getElementById('btnFit');
+  const statusStrip = document.getElementById('statusStrip');
+  const processingOverlay = document.getElementById('processingOverlay');
+  const procTitle = document.getElementById('procTitle');
+  const procSub = document.getElementById('procSub');
+  const bgRemoveToggle = document.getElementById('bgRemoveToggle');
+  const watermarkToggle = document.getElementById('watermarkToggle');
+  const customColorRow = document.getElementById('customColorRow');
+  const customColorPicker = document.getElementById('customColorPicker');
+  const customColorHex = document.getElementById('customColorHex');
+
+  // ============ BUILD SLIDERS ============
+  function buildSliders(containerId, defs) {
+    const container = document.getElementById(containerId);
+    defs.forEach(def => {
+      const row = document.createElement('div');
+      row.className = 'slider-row';
+      const target = def.target || 'adjustments';
+      const value = target === 'watermark' ? state.watermark[def.key] : state.adjustments[def.key];
+      row.innerHTML = `
+        <div class="slider-head">
+          <span class="slider-label">${def.label}</span>
+          <span class="slider-value" data-target="${target}" data-key="${def.key}">${value}</span>
+        </div>
+        <input type="range" class="slider-input" min="${def.min}" max="${def.max}" value="${value}"
+          data-target="${target}" data-key="${def.key}">
+      `;
+      container.appendChild(row);
+      const input = row.querySelector('input');
+      const valEl = row.querySelector('.slider-value');
+      input.addEventListener('input', (e) => {
+        const v = parseInt(e.target.value);
+        if (target === 'watermark') state.watermark[def.key] = v;
+        else state.adjustments[def.key] = v;
+        valEl.textContent = v;
+        scheduleRender();
+      });
+      valEl.addEventListener('click', () => {
+        input.value = 0;
+        input.dispatchEvent(new Event('input'));
+      });
+    });
+  }
+
+  buildSliders('lightControls', sliderDefs.light);
+  buildSliders('colorControls', sliderDefs.color);
+  buildSliders('detailControls', sliderDefs.detail);
+  buildSliders('frameControls', sliderDefs.frame);
+  buildSliders('brandControls', sliderDefs.brand);
+
+  // ============ SECTION COLLAPSE ============
+  document.querySelectorAll('.section-header').forEach(h => {
+    h.addEventListener('click', () => {
+      h.parentElement.classList.toggle('collapsed');
+    });
+  });
+
+  // ============ FILE LOAD ============
+  emptyState.addEventListener('click', () => fileInput.click());
+  btnOpen.addEventListener('click', () => fileInput.click());
+
+  ['dragenter','dragover'].forEach(e => {
+    emptyState.addEventListener(e, ev => {
+      ev.preventDefault(); emptyState.classList.add('dragover');
+    });
+  });
+  ['dragleave','drop'].forEach(e => {
+    emptyState.addEventListener(e, ev => {
+      ev.preventDefault(); emptyState.classList.remove('dragover');
+    });
+  });
+  emptyState.addEventListener('drop', ev => {
+    const file = Array.from(ev.dataTransfer.files).find(f => f.type.startsWith('image/'));
+    if (file) loadFile(file);
+  });
+  fileInput.addEventListener('change', ev => {
+    if (ev.target.files[0]) loadFile(ev.target.files[0]);
+  });
+
+  async function loadFile(file) {
+    state.fileName = file.name;
+    fileInfo.textContent = `${file.name} · 載入中…`;
+    const img = new Image();
+    img.onload = async () => {
+      state.originalImg = img;
+      state.originalBitmap = await createImageBitmap(img);
+      state.transparentBitmap = null;
+      state.bgRemoved = false;
+      bgRemoveToggle.classList.remove('on');
+
+      // Initialize brush layers to match image dimensions
+      state.maskCanvas = createLayer(img.width, img.height, 'white'); // start fully visible
+      state.localMaskCanvas = createLayer(img.width, img.height, 'black'); // start no adjustment
+      state.paintCanvas = createLayer(img.width, img.height, 'transparent');
+      state.history = { mask: [], local: [], paint: [] };
+      updateUndoBtn();
+
+      emptyState.style.display = 'none';
+      canvasWrapper.classList.add('visible');
+      statusStrip.classList.add('visible');
+      btnReset.disabled = false;
+      btnExport.disabled = false;
+      fileInfo.textContent = `${file.name} · ${img.width}×${img.height}`;
+      statusStrip.textContent = `${img.width} × ${img.height} px`;
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+      render();
+    };
+    img.src = URL.createObjectURL(file);
+  }
+
+  // ============ BG REMOVAL ============
+  bgRemoveToggle.addEventListener('click', async () => {
+    if (!state.originalImg) return;
+    const willBeOn = !bgRemoveToggle.classList.contains('on');
+
+    if (willBeOn && !state.transparentBitmap) {
+      // Need to run removal
+      processingOverlay.classList.add('visible');
+      procTitle.textContent = 'AI 正在去背';
+      procSub.textContent = '首次使用會載入模型 (~40MB)，請耐心等候';
+      try {
+        const blob = await fetch(state.originalImg.src).then(r => r.blob());
+        const resultBlob = await removeBackground(blob, {
+          publicPath: 'https://staticimgly.com/@imgly/background-removal-data/1.4.5/dist/',
+          progress: (key, current, total) => {
+            procSub.textContent = `${key} · ${current}/${total}`;
+          }
+        });
+        const resultImg = await blobToImage(resultBlob);
+        state.transparentBitmap = await createImageBitmap(resultImg);
+        state.bgRemoved = true;
+        bgRemoveToggle.classList.add('on');
+      } catch (err) {
+        console.error(err);
+        alert('去背失敗：' + err.message);
+      } finally {
+        processingOverlay.classList.remove('visible');
+        render();
+      }
+    } else {
+      state.bgRemoved = willBeOn;
+      bgRemoveToggle.classList.toggle('on', willBeOn);
+      render();
+    }
+  });
+
+  function blobToImage(blob) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = URL.createObjectURL(blob);
+    });
+  }
+
+  // ============ BG SWATCHES ============
+  document.querySelectorAll('.bg-swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('.bg-swatch').forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+      state.bgChoice = s.dataset.bg;
+      customColorRow.classList.toggle('visible', s.dataset.bg === 'custom');
+      render();
+    });
+  });
+
+  customColorPicker.addEventListener('input', (e) => {
+    state.customColor = e.target.value;
+    customColorHex.value = e.target.value.toUpperCase();
+    if (state.bgChoice === 'custom') render();
+  });
+
+  customColorHex.addEventListener('input', (e) => {
+    let v = e.target.value.trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+      state.customColor = v;
+      customColorPicker.value = v;
+      if (state.bgChoice === 'custom') render();
+    }
+  });
+
+  // ============ PRESETS ============
+  document.querySelectorAll('.preset-chip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.preset-chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      const p = presets[c.dataset.preset];
+      Object.assign(state.adjustments, p);
+      refreshSliderValues();
+      render();
+    });
+  });
+
+  function refreshSliderValues() {
+    document.querySelectorAll('.slider-input').forEach(input => {
+      const target = input.dataset.target;
+      const key = input.dataset.key;
+      const v = target === 'watermark' ? state.watermark[key] : state.adjustments[key];
+      input.value = v;
+      const valEl = input.parentElement.querySelector('.slider-value');
+      valEl.textContent = v;
+    });
+  }
+
+  // ============ CROP RATIO ============
+  document.querySelectorAll('#cropRatio button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#cropRatio button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      state.cropRatio = b.dataset.ratio;
+      render();
+    });
+  });
+
+  // ============ WATERMARK ============
+  watermarkToggle.addEventListener('click', () => {
+    state.watermark.on = !state.watermark.on;
+    watermarkToggle.classList.toggle('on', state.watermark.on);
+    render();
+  });
+
+  document.querySelectorAll('#watermarkPos button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#watermarkPos button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      state.watermark.pos = b.dataset.pos;
+      render();
+    });
+  });
+
+  // ============ BEFORE/AFTER HOLD ============
+  let holdTimer;
+  btnBefore.addEventListener('mousedown', () => {
+    state.showingOriginal = true;
+    render();
+  });
+  btnBefore.addEventListener('mouseup', () => {
+    state.showingOriginal = false;
+    render();
+  });
+  btnBefore.addEventListener('mouseleave', () => {
+    if (state.showingOriginal) {
+      state.showingOriginal = false;
+      render();
+    }
+  });
+  // touch
+  btnBefore.addEventListener('touchstart', (e) => { e.preventDefault(); state.showingOriginal = true; render(); });
+  btnBefore.addEventListener('touchend', (e) => { e.preventDefault(); state.showingOriginal = false; render(); });
+
+  // ============ FIT ============
+  btnFit.addEventListener('click', () => {
+    // Scale reset is CSS-based, just a no-op visual confirmation
+    btnFit.classList.add('active');
+    setTimeout(() => btnFit.classList.remove('active'), 300);
+  });
+
+  // ============ RESET ============
+  btnReset.addEventListener('click', () => {
+    state.adjustments = defaultAdjustments();
+    refreshSliderValues();
+    document.querySelectorAll('.preset-chip').forEach(x => x.classList.remove('active'));
+    document.querySelector('[data-preset="none"]').classList.add('active');
+    render();
+  });
+
+  document.getElementById('fullResetBtn').addEventListener('click', () => {
+    state.adjustments = defaultAdjustments();
+    state.watermark = { on: false, pos: 'br', size: 30, opacity: 70 };
+    state.cropRatio = 'original';
+    state.bgChoice = 'transparent';
+    state.bgRemoved = false;
+    bgRemoveToggle.classList.remove('on');
+    watermarkToggle.classList.remove('on');
+    refreshSliderValues();
+    document.querySelectorAll('.bg-swatch').forEach(x => x.classList.remove('active'));
+    document.querySelector('.bg-swatch.transparent').classList.add('active');
+    document.querySelectorAll('#cropRatio button').forEach(x => x.classList.remove('active'));
+    document.querySelector('#cropRatio [data-ratio="original"]').classList.add('active');
+    document.querySelectorAll('#watermarkPos button').forEach(x => x.classList.remove('active'));
+    document.querySelector('#watermarkPos [data-pos="br"]').classList.add('active');
+    document.querySelectorAll('.preset-chip').forEach(x => x.classList.remove('active'));
+    render();
+  });
+
+  // ============ EXPORT ============
+  btnExport.addEventListener('click', async () => {
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const base = state.fileName.replace(/\.[^.]+$/, '');
+    a.download = `${base}_edited.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  // ============ BRUSH SYSTEM ============
+  const brushCursor = document.getElementById('brushCursor');
+  const brushModeTabs = document.getElementById('brushModeTabs');
+  const btnPaintMode = document.getElementById('btnPaintMode');
+  const btnEraseMode = document.getElementById('btnEraseMode');
+  const btnUndo = document.getElementById('btnUndo');
+  const btnClearBrush = document.getElementById('btnClearBrush');
+  const maskStatus = document.getElementById('maskStatus');
+  const paintColorRow = document.getElementById('paintColorRow');
+  const localAdjPanel = document.getElementById('localAdjPanel');
+  const maskOverlayRow = document.getElementById('maskOverlayRow');
+  const showMaskOverlay = document.getElementById('showMaskOverlay');
+  const paintColorInput = document.getElementById('paintColor');
+  const quickColors = document.getElementById('quickColors');
+
+  // Build brush sliders
+  const brushSlidersContainer = document.getElementById('brushSliders');
+  const brushSliderDefs = [
+    { key: 'size', label: '筆刷大小', min: 5, max: 300 },
+    { key: 'hardness', label: '硬度', min: 0, max: 100 },
+    { key: 'opacity', label: '不透明度', min: 10, max: 100 },
+  ];
+  brushSliderDefs.forEach(def => {
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    row.innerHTML = `
+      <div class="slider-head">
+        <span class="slider-label">${def.label}</span>
+        <span class="slider-value">${state.brush[def.key]}</span>
+      </div>
+      <input type="range" class="slider-input" min="${def.min}" max="${def.max}" value="${state.brush[def.key]}">
+    `;
+    brushSlidersContainer.appendChild(row);
+    const input = row.querySelector('input');
+    const valEl = row.querySelector('.slider-value');
+    input.addEventListener('input', (e) => {
+      state.brush[def.key] = parseInt(e.target.value);
+      valEl.textContent = e.target.value;
+    });
+  });
+
+  // Build local adjustment mini sliders
+  const localAdjSliders = document.getElementById('localAdjSliders');
+  const localAdjDefs = [
+    { key: 'exposure', label: '曝光' },
+    { key: 'contrast', label: '對比' },
+    { key: 'saturation', label: '飽和度' },
+    { key: 'temp', label: '色溫' },
+  ];
+  localAdjDefs.forEach(def => {
+    const row = document.createElement('div');
+    row.className = 'mini-slider';
+    row.innerHTML = `
+      <div class="head"><span class="lbl">${def.label}</span><span class="val">0</span></div>
+      <input type="range" class="slider-input" min="-100" max="100" value="0">
+    `;
+    localAdjSliders.appendChild(row);
+    const input = row.querySelector('input');
+    const valEl = row.querySelector('.val');
+    input.addEventListener('input', (e) => {
+      state.localAdj[def.key] = parseInt(e.target.value);
+      valEl.textContent = e.target.value;
+      scheduleRender();
+    });
+  });
+
+  // Create layer canvas helpers
+  function createLayer(w, h, initial) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const cx = c.getContext('2d', { willReadFrequently: true });
+    if (initial === 'white') {
+      cx.fillStyle = '#ffffff';
+      cx.fillRect(0, 0, w, h);
+    } else if (initial === 'black') {
+      cx.fillStyle = '#000000';
+      cx.fillRect(0, 0, w, h);
+    } else {
+      // transparent: nothing to do
+      cx.clearRect(0, 0, w, h);
+    }
+    return c;
+  }
+
+  // Push to history (limit to 20 entries)
+  function pushHistory(layer) {
+    if (!state.history[layer]) state.history[layer] = [];
+    const src = layer === 'mask' ? state.maskCanvas
+              : layer === 'local' ? state.localMaskCanvas
+              : state.paintCanvas;
+    if (!src) return;
+    const snapshot = document.createElement('canvas');
+    snapshot.width = src.width;
+    snapshot.height = src.height;
+    snapshot.getContext('2d').drawImage(src, 0, 0);
+    state.history[layer].push(snapshot);
+    if (state.history[layer].length > 20) state.history[layer].shift();
+    updateUndoBtn();
+  }
+
+  function undoLayer(layer) {
+    const stack = state.history[layer];
+    if (!stack || stack.length === 0) return;
+    const prev = stack.pop();
+    const target = layer === 'mask' ? state.maskCanvas
+                 : layer === 'local' ? state.localMaskCanvas
+                 : state.paintCanvas;
+    const cx = target.getContext('2d');
+    cx.clearRect(0, 0, target.width, target.height);
+    cx.drawImage(prev, 0, 0);
+    updateUndoBtn();
+    render();
+  }
+
+  function updateUndoBtn() {
+    const mode = state.brushMode;
+    if (mode === 'off' || !state.history[mode]) {
+      btnUndo.disabled = true;
+      return;
+    }
+    btnUndo.disabled = state.history[mode].length === 0;
+  }
+
+  // Brush mode switching
+  brushModeTabs.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      brushModeTabs.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      state.brushMode = b.dataset.mode;
+
+      // UI visibility
+      paintColorRow.style.display = state.brushMode === 'paint' ? 'flex' : 'none';
+      localAdjPanel.classList.toggle('visible', state.brushMode === 'local');
+      maskOverlayRow.style.display = state.brushMode === 'mask' ? 'flex' : 'none';
+
+      canvasWrapper.classList.toggle('brush-active', state.brushMode !== 'off');
+      brushCursor.classList.toggle('visible', false);
+
+      // Status
+      const statuses = {
+        off: '選擇模式開始使用',
+        mask: '塗抹=顯示, 橡皮擦=隱藏 · 建議先啟用 AI 去背',
+        local: '塗出區域後，上方滑桿只作用於該區',
+        paint: '在照片上直接塗色',
+      };
+      maskStatus.textContent = statuses[state.brushMode];
+
+      updateUndoBtn();
+      render();
+    });
+  });
+
+  // Paint/Erase toggle
+  btnPaintMode.addEventListener('click', () => {
+    state.brushOp = 'paint';
+    btnPaintMode.classList.add('active');
+    btnEraseMode.classList.remove('active');
+    brushCursor.classList.remove('erase');
+  });
+  btnEraseMode.addEventListener('click', () => {
+    state.brushOp = 'erase';
+    btnEraseMode.classList.add('active');
+    btnPaintMode.classList.remove('active');
+    brushCursor.classList.add('erase');
+  });
+
+  // Undo
+  btnUndo.addEventListener('click', () => {
+    if (state.brushMode !== 'off') undoLayer(state.brushMode);
+  });
+
+  // Clear current brush layer
+  btnClearBrush.addEventListener('click', () => {
+    if (state.brushMode === 'off' || !state.originalBitmap) return;
+    pushHistory(state.brushMode);
+    let target, initial;
+    if (state.brushMode === 'mask') { target = state.maskCanvas; initial = 'white'; }
+    else if (state.brushMode === 'local') { target = state.localMaskCanvas; initial = 'black'; }
+    else { target = state.paintCanvas; initial = 'transparent'; }
+    const cx = target.getContext('2d');
+    cx.clearRect(0, 0, target.width, target.height);
+    if (initial === 'white') { cx.fillStyle = '#fff'; cx.fillRect(0,0,target.width,target.height); }
+    else if (initial === 'black') { cx.fillStyle = '#000'; cx.fillRect(0,0,target.width,target.height); }
+    render();
+  });
+
+  // Mask overlay toggle
+  showMaskOverlay.addEventListener('change', (e) => {
+    state.showMaskOverlay = e.target.checked;
+    render();
+  });
+
+  // Paint color
+  paintColorInput.addEventListener('input', (e) => {
+    state.brush.paintColor = e.target.value;
+  });
+  quickColors.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      state.brush.paintColor = b.dataset.color;
+      paintColorInput.value = b.dataset.color;
+    });
+  });
+
+  // ============ EYEDROPPER ============
+  const btnEyedropper = document.getElementById('btnEyedropper');
+  const eyedropCursor = document.getElementById('eyedropCursor');
+  const eyedropSwatch = document.getElementById('eyedropSwatch');
+  const eyedropHex = document.getElementById('eyedropHex');
+
+  function isEyedropperActive() {
+    return state.eyedropActive || state.eyedropTemporary;
+  }
+
+  function updateEyedropperUI() {
+    const active = isEyedropperActive();
+    canvasWrapper.classList.toggle('eyedrop-active', active);
+    btnEyedropper.classList.toggle('active', state.eyedropActive);
+    if (!active) {
+      eyedropCursor.classList.remove('visible');
+      brushCursor.classList.remove('visible');
+    }
+  }
+
+  btnEyedropper.addEventListener('click', () => {
+    state.eyedropActive = !state.eyedropActive;
+    updateEyedropperUI();
+    maskStatus.textContent = state.eyedropActive
+      ? '點擊照片任一處以取色'
+      : '在照片上直接塗色';
+  });
+
+  function sampleColorAt(pt) {
+    // Clamp to canvas bounds
+    const x = Math.max(0, Math.min(canvas.width - 1, Math.floor(pt.x)));
+    const y = Math.max(0, Math.min(canvas.height - 1, Math.floor(pt.y)));
+    try {
+      const data = ctx.getImageData(x, y, 1, 1).data;
+      // If pixel is fully transparent, return null
+      if (data[3] === 0) return null;
+      const hex = '#' + [data[0], data[1], data[2]]
+        .map(v => v.toString(16).padStart(2, '0'))
+        .join('').toUpperCase();
+      return { hex, r: data[0], g: data[1], b: data[2] };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function updateEyedropCursor(e) {
+    if (!isEyedropperActive() || !state.originalBitmap) return;
+    const coords = getCanvasCoords(e);
+    eyedropCursor.classList.add('visible');
+    eyedropCursor.style.left = coords.rectX + 'px';
+    eyedropCursor.style.top = coords.rectY + 'px';
+
+    const color = sampleColorAt(coords);
+    if (color) {
+      eyedropSwatch.style.background = color.hex;
+      eyedropHex.textContent = color.hex;
+    } else {
+      eyedropSwatch.style.background = 'transparent';
+      eyedropHex.textContent = '透明';
+    }
+  }
+
+  function applyEyedrop(e) {
+    const coords = getCanvasCoords(e);
+    const color = sampleColorAt(coords);
+    if (!color) return;
+    state.brush.paintColor = color.hex;
+    paintColorInput.value = color.hex;
+    // Flash the color input to give feedback
+    paintColorInput.style.transition = 'transform 0.2s';
+    paintColorInput.style.transform = 'scale(1.2)';
+    setTimeout(() => { paintColorInput.style.transform = 'scale(1)'; }, 200);
+    // Auto-exit eyedropper after pick (if it was button-toggled)
+    if (state.eyedropActive) {
+      state.eyedropActive = false;
+      updateEyedropperUI();
+      maskStatus.textContent = `已取色 ${color.hex}`;
+    }
+  }
+
+  // Alt key = temporary eyedropper (only in paint mode)
+  window.addEventListener('keydown', (e) => {
+    if ((e.key === 'Alt' || e.altKey) && state.brushMode === 'paint' && !state.eyedropTemporary) {
+      state.eyedropTemporary = true;
+      updateEyedropperUI();
+      e.preventDefault();
+    }
+    if ((e.key === 'i' || e.key === 'I') && state.brushMode === 'paint') {
+      btnEyedropper.click();
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'Alt' && state.eyedropTemporary) {
+      state.eyedropTemporary = false;
+      updateEyedropperUI();
+    }
+  });
+  // Safety: release temporary on blur
+  window.addEventListener('blur', () => {
+    if (state.eyedropTemporary) {
+      state.eyedropTemporary = false;
+      updateEyedropperUI();
+    }
+  });
+
+  // Canvas brush interaction
+  // Convert mouse event to canvas pixel coordinates
+  function getCanvasCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+      rectX: clientX - rect.left,
+      rectY: clientY - rect.top,
+      scale: rect.width / canvas.width,
+    };
+  }
+
+  function updateBrushCursor(e) {
+    if (state.brushMode === 'off' || !state.originalBitmap) {
+      brushCursor.classList.remove('visible');
+      return;
+    }
+    const coords = getCanvasCoords(e);
+    brushCursor.classList.add('visible');
+    brushCursor.style.left = coords.rectX + 'px';
+    brushCursor.style.top = coords.rectY + 'px';
+    const visualSize = state.brush.size * coords.scale;
+    brushCursor.style.width = visualSize + 'px';
+    brushCursor.style.height = visualSize + 'px';
+  }
+
+  function drawStroke(fromPt, toPt) {
+    const mode = state.brushMode;
+    if (mode === 'off') return;
+
+    let target, op;
+    if (mode === 'mask') {
+      target = state.maskCanvas;
+      // paint = add white (show), erase = add black (hide)
+      op = state.brushOp === 'paint' ? 'white' : 'black';
+    } else if (mode === 'local') {
+      target = state.localMaskCanvas;
+      // paint = white, erase = black
+      op = state.brushOp === 'paint' ? 'white' : 'black';
+    } else {
+      target = state.paintCanvas;
+      op = state.brushOp === 'paint' ? state.brush.paintColor : 'erase';
+    }
+
+    const cx = target.getContext('2d');
+    cx.save();
+
+    const size = state.brush.size;
+    const hardness = state.brush.hardness / 100;
+    const opacity = state.brush.opacity / 100;
+
+    // Draw along the line from fromPt to toPt
+    const dist = Math.hypot(toPt.x - fromPt.x, toPt.y - fromPt.y);
+    const step = Math.max(1, size / 8);
+    const steps = Math.max(1, Math.ceil(dist / step));
+
+    cx.globalAlpha = opacity;
+
+    if (op === 'erase' && mode === 'paint') {
+      cx.globalCompositeOperation = 'destination-out';
+      cx.fillStyle = '#000';
+    } else {
+      cx.globalCompositeOperation = 'source-over';
+      if (op === 'white') cx.fillStyle = '#ffffff';
+      else if (op === 'black') cx.fillStyle = '#000000';
+      else cx.fillStyle = op; // a hex color for paint mode
+    }
+
+    for (let i = 0; i <= steps; i++) {
+      const t = steps === 0 ? 0 : i / steps;
+      const px = fromPt.x + (toPt.x - fromPt.x) * t;
+      const py = fromPt.y + (toPt.y - fromPt.y) * t;
+
+      // Radial gradient for soft brush
+      const r = size / 2;
+      const innerR = r * hardness;
+      if (hardness >= 0.99) {
+        cx.beginPath();
+        cx.arc(px, py, r, 0, Math.PI * 2);
+        cx.fill();
+      } else {
+        const grad = cx.createRadialGradient(px, py, innerR, px, py, r);
+        const col = (op === 'erase' && mode === 'paint') ? '#000' :
+                    op === 'white' ? '255,255,255' :
+                    op === 'black' ? '0,0,0' :
+                    hexToRgbStr(op);
+        if (op === 'erase' && mode === 'paint') {
+          grad.addColorStop(0, 'rgba(0,0,0,1)');
+          grad.addColorStop(1, 'rgba(0,0,0,0)');
+        } else {
+          grad.addColorStop(0, `rgba(${col},1)`);
+          grad.addColorStop(1, `rgba(${col},0)`);
+        }
+        cx.fillStyle = grad;
+        cx.beginPath();
+        cx.arc(px, py, r, 0, Math.PI * 2);
+        cx.fill();
+      }
+    }
+
+    cx.restore();
+  }
+
+  function hexToRgbStr(hex) {
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    return `${r},${g},${b}`;
+  }
+
+  // Mouse / touch listeners on canvas
+  canvas.addEventListener('mousemove', (e) => {
+    if (isEyedropperActive()) {
+      updateEyedropCursor(e);
+      brushCursor.classList.remove('visible');
+      return;
+    }
+    updateBrushCursor(e);
+    if (state.isDrawing && state.brushMode !== 'off') {
+      const pt = getCanvasCoords(e);
+      if (state.lastDrawPoint) {
+        drawStroke(state.lastDrawPoint, pt);
+      }
+      state.lastDrawPoint = pt;
+      scheduleRender();
+    }
+  });
+
+  canvas.addEventListener('mousedown', (e) => {
+    if (!state.originalBitmap) return;
+    if (isEyedropperActive()) {
+      e.preventDefault();
+      applyEyedrop(e);
+      return;
+    }
+    if (state.brushMode === 'off') return;
+    e.preventDefault();
+    pushHistory(state.brushMode);
+    state.isDrawing = true;
+    const pt = getCanvasCoords(e);
+    state.lastDrawPoint = pt;
+    drawStroke(pt, pt);
+    scheduleRender();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (state.isDrawing) {
+      state.isDrawing = false;
+      state.lastDrawPoint = null;
+      render();
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    brushCursor.classList.remove('visible');
+    eyedropCursor.classList.remove('visible');
+  });
+
+  // Touch support
+  canvas.addEventListener('touchstart', (e) => {
+    if (!state.originalBitmap) return;
+    if (isEyedropperActive()) {
+      e.preventDefault();
+      applyEyedrop(e);
+      return;
+    }
+    if (state.brushMode === 'off') return;
+    e.preventDefault();
+    pushHistory(state.brushMode);
+    state.isDrawing = true;
+    const pt = getCanvasCoords(e);
+    state.lastDrawPoint = pt;
+    drawStroke(pt, pt);
+    updateBrushCursor(e);
+    scheduleRender();
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (isEyedropperActive()) {
+      e.preventDefault();
+      updateEyedropCursor(e);
+      return;
+    }
+    if (!state.isDrawing) return;
+    e.preventDefault();
+    updateBrushCursor(e);
+    const pt = getCanvasCoords(e);
+    if (state.lastDrawPoint) drawStroke(state.lastDrawPoint, pt);
+    state.lastDrawPoint = pt;
+    scheduleRender();
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => {
+    if (state.isDrawing) {
+      state.isDrawing = false;
+      state.lastDrawPoint = null;
+      render();
+    }
+  });
+
+  // Keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      e.preventDefault();
+      if (state.brushMode !== 'off') undoLayer(state.brushMode);
+    }
+    // [ ] to resize brush
+    if (e.key === '[' || e.key === ']') {
+      if (state.brushMode === 'off') return;
+      const delta = e.key === '[' ? -10 : 10;
+      state.brush.size = Math.max(5, Math.min(300, state.brush.size + delta));
+      const sizeInput = brushSlidersContainer.querySelector('input');
+      sizeInput.value = state.brush.size;
+      sizeInput.parentElement.querySelector('.slider-value').textContent = state.brush.size;
+    }
+    // E / B to switch erase/paint
+    if (e.key === 'e' || e.key === 'E') btnEraseMode.click();
+    if (e.key === 'b' || e.key === 'B') btnPaintMode.click();
+  });
+
+  // ============ RENDER PIPELINE ============
+  let renderScheduled = false;
+  function scheduleRender() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(() => {
+      renderScheduled = false;
+      render();
+    });
+  }
+
+  function render() {
+    if (!state.originalBitmap) return;
+
+    const src = state.originalBitmap;
+    let srcW = src.width;
+    let srcH = src.height;
+
+    // If showing original, just draw original
+    if (state.showingOriginal) {
+      canvas.width = srcW;
+      canvas.height = srcH;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(src, 0, 0);
+      return;
+    }
+
+    // Determine output dimensions (for crop)
+    let outW = srcW, outH = srcH;
+    if (state.cropRatio !== 'original') {
+      const [rW, rH] = state.cropRatio.split(':').map(Number);
+      const targetAspect = rW / rH;
+      const srcAspect = srcW / srcH;
+      if (srcAspect > targetAspect) {
+        outW = Math.floor(srcH * targetAspect);
+        outH = srcH;
+      } else {
+        outW = srcW;
+        outH = Math.floor(srcW / targetAspect);
+      }
+    }
+
+    // Apply padding
+    const padPct = state.adjustments.padding / 100;
+    const padX = Math.floor(outW * padPct);
+    const padY = Math.floor(outH * padPct);
+    const finalW = outW + padX * 2;
+    const finalH = outH + padY * 2;
+
+    canvas.width = finalW;
+    canvas.height = finalH;
+
+    // Paint background
+    paintBackground(finalW, finalH);
+
+    const cropX = Math.max(0, Math.floor((srcW - outW) / 2));
+    const cropY = Math.max(0, Math.floor((srcH - outH) / 2));
+    const cropW = Math.min(srcW, outW);
+    const cropH = Math.min(srcH, outH);
+
+    // ============ BUILD SUBJECT LAYER (with mask repair) ============
+    // This composite will hold the image with any bg-removal + mask repair applied
+    const subjectCanvas = document.createElement('canvas');
+    subjectCanvas.width = srcW;
+    subjectCanvas.height = srcH;
+    const subCtx = subjectCanvas.getContext('2d');
+
+    if (state.bgRemoved && state.transparentBitmap) {
+      // Start with transparent bitmap
+      subCtx.drawImage(state.transparentBitmap, 0, 0);
+
+      // Apply mask repair: use maskCanvas as alpha modifier
+      // White pixel in mask = keep visible (original alpha), black = force hidden
+      // But we also want to reveal pixels that AI hid — we need the original image for those
+      if (hasMaskEdits()) {
+        applyMaskRepair(subCtx, srcW, srcH);
+      }
+    } else {
+      subCtx.drawImage(state.originalBitmap, 0, 0);
+    }
+
+    // Draw subject layer onto main canvas (with crop)
+    ctx.drawImage(subjectCanvas, cropX, cropY, cropW, cropH, padX, padY, cropW, cropH);
+
+    // Apply global adjustments
+    applyAdjustments();
+
+    // Apply LOCAL adjustments (masked)
+    if (hasLocalAdjustments()) {
+      applyLocalAdjustments(padX, padY, cropX, cropY, cropW, cropH, srcW, srcH);
+    }
+
+    // Draw paint layer on top
+    if (state.paintCanvas && hasPaintContent()) {
+      ctx.drawImage(state.paintCanvas, cropX, cropY, cropW, cropH, padX, padY, cropW, cropH);
+    }
+
+    // Mask overlay visualization (red where hidden)
+    if (state.showMaskOverlay && state.brushMode === 'mask') {
+      drawMaskOverlay(padX, padY, cropX, cropY, cropW, cropH);
+    }
+
+    // Watermark
+    if (state.watermark.on) drawWatermark();
+  }
+
+  function hasMaskEdits() {
+    // Quick check: we assume edits exist if history has anything, or the canvas has been drawn on
+    return state.history.mask && state.history.mask.length > 0;
+  }
+
+  function hasLocalAdjustments() {
+    const a = state.localAdj;
+    return (a.exposure || a.contrast || a.saturation || a.temp) &&
+           state.history.local && state.history.local.length > 0;
+  }
+
+  function hasPaintContent() {
+    return state.history.paint && state.history.paint.length > 0;
+  }
+
+  function applyMaskRepair(targetCtx, w, h) {
+    // Get current subject image data (has transparent alpha where bg was removed)
+    const subjData = targetCtx.getImageData(0, 0, w, h);
+    // Get mask data
+    const maskCtx = state.maskCanvas.getContext('2d');
+    const maskData = maskCtx.getImageData(0, 0, w, h);
+    // Get original image data (for pixels we need to "bring back")
+    const origCanvas = document.createElement('canvas');
+    origCanvas.width = w; origCanvas.height = h;
+    origCanvas.getContext('2d').drawImage(state.originalBitmap, 0, 0);
+    const origData = origCanvas.getContext('2d').getImageData(0, 0, w, h);
+
+    const s = subjData.data;
+    const m = maskData.data;
+    const o = origData.data;
+
+    for (let i = 0; i < s.length; i += 4) {
+      const maskVal = m[i]; // 0..255, white means show
+      const currentAlpha = s[i+3];
+
+      // If mask is pure white (default), keep as-is (AI's decision)
+      // If mask is darker than 250, start hiding
+      // If mask is near black, force hide
+      if (maskVal < 250) {
+        // User has modified this area
+        if (maskVal < 10) {
+          // Force hide
+          s[i+3] = 0;
+        } else {
+          // Partial hide (scale alpha)
+          s[i+3] = Math.min(currentAlpha, maskVal);
+        }
+      } else if (currentAlpha < 255 && maskVal > 250) {
+        // User painted white where AI had removed — bring back original
+        // Take original pixel, blend based on how white the mask is
+        const bringBackAmount = (maskVal - 250) / 5; // 250-255 maps to 0-1
+        // If this pixel was fully transparent, restore from original
+        if (currentAlpha === 0) {
+          s[i] = o[i];
+          s[i+1] = o[i+1];
+          s[i+2] = o[i+2];
+          s[i+3] = 255 * bringBackAmount;
+        }
+      }
+    }
+    targetCtx.putImageData(subjData, 0, 0);
+  }
+
+  function applyLocalAdjustments(padX, padY, cropX, cropY, cropW, cropH, srcW, srcH) {
+    const a = state.localAdj;
+    const imgData = ctx.getImageData(padX, padY, cropW, cropH);
+
+    // Get local mask data (scaled to match crop)
+    const maskCtx = state.localMaskCanvas.getContext('2d');
+    const maskData = maskCtx.getImageData(cropX, cropY, cropW, cropH);
+
+    const d = imgData.data;
+    const m = maskData.data;
+
+    const expF = Math.pow(2, a.exposure / 100);
+    const contrastF = a.contrast / 100;
+    const satF = 1 + a.saturation / 100;
+    const tempShift = a.temp * 0.5;
+
+    for (let i = 0; i < d.length; i += 4) {
+      const weight = m[i] / 255; // white mask = full apply, black = skip
+      if (weight < 0.01) continue;
+      if (d[i+3] === 0) continue;
+
+      let r = d[i], g = d[i+1], b = d[i+2];
+
+      // Apply adjustments scaled by weight
+      // Exposure
+      let nr = r * expF, ng = g * expF, nb = b * expF;
+
+      // Temp
+      nr += tempShift;
+      nb -= tempShift;
+
+      // Contrast
+      if (a.contrast !== 0) {
+        nr = ((nr - 128) * (1 + contrastF)) + 128;
+        ng = ((ng - 128) * (1 + contrastF)) + 128;
+        nb = ((nb - 128) * (1 + contrastF)) + 128;
+      }
+
+      // Saturation
+      if (a.saturation !== 0) {
+        const gray = 0.299 * nr + 0.587 * ng + 0.114 * nb;
+        nr = gray + (nr - gray) * satF;
+        ng = gray + (ng - gray) * satF;
+        nb = gray + (nb - gray) * satF;
+      }
+
+      // Blend with original based on weight
+      d[i]   = clamp255(r + (nr - r) * weight);
+      d[i+1] = clamp255(g + (ng - g) * weight);
+      d[i+2] = clamp255(b + (nb - b) * weight);
+    }
+
+    ctx.putImageData(imgData, padX, padY);
+  }
+
+  function drawMaskOverlay(padX, padY, cropX, cropY, cropW, cropH) {
+    // Draw red where mask is black (hidden areas)
+    const maskCtx = state.maskCanvas.getContext('2d');
+    const maskData = maskCtx.getImageData(cropX, cropY, cropW, cropH);
+    const overlayData = ctx.createImageData(cropW, cropH);
+    const m = maskData.data;
+    const o = overlayData.data;
+    for (let i = 0; i < m.length; i += 4) {
+      const hidden = 255 - m[i]; // black = hidden = more red
+      if (hidden > 10) {
+        o[i] = 255;
+        o[i+1] = 0;
+        o[i+2] = 0;
+        o[i+3] = hidden * 0.5;
+      }
+    }
+    // Draw onto main canvas
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = cropW;
+    tempCanvas.height = cropH;
+    tempCanvas.getContext('2d').putImageData(overlayData, 0, 0);
+    ctx.drawImage(tempCanvas, padX, padY);
+  }
+
+  function paintBackground(w, h) {
+    const bg = state.bgChoice;
+    if (bg === 'transparent') {
+      ctx.clearRect(0, 0, w, h);
+      return;
+    }
+    if (bg === 'grad-brand') {
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, '#3B1A10');
+      g.addColorStop(1, '#B5733A');
+      ctx.fillStyle = g;
+    } else if (bg === 'grad-charcoal') {
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, '#2a2a2a');
+      g.addColorStop(1, '#1a1a1a');
+      ctx.fillStyle = g;
+    } else if (bg === 'custom') {
+      ctx.fillStyle = state.customColor;
+    } else {
+      ctx.fillStyle = bg;
+    }
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  function applyAdjustments() {
+    const a = state.adjustments;
+    // Only process if any adjustment is non-zero
+    const hasAdjustments = Object.values(a).some(v => v !== 0);
+    if (!hasAdjustments) return;
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = imgData.data;
+
+    // Precalc factors
+    const exposureF = Math.pow(2, a.exposure / 100);           // -100..100 -> 0.5..2
+    const contrastF = (a.contrast + 100) / 100;                 // 0..2, but we apply differently
+    const tempShift = a.temp * 0.5;                              // -50..50 red-blue
+    const tintShift = a.tint * 0.3;                              // green-magenta
+    const satF = 1 + a.saturation / 100;                         // 0..2
+    const vibF = a.vibrance / 100;
+    const highF = a.highlights / 100;
+    const shadF = a.shadows / 100;
+    const whitesF = a.whites / 100;
+    const blacksF = a.blacks / 100;
+    const clarityF = a.clarity / 200;
+
+    for (let i = 0; i < d.length; i += 4) {
+      const alpha = d[i+3];
+      if (alpha === 0) continue; // skip transparent pixels
+
+      let r = d[i], g = d[i+1], b = d[i+2];
+
+      // Exposure
+      r *= exposureF; g *= exposureF; b *= exposureF;
+
+      // Temperature/Tint
+      r += tempShift; b -= tempShift;
+      g -= tintShift; r += tintShift * 0.3; b += tintShift * 0.3;
+
+      // Luminance for zone-based adjustments
+      let lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const lumN = Math.max(0, Math.min(255, lum)) / 255;
+
+      // Highlights/Shadows/Whites/Blacks — zone-based multipliers
+      let zoneAdj = 0;
+      // Shadows affect lower tones
+      zoneAdj += shadF * Math.max(0, 1 - lumN * 2) * 80;
+      // Highlights affect upper tones
+      zoneAdj += highF * Math.max(0, (lumN - 0.5) * 2) * 80;
+      // Blacks - very dark
+      zoneAdj += blacksF * Math.max(0, 1 - lumN * 4) * 60;
+      // Whites - very bright
+      zoneAdj += whitesF * Math.max(0, (lumN - 0.75) * 4) * 60;
+
+      r += zoneAdj; g += zoneAdj; b += zoneAdj;
+
+      // Contrast
+      if (a.contrast !== 0) {
+        const cf = a.contrast / 100;
+        r = ((r - 128) * (1 + cf)) + 128;
+        g = ((g - 128) * (1 + cf)) + 128;
+        b = ((b - 128) * (1 + cf)) + 128;
+      }
+
+      // Clarity - local contrast approximated via midtone contrast
+      if (a.clarity !== 0) {
+        const midDist = Math.abs(lumN - 0.5) * 2; // 0 at midtone, 1 at extremes
+        const midWeight = 1 - midDist; // 1 at midtone
+        r += (r - 128) * clarityF * midWeight;
+        g += (g - 128) * clarityF * midWeight;
+        b += (b - 128) * clarityF * midWeight;
+      }
+
+      // Saturation
+      if (a.saturation !== 0) {
+        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        r = gray + (r - gray) * satF;
+        g = gray + (g - gray) * satF;
+        b = gray + (b - gray) * satF;
+      }
+
+      // Vibrance - boost less-saturated colors more
+      if (a.vibrance !== 0) {
+        const mx = Math.max(r, g, b);
+        const mn = Math.min(r, g, b);
+        const curSat = (mx - mn) / 255;
+        const boost = vibF * (1 - curSat) * 0.8;
+        const gray2 = 0.299 * r + 0.587 * g + 0.114 * b;
+        r = gray2 + (r - gray2) * (1 + boost);
+        g = gray2 + (g - gray2) * (1 + boost);
+        b = gray2 + (b - gray2) * (1 + boost);
+      }
+
+      d[i]   = clamp255(r);
+      d[i+1] = clamp255(g);
+      d[i+2] = clamp255(b);
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+
+    // Apply sharpness via a simple convolution (cheap version)
+    if (a.sharpness > 0) {
+      applySharpen(a.sharpness / 100);
+    }
+  }
+
+  function clamp255(v) {
+    return v < 0 ? 0 : v > 255 ? 255 : v;
+  }
+
+  function applySharpen(strength) {
+    // Lightweight: use drawImage with filter not ideal cross-browser
+    // Instead use a tiny unsharp by shifting
+    const amount = strength * 0.6;
+    const off = document.createElement('canvas');
+    off.width = canvas.width;
+    off.height = canvas.height;
+    const offCtx = off.getContext('2d');
+    offCtx.filter = `blur(1px)`;
+    offCtx.drawImage(canvas, 0, 0);
+    // result = original + (original - blurred) * amount
+    const origData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const blurData = offCtx.getImageData(0, 0, canvas.width, canvas.height);
+    const o = origData.data, b = blurData.data;
+    for (let i = 0; i < o.length; i += 4) {
+      if (o[i+3] === 0) continue;
+      o[i]   = clamp255(o[i]   + (o[i]   - b[i])   * amount);
+      o[i+1] = clamp255(o[i+1] + (o[i+1] - b[i+1]) * amount);
+      o[i+2] = clamp255(o[i+2] + (o[i+2] - b[i+2]) * amount);
+    }
+    ctx.putImageData(origData, 0, 0);
+  }
+
+  function drawWatermark() {
+    const w = canvas.width;
+    const h = canvas.height;
+    const fontSize = Math.max(16, Math.floor(w * state.watermark.size / 1000));
+    ctx.font = `italic 600 ${fontSize}px "Playfair Display", serif`;
+    const text = 'hm.pythons';
+    const metrics = ctx.measureText(text);
+    const padding = fontSize * 0.7;
+    let x, y;
+    ctx.textBaseline = 'alphabetic';
+    switch (state.watermark.pos) {
+      case 'tl': x = padding; y = fontSize + padding * 0.5; break;
+      case 'tr': x = w - metrics.width - padding; y = fontSize + padding * 0.5; break;
+      case 'bl': x = padding; y = h - padding; break;
+      case 'br': default: x = w - metrics.width - padding; y = h - padding;
+    }
+
+    // Detect local bg darkness by sampling
+    const sample = ctx.getImageData(Math.max(0, x - 5), Math.max(0, y - fontSize), 20, 20);
+    let avg = 0;
+    for (let i = 0; i < sample.data.length; i += 4) {
+      avg += 0.299 * sample.data[i] + 0.587 * sample.data[i+1] + 0.114 * sample.data[i+2];
+    }
+    avg /= (sample.data.length / 4);
+    const isDark = avg < 128;
+
+    const opacity = state.watermark.opacity / 100;
+    ctx.fillStyle = isDark
+      ? `rgba(245, 239, 230, ${opacity})`
+      : `rgba(59, 26, 16, ${opacity})`;
+    ctx.fillText(text, x, y);
+  }
+
+</script>
+
+</body>
+</html>
