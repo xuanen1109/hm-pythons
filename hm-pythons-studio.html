@@ -124,6 +124,32 @@
     cursor: not-allowed;
   }
 
+  .icon-btn.zoom-btn {
+    padding: 0.4rem 0.55rem;
+    min-width: 28px;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .icon-btn.zoom-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    min-width: 50px;
+    color: var(--silver);
+  }
+  .icon-btn.zoom-label:hover {
+    color: var(--copper-light);
+  }
+
+  /* Redo button: mirror the undo arrow */
+  #btnRedoGlobal {
+    /* Arrow visually flipped via the unicode position; nothing extra needed */
+  }
+  #btnUndoGlobal:not(:disabled):hover,
+  #btnRedoGlobal:not(:disabled):hover {
+    border-color: var(--copper-light);
+    color: var(--copper-light);
+  }
+
   /* LAYOUT */
   .workspace {
     display: grid;
@@ -195,7 +221,11 @@
     position: relative;
     display: none;
     box-shadow: 0 30px 60px -20px rgba(0,0,0,0.5);
+    transform-origin: center center;
+    transition: transform 0.12s ease-out;
+    will-change: transform;
   }
+  .canvas-wrapper.dragging { transition: none; cursor: grabbing; }
 
   .canvas-wrapper.visible { display: block; }
 
@@ -205,51 +235,143 @@
     max-height: calc(100vh - 160px);
   }
 
-  .canvas-overlay {
-    position: absolute;
-    top: 1rem; right: 1rem;
+  /* CANVAS TOOLS — sits at the very top of the side panel */
+  .canvas-tools-section {
+    border-bottom: 1px solid var(--divider);
+    background: var(--panel-light);
+  }
+  .canvas-tools-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--divider);
+  }
+  .tool-btn {
+    background: var(--panel-light);
+    border: none;
+    color: var(--cream);
+    padding: 0.7rem 0.4rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
     display: flex;
-    gap: 0.5rem;
-    z-index: 5;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .tool-btn:hover {
+    background: var(--panel-deep);
+    color: var(--copper-light);
+  }
+  .tool-btn.active {
+    background: var(--copper);
+    color: white;
+  }
+  .tool-btn.inactive {
+    opacity: 0.4;
+  }
+  .tool-btn:disabled {
+    cursor: default;
+  }
+  .tool-btn:disabled:hover {
+    background: var(--panel-light);
+    color: var(--cream);
+  }
+  .tool-btn .tool-icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .tool-btn .tool-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
   }
 
-  .overlay-btn {
-    background: rgba(26, 13, 8, 0.85);
-    backdrop-filter: blur(8px);
+  .crop-controls {
+    display: none;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.75rem;
+    background: var(--panel-deep);
+    border-top: 1px solid var(--copper);
+  }
+  .crop-controls.visible { display: flex; }
+  .crop-controls-label {
+    font-size: 0.7rem;
+    color: var(--silver);
+    letter-spacing: 0.08em;
+  }
+  .crop-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.4rem;
+  }
+  .crop-action-btn {
+    background: transparent;
     color: var(--cream);
     border: 1px solid var(--divider);
-    padding: 0.45rem 0.75rem;
-    font-size: 0.75rem;
+    padding: 0.5rem 0.5rem;
+    font-family: inherit;
+    font-size: 0.72rem;
     cursor: pointer;
     border-radius: 2px;
-    letter-spacing: 0.05em;
-    font-family: inherit;
+    transition: all 0.15s;
   }
-
-  .overlay-btn:hover {
+  .crop-action-btn:hover {
     border-color: var(--copper);
     color: var(--copper-light);
   }
-
-  .overlay-btn.active {
+  .crop-action-btn.primary {
     background: var(--copper);
     border-color: var(--copper);
     color: white;
   }
+  .crop-action-btn.primary:hover {
+    background: var(--copper-light);
+    border-color: var(--copper-light);
+  }
+  .crop-hint {
+    font-size: 0.65rem;
+    color: var(--silver);
+    line-height: 1.4;
+    opacity: 0.7;
+  }
+
+  /* CROP OVERLAY (drawn over canvas during crop mode) */
+  .crop-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto;
+    cursor: crosshair;
+    z-index: 4;
+    display: none;
+  }
+  .crop-overlay.visible { display: block; }
+  .crop-overlay svg { width: 100%; height: 100%; display: block; }
+  .crop-handle {
+    fill: var(--copper);
+    stroke: white;
+    stroke-width: 1.5;
+    cursor: pointer;
+  }
+  .crop-handle.tl, .crop-handle.br { cursor: nwse-resize; }
+  .crop-handle.tr, .crop-handle.bl { cursor: nesw-resize; }
+  .crop-handle.t, .crop-handle.b { cursor: ns-resize; }
+  .crop-handle.l, .crop-handle.r { cursor: ew-resize; }
+  .crop-rect-body { cursor: move; fill: transparent; }
 
   .status-strip {
     position: absolute;
-    bottom: 1rem; left: 50%;
-    transform: translateX(-50%);
+    top: 1rem; left: 1rem;
     background: rgba(26, 13, 8, 0.85);
     backdrop-filter: blur(8px);
     border: 1px solid var(--divider);
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem;
     border-radius: 2px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--silver);
     display: none;
+    z-index: 5;
   }
 
   .status-strip.visible { display: block; }
@@ -560,6 +682,27 @@
     color: white;
   }
 
+  .export-size-select {
+    width: 100%;
+    background: var(--panel-light);
+    border: 1px solid var(--divider);
+    border-radius: 2px;
+    color: var(--cream);
+    padding: 0.5rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--silver) 50%),
+                      linear-gradient(135deg, var(--silver) 50%, transparent 50%);
+    background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 26px;
+  }
+  .export-size-select:focus { outline: 1px solid var(--copper); }
+
   .toggle-row {
     display: flex;
     align-items: center;
@@ -660,7 +803,7 @@
   /* BRUSH SYSTEM */
   .brush-mode-tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     background: var(--panel-light);
     border: 1px solid var(--divider);
     border-radius: 2px;
@@ -940,6 +1083,13 @@
   <div class="divider-v"></div>
   <div class="file-info" id="fileInfo">尚未載入照片</div>
   <div class="topbar-actions">
+    <button class="icon-btn" id="btnUndoGlobal" disabled title="上一步 (Ctrl+Z)">⎌ 上一步</button>
+    <button class="icon-btn" id="btnRedoGlobal" disabled title="下一步 (Ctrl+Shift+Z)">下一步 ⎌</button>
+    <div class="divider-v"></div>
+    <button class="icon-btn zoom-btn" id="btnZoomOut" title="縮小檢視">−</button>
+    <button class="icon-btn zoom-btn zoom-label" id="btnZoomLabel" title="重設縮放">100%</button>
+    <button class="icon-btn zoom-btn" id="btnZoomIn" title="放大檢視">+</button>
+    <div class="divider-v"></div>
     <button class="icon-btn" id="btnOpen">開啟</button>
     <button class="icon-btn" id="btnReset" disabled>重置</button>
     <button class="icon-btn primary" id="btnExport" disabled>匯出</button>
@@ -948,7 +1098,7 @@
 
 <div class="workspace">
   <div class="canvas-area" id="canvasArea">
-    <label class="empty-state" id="emptyState" for="fileInput">
+    <label class="empty-state" id="emptyState">
       <div class="mark">✦</div>
       <div class="title">Load a photograph</div>
       <div class="hint">拖曳照片到這裡，或點擊選擇一張</div>
@@ -958,16 +1108,27 @@
     <div class="canvas-wrapper" id="canvasWrapper">
       <canvas id="canvas"></canvas>
       <div class="brush-cursor" id="brushCursor"></div>
+      <div class="crop-overlay" id="cropOverlay">
+        <svg id="cropSvg" preserveAspectRatio="none">
+          <defs>
+            <mask id="cropMask">
+              <rect width="100%" height="100%" fill="white"/>
+              <rect id="cropMaskHole" fill="black"/>
+            </mask>
+          </defs>
+          <rect class="crop-dim" width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#cropMask)"/>
+          <rect id="cropRect" fill="none" stroke="white" stroke-width="1.5"/>
+          <g id="cropGrid" stroke="rgba(255,255,255,0.4)" stroke-width="1"></g>
+          <rect id="cropRectBody" class="crop-rect-body"/>
+          <g id="cropHandles"></g>
+        </svg>
+      </div>
       <div class="eyedrop-cursor" id="eyedropCursor">
         <div class="ring"></div>
         <div class="crosshair-h"></div>
         <div class="crosshair-v"></div>
         <div class="swatch" id="eyedropSwatch"></div>
         <div class="hex-label" id="eyedropHex">#000000</div>
-      </div>
-      <div class="canvas-overlay">
-        <button class="overlay-btn" id="btnBefore">按住看原圖</button>
-        <button class="overlay-btn" id="btnFit">符合視窗</button>
       </div>
     </div>
 
@@ -983,6 +1144,39 @@
   </div>
 
   <aside class="panel" id="panel">
+
+    <!-- 00 · CANVAS TOOLS -->
+    <div class="canvas-tools-section">
+      <div class="canvas-tools-row">
+        <button class="tool-btn" id="btnBefore" title="按住對比原圖">
+          <span class="tool-icon">◐</span>
+          <span class="tool-label">原圖</span>
+        </button>
+        <button class="tool-btn" id="btnCrop" title="裁切（C）">
+          <span class="tool-icon">✂</span>
+          <span class="tool-label">裁切</span>
+        </button>
+        <button class="tool-btn" id="btnFit" title="重設縮放與位置">
+          <span class="tool-icon">⊙</span>
+          <span class="tool-label">重設檢視</span>
+        </button>
+      </div>
+      <div class="crop-controls" id="cropToolbar">
+        <div class="crop-controls-label">裁切比例</div>
+        <div class="segmented" id="cropAspect">
+          <button class="active" data-aspect="free">自由</button>
+          <button data-aspect="1:1">1:1</button>
+          <button data-aspect="4:5">4:5</button>
+          <button data-aspect="3:4">3:4</button>
+        </div>
+        <div class="crop-actions">
+          <button class="crop-action-btn" id="btnCropCancel">取消</button>
+          <button class="crop-action-btn" id="btnCropReset">重設</button>
+          <button class="crop-action-btn primary" id="btnCropApply">套用</button>
+        </div>
+        <div class="crop-hint">在畫面上拖曳框線或角落調整範圍 · Enter 套用 · Esc 取消</div>
+      </div>
+    </div>
 
     <!-- 01 · PRESETS -->
     <div class="section" data-section="presets">
@@ -1137,13 +1331,32 @@
             <span class="slider-label">裁切比例</span>
           </div>
           <div class="segmented" id="cropRatio">
-            <button class="active" data-ratio="original">原始</button>
-            <button data-ratio="1:1">1:1</button>
-            <button data-ratio="4:5">4:5</button>
-            <button data-ratio="3:4">3:4</button>
+          <button class="active" data-ratio="original">原始</button>
+          <button data-ratio="1:1">1:1</button>
+          <button data-ratio="4:5">4:5</button>
+          <button data-ratio="3:4">3:4</button>
+        </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-head">
+            <span class="slider-label">匯出尺寸</span>
           </div>
+          <select id="exportSizeSelect" class="export-size-select">
+            <option value="original">原始尺寸</option>
+            <option value="2048">長邊 2048 px</option>
+            <option value="1600">長邊 1600 px</option>
+            <option value="1080">長邊 1080 px（IG）</option>
+          </select>
         </div>
         <div id="frameControls"></div>
+        <div class="toggle-row">
+          <label>邊框獨立顏色</label>
+          <div class="switch" id="paddingColorToggle"></div>
+        </div>
+        <div class="custom-color-row" id="paddingColorRow">
+          <input type="color" id="paddingColorPicker" value="#FFFFFF">
+          <input type="text" id="paddingColorHex" value="#FFFFFF" maxlength="7">
+        </div>
       </div>
     </div>
 
@@ -1191,6 +1404,19 @@
     customColor: '#3B1A10',
     adjustments: defaultAdjustments(),
     cropRatio: 'original',
+    // PADDING (FRAME) COLOR — independent of background colour
+    paddingColorOn: false,        // off = padding inherits background
+    paddingColor: '#FFFFFF',      // user's chosen frame colour
+    // MANUAL CROP REGION (in original image px). null = no manual crop.
+    cropRegion: null,         // { x, y, w, h }
+    cropAspect: 'free',       // 'free' | '1:1' | '4:5' | '3:4'
+    cropMode: false,          // is the user currently editing crop rect
+    // EXPORT SIZE (匯出尺寸)
+    exportSize: 'original',   // 'original' | '2048' | '1600' | '1080'
+    // PREVIEW ZOOM (預覽縮放，僅影響顯示)
+    previewZoom: 1,           // 0.25 .. 4
+    previewPanX: 0,           // px
+    previewPanY: 0,           // px
     watermark: { on: false, pos: 'br', size: 30, opacity: 70 },
     showingOriginal: false,
 
@@ -1229,6 +1455,204 @@
       sharpness: 0, noise: 0,
       padding: 0,
     };
+  }
+
+  // ============ GLOBAL HISTORY ============
+  // History stack stores snapshots of all editable state.
+  // We use index-based navigation: snapshots[index] is current state.
+  // undo: index--, redo: index++
+  const HISTORY_LIMIT = 30;
+  const globalHistory = {
+    snapshots: [],
+    index: -1,  // -1 means no snapshots yet
+  };
+
+  function captureSnapshot() {
+    // Deep clone all editable state
+    const snap = {
+      adjustments: { ...state.adjustments },
+      bgChoice: state.bgChoice,
+      customColor: state.customColor,
+      bgRemoved: state.bgRemoved,
+      cropRatio: state.cropRatio,
+      paddingColorOn: state.paddingColorOn,
+      paddingColor: state.paddingColor,
+      cropRegion: state.cropRegion ? { ...state.cropRegion } : null,
+      cropAspect: state.cropAspect,
+      exportSize: state.exportSize,
+      watermark: { ...state.watermark },
+      brush: { ...state.brush },
+      localAdj: { ...state.localAdj },
+      // Brush layers stored as ImageBitmap-equivalent (we use canvas snapshots)
+      maskLayer: cloneCanvas(state.maskCanvas),
+      localLayer: cloneCanvas(state.localMaskCanvas),
+      paintLayer: cloneCanvas(state.paintCanvas),
+    };
+    return snap;
+  }
+
+  function cloneCanvas(src) {
+    if (!src) return null;
+    const c = document.createElement('canvas');
+    c.width = src.width;
+    c.height = src.height;
+    c.getContext('2d').drawImage(src, 0, 0);
+    return c;
+  }
+
+  function pushGlobalHistory() {
+    if (!state.originalBitmap) return;
+    // If we're not at the end (user has undone some steps), drop the future
+    if (globalHistory.index < globalHistory.snapshots.length - 1) {
+      globalHistory.snapshots = globalHistory.snapshots.slice(0, globalHistory.index + 1);
+    }
+    const snap = captureSnapshot();
+    globalHistory.snapshots.push(snap);
+    if (globalHistory.snapshots.length > HISTORY_LIMIT) {
+      globalHistory.snapshots.shift();
+    } else {
+      globalHistory.index++;
+    }
+    updateGlobalHistoryButtons();
+  }
+
+  function applySnapshot(snap) {
+    // Restore all state
+    Object.assign(state.adjustments, snap.adjustments);
+    state.bgChoice = snap.bgChoice;
+    state.customColor = snap.customColor;
+    state.bgRemoved = snap.bgRemoved;
+    state.cropRatio = snap.cropRatio;
+    if (snap.paddingColorOn !== undefined) state.paddingColorOn = snap.paddingColorOn;
+    if (snap.paddingColor !== undefined) state.paddingColor = snap.paddingColor;
+    if (snap.cropRegion !== undefined) state.cropRegion = snap.cropRegion ? { ...snap.cropRegion } : null;
+    if (snap.cropAspect !== undefined) state.cropAspect = snap.cropAspect;
+    if (snap.exportSize !== undefined) state.exportSize = snap.exportSize;
+    Object.assign(state.watermark, snap.watermark);
+    Object.assign(state.brush, snap.brush);
+    Object.assign(state.localAdj, snap.localAdj);
+
+    // Restore brush layers
+    if (snap.maskLayer && state.maskCanvas) {
+      const cx = state.maskCanvas.getContext('2d');
+      cx.clearRect(0, 0, state.maskCanvas.width, state.maskCanvas.height);
+      cx.drawImage(snap.maskLayer, 0, 0);
+    }
+    if (snap.localLayer && state.localMaskCanvas) {
+      const cx = state.localMaskCanvas.getContext('2d');
+      cx.clearRect(0, 0, state.localMaskCanvas.width, state.localMaskCanvas.height);
+      cx.drawImage(snap.localLayer, 0, 0);
+    }
+    if (snap.paintLayer && state.paintCanvas) {
+      const cx = state.paintCanvas.getContext('2d');
+      cx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+      cx.drawImage(snap.paintLayer, 0, 0);
+    }
+
+    syncUIToState();
+    render();
+  }
+
+  function syncUIToState() {
+    // Sync all sliders
+    document.querySelectorAll('.slider-input').forEach(input => {
+      const target = input.dataset.target;
+      const key = input.dataset.key;
+      if (!target || !key) return;
+      const v = target === 'watermark' ? state.watermark[key] : state.adjustments[key];
+      input.value = v;
+      const valEl = input.parentElement.querySelector('.slider-value');
+      if (valEl) valEl.textContent = v;
+    });
+
+    // Sync background swatches
+    document.querySelectorAll('.bg-swatch').forEach(s => {
+      s.classList.toggle('active', s.dataset.bg === state.bgChoice);
+    });
+    customColorRow.classList.toggle('visible', state.bgChoice === 'custom');
+    customColorPicker.value = state.customColor;
+    customColorHex.value = state.customColor.toUpperCase();
+
+    // Sync bg removal toggle
+    bgRemoveToggle.classList.toggle('on', state.bgRemoved);
+
+    // Sync crop ratio
+    document.querySelectorAll('#cropRatio button').forEach(b => {
+      b.classList.toggle('active', b.dataset.ratio === state.cropRatio);
+    });
+
+    // Sync export size dropdown
+    const exportSel = document.getElementById('exportSizeSelect');
+    if (exportSel) exportSel.value = state.exportSize;
+
+    // Sync padding color
+    const pcToggle = document.getElementById('paddingColorToggle');
+    const pcRow = document.getElementById('paddingColorRow');
+    const pcPicker = document.getElementById('paddingColorPicker');
+    const pcHex = document.getElementById('paddingColorHex');
+    if (pcToggle) pcToggle.classList.toggle('on', state.paddingColorOn);
+    if (pcRow) pcRow.classList.toggle('visible', state.paddingColorOn);
+    if (pcPicker) pcPicker.value = state.paddingColor;
+    if (pcHex) pcHex.value = state.paddingColor.toUpperCase();
+
+    // Sync watermark
+    watermarkToggle.classList.toggle('on', state.watermark.on);
+    document.querySelectorAll('#watermarkPos button').forEach(b => {
+      b.classList.toggle('active', b.dataset.pos === state.watermark.pos);
+    });
+
+    // Sync local adjustment sliders
+    const localInputs = document.querySelectorAll('#localAdjSliders input');
+    const localKeys = ['exposure', 'contrast', 'saturation', 'temp'];
+    localInputs.forEach((input, i) => {
+      input.value = state.localAdj[localKeys[i]];
+      input.parentElement.querySelector('.val').textContent = state.localAdj[localKeys[i]];
+    });
+
+    // Sync brush sliders (size, hardness, opacity)
+    const brushInputs = document.querySelectorAll('#brushSliders input');
+    const brushKeys = ['size', 'hardness', 'opacity'];
+    brushInputs.forEach((input, i) => {
+      input.value = state.brush[brushKeys[i]];
+      const valEl = input.parentElement.querySelector('.slider-value');
+      if (valEl) valEl.textContent = state.brush[brushKeys[i]];
+    });
+
+    // Sync paint color
+    if (paintColorInput) paintColorInput.value = state.brush.paintColor;
+
+    // Clear preset highlight (we don't track which preset was applied)
+    document.querySelectorAll('.preset-chip').forEach(x => x.classList.remove('active'));
+  }
+
+  function undoGlobal() {
+    if (globalHistory.index <= 0) return;
+    globalHistory.index--;
+    applySnapshot(globalHistory.snapshots[globalHistory.index]);
+    updateGlobalHistoryButtons();
+  }
+
+  function redoGlobal() {
+    if (globalHistory.index >= globalHistory.snapshots.length - 1) return;
+    globalHistory.index++;
+    applySnapshot(globalHistory.snapshots[globalHistory.index]);
+    updateGlobalHistoryButtons();
+  }
+
+  function updateGlobalHistoryButtons() {
+    const btnU = document.getElementById('btnUndoGlobal');
+    const btnR = document.getElementById('btnRedoGlobal');
+    btnU.disabled = globalHistory.index <= 0;
+    btnR.disabled = globalHistory.index >= globalHistory.snapshots.length - 1;
+    // Also sync the brush panel undo button if it exists
+    const brushUndo = document.getElementById('btnUndo');
+    if (brushUndo) brushUndo.disabled = globalHistory.index <= 0;
+  }
+
+  function resetGlobalHistory() {
+    globalHistory.snapshots = [];
+    globalHistory.index = -1;
+    updateGlobalHistoryButtons();
   }
 
   // ============ SLIDER DEFINITIONS ============
@@ -1314,14 +1738,33 @@
       const valEl = row.querySelector('.slider-value');
       input.addEventListener('input', (e) => {
         const v = parseInt(e.target.value);
+        const currentVal = target === 'watermark' ? state.watermark[def.key] : state.adjustments[def.key];
+        // Skip if value didn't actually change (prevents stale DOM from overwriting state after undo)
+        if (v === currentVal) {
+          valEl.textContent = v;
+          return;
+        }
         if (target === 'watermark') state.watermark[def.key] = v;
         else state.adjustments[def.key] = v;
         valEl.textContent = v;
         scheduleRender();
       });
+      input.addEventListener('change', (e) => {
+        // Only push history if the value differs from the last snapshot
+        const v = parseInt(e.target.value);
+        const lastSnap = globalHistory.snapshots[globalHistory.index];
+        if (lastSnap) {
+          const lastVal = target === 'watermark' ? lastSnap.watermark[def.key] : lastSnap.adjustments[def.key];
+          if (v === lastVal) return;
+        }
+        pushGlobalHistory();
+      });
       valEl.addEventListener('click', () => {
+        const currentVal = target === 'watermark' ? state.watermark[def.key] : state.adjustments[def.key];
+        if (currentVal === 0) return; // already zero, nothing to do
         input.value = 0;
         input.dispatchEvent(new Event('input'));
+        pushGlobalHistory();
       });
     });
   }
@@ -1359,6 +1802,8 @@
   });
   fileInput.addEventListener('change', ev => {
     if (ev.target.files[0]) loadFile(ev.target.files[0]);
+    // Reset value so selecting the same file again still triggers change
+    ev.target.value = '';
   });
 
   async function loadFile(file) {
@@ -1377,7 +1822,9 @@
       state.localMaskCanvas = createLayer(img.width, img.height, 'black'); // start no adjustment
       state.paintCanvas = createLayer(img.width, img.height, 'transparent');
       state.history = { mask: [], local: [], paint: [] };
-      updateUndoBtn();
+
+      // Reset global history and capture initial state
+      resetGlobalHistory();
 
       emptyState.style.display = 'none';
       canvasWrapper.classList.add('visible');
@@ -1389,7 +1836,14 @@
 
       canvas.width = img.width;
       canvas.height = img.height;
+      state.previewZoom = 1;
+      state.previewPanX = 0;
+      state.previewPanY = 0;
+      if (typeof applyPreviewTransform === 'function') applyPreviewTransform();
       render();
+
+      // Capture initial snapshot AFTER everything is initialized
+      pushGlobalHistory();
     };
     img.src = URL.createObjectURL(file);
   }
@@ -1422,11 +1876,13 @@
       } finally {
         processingOverlay.classList.remove('visible');
         render();
+        pushGlobalHistory();
       }
     } else {
       state.bgRemoved = willBeOn;
       bgRemoveToggle.classList.toggle('on', willBeOn);
       render();
+      pushGlobalHistory();
     }
   });
 
@@ -1447,6 +1903,7 @@
       state.bgChoice = s.dataset.bg;
       customColorRow.classList.toggle('visible', s.dataset.bg === 'custom');
       render();
+      pushGlobalHistory();
     });
   });
 
@@ -1454,6 +1911,9 @@
     state.customColor = e.target.value;
     customColorHex.value = e.target.value.toUpperCase();
     if (state.bgChoice === 'custom') render();
+  });
+  customColorPicker.addEventListener('change', () => {
+    if (state.bgChoice === 'custom') pushGlobalHistory();
   });
 
   customColorHex.addEventListener('input', (e) => {
@@ -1466,6 +1926,41 @@
     }
   });
 
+  // ============ PADDING COLOR (邊框獨立顏色) ============
+  const paddingColorToggle = document.getElementById('paddingColorToggle');
+  const paddingColorRow = document.getElementById('paddingColorRow');
+  const paddingColorPicker = document.getElementById('paddingColorPicker');
+  const paddingColorHex = document.getElementById('paddingColorHex');
+
+  // Initial UI state
+  paddingColorRow.classList.toggle('visible', state.paddingColorOn);
+
+  paddingColorToggle.addEventListener('click', () => {
+    state.paddingColorOn = !state.paddingColorOn;
+    paddingColorToggle.classList.toggle('on', state.paddingColorOn);
+    paddingColorRow.classList.toggle('visible', state.paddingColorOn);
+    render();
+    pushGlobalHistory();
+  });
+
+  paddingColorPicker.addEventListener('input', (e) => {
+    state.paddingColor = e.target.value;
+    paddingColorHex.value = e.target.value.toUpperCase();
+    if (state.paddingColorOn) render();
+  });
+  paddingColorPicker.addEventListener('change', () => {
+    if (state.paddingColorOn) pushGlobalHistory();
+  });
+  paddingColorHex.addEventListener('input', (e) => {
+    let v = e.target.value.trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+      state.paddingColor = v;
+      paddingColorPicker.value = v;
+      if (state.paddingColorOn) render();
+    }
+  });
+
   // ============ PRESETS ============
   document.querySelectorAll('.preset-chip').forEach(c => {
     c.addEventListener('click', () => {
@@ -1475,6 +1970,7 @@
       Object.assign(state.adjustments, p);
       refreshSliderValues();
       render();
+      pushGlobalHistory();
     });
   });
 
@@ -1490,20 +1986,52 @@
   }
 
   // ============ CROP RATIO ============
+  // Note: ratio buttons in section 07 do quick center-crop. Using one clears
+  // any manual crop region (the two are mutually exclusive — same intent,
+  // different methods).
   document.querySelectorAll('#cropRatio button').forEach(b => {
     b.addEventListener('click', () => {
       document.querySelectorAll('#cropRatio button').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
       state.cropRatio = b.dataset.ratio;
+      state.cropRegion = null; // clear manual crop — ratio takes over
       render();
+      pushGlobalHistory();
     });
   });
+
+  // ============ EXPORT SIZE ============
+  const exportSizeSelect = document.getElementById('exportSizeSelect');
+  if (exportSizeSelect) {
+    exportSizeSelect.addEventListener('change', () => {
+      state.exportSize = exportSizeSelect.value;
+      pushGlobalHistory();
+      // No render needed — export size only affects the saved file, not the preview.
+      // But update the status strip so the user can see expected output.
+      updateStatusStrip();
+    });
+  }
+  function updateStatusStrip() {
+    if (!state.originalBitmap) return;
+    const w = canvas.width, h = canvas.height;
+    let label = `${w} × ${h} px`;
+    if (state.exportSize !== 'original') {
+      const target = parseInt(state.exportSize);
+      const longEdge = Math.max(w, h);
+      const ratio = target / longEdge;
+      const outW = Math.round(w * ratio);
+      const outH = Math.round(h * ratio);
+      label += `　·　匯出 ${outW} × ${outH}`;
+    }
+    statusStrip.textContent = label;
+  }
 
   // ============ WATERMARK ============
   watermarkToggle.addEventListener('click', () => {
     state.watermark.on = !state.watermark.on;
     watermarkToggle.classList.toggle('on', state.watermark.on);
     render();
+    pushGlobalHistory();
   });
 
   document.querySelectorAll('#watermarkPos button').forEach(b => {
@@ -1512,6 +2040,7 @@
       b.classList.add('active');
       state.watermark.pos = b.dataset.pos;
       render();
+      pushGlobalHistory();
     });
   });
 
@@ -1535,44 +2064,597 @@
   btnBefore.addEventListener('touchstart', (e) => { e.preventDefault(); state.showingOriginal = true; render(); });
   btnBefore.addEventListener('touchend', (e) => { e.preventDefault(); state.showingOriginal = false; render(); });
 
+  // ============ CROP MODE ============
+  const btnCrop = document.getElementById('btnCrop');
+  const cropToolbar = document.getElementById('cropToolbar');
+  const cropOverlay = document.getElementById('cropOverlay');
+  const cropSvg = document.getElementById('cropSvg');
+  const cropRectEl = document.getElementById('cropRect');
+  const cropMaskHole = document.getElementById('cropMaskHole');
+  const cropRectBody = document.getElementById('cropRectBody');
+  const cropHandlesG = document.getElementById('cropHandles');
+  const cropGridG = document.getElementById('cropGrid');
+  const btnCropApply = document.getElementById('btnCropApply');
+  const btnCropCancel = document.getElementById('btnCropCancel');
+  const btnCropReset = document.getElementById('btnCropReset');
+
+  // Working crop rect in CANVAS pixel coordinates (matches the displayed canvas).
+  // When entering crop mode we initialize from state.cropRegion (mapped from
+  // source coords to canvas coords) or from the full canvas.
+  let cropRect = null; // { x, y, w, h } in canvas pixels
+  let cropAspect = 'free';
+  let cropDragMode = null; // 'create' | 'move' | 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r'
+  let cropDragStart = null;
+
+  function aspectRatioValue() {
+    if (cropAspect === 'free') return null;
+    const [a, b] = cropAspect.split(':').map(Number);
+    return a / b;
+  }
+
+  function enterCropMode() {
+    if (!state.originalBitmap) return;
+    state.cropMode = true;
+    cropToolbar.classList.add('visible');
+    cropOverlay.classList.add('visible');
+    btnCrop.classList.add('active');
+
+    // Initialize cropRect in canvas pixel coords.
+    // The current canvas already reflects any existing crop, so use full canvas.
+    // The crop rectangle is relative to what's visible right now, then on apply
+    // it's translated back to source coords.
+    cropRect = {
+      x: canvas.width * 0.1,
+      y: canvas.height * 0.1,
+      w: canvas.width * 0.8,
+      h: canvas.height * 0.8,
+    };
+    if (cropAspect !== 'free') applyAspectToRect(cropRect, cropAspect);
+    drawCropOverlay();
+  }
+  function exitCropMode() {
+    state.cropMode = false;
+    cropToolbar.classList.remove('visible');
+    cropOverlay.classList.remove('visible');
+    btnCrop.classList.remove('active');
+    cropRect = null;
+    cropDragMode = null;
+  }
+
+  function applyAspectToRect(rect, aspectStr) {
+    const ratio = aspectStr === 'free' ? null : (() => {
+      const [a, b] = aspectStr.split(':').map(Number);
+      return a / b;
+    })();
+    if (!ratio) return;
+    // Adjust height to match ratio, preserving width
+    const newH = rect.w / ratio;
+    if (newH <= canvas.height - rect.y) {
+      rect.h = newH;
+    } else {
+      rect.h = canvas.height - rect.y;
+      rect.w = rect.h * ratio;
+    }
+  }
+
+  function drawCropOverlay() {
+    if (!cropRect) return;
+    // The SVG is positioned absolutely over the wrapper (inset:0). We need its
+    // viewBox to match the canvas's CSS size. Use the canvas's bounding rect.
+    const cRect = canvas.getBoundingClientRect();
+    const wRect = cropOverlay.getBoundingClientRect();
+    const z = state.previewZoom || 1;
+    // Compute canvas position relative to cropOverlay (both inside wrapper, so
+    // wrapper transform cancels out — but we still need offset since canvas has
+    // max-height applied).
+    const cssCanvasW = cRect.width / z;
+    const cssCanvasH = cRect.height / z;
+    const cssCanvasLeft = (cRect.left - wRect.left) / z;
+    const cssCanvasTop = (cRect.top - wRect.top) / z;
+
+    // Set svg viewBox to wrapper size, but draw rect using canvas-pixel→css mapping
+    cropSvg.setAttribute('viewBox', `0 0 ${wRect.width / z} ${wRect.height / z}`);
+
+    // Map canvas-pixel rect to css coords inside SVG
+    const px2css = (x, y, w, h) => ({
+      x: cssCanvasLeft + x * (cssCanvasW / canvas.width),
+      y: cssCanvasTop + y * (cssCanvasH / canvas.height),
+      w: w * (cssCanvasW / canvas.width),
+      h: h * (cssCanvasH / canvas.height),
+    });
+    const r = px2css(cropRect.x, cropRect.y, cropRect.w, cropRect.h);
+
+    cropRectEl.setAttribute('x', r.x);
+    cropRectEl.setAttribute('y', r.y);
+    cropRectEl.setAttribute('width', r.w);
+    cropRectEl.setAttribute('height', r.h);
+    cropRectBody.setAttribute('x', r.x);
+    cropRectBody.setAttribute('y', r.y);
+    cropRectBody.setAttribute('width', r.w);
+    cropRectBody.setAttribute('height', r.h);
+    cropMaskHole.setAttribute('x', r.x);
+    cropMaskHole.setAttribute('y', r.y);
+    cropMaskHole.setAttribute('width', r.w);
+    cropMaskHole.setAttribute('height', r.h);
+
+    // Rule-of-thirds grid
+    cropGridG.innerHTML = '';
+    for (let i = 1; i < 3; i++) {
+      const v = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      v.setAttribute('x1', r.x + r.w * i / 3);
+      v.setAttribute('y1', r.y);
+      v.setAttribute('x2', r.x + r.w * i / 3);
+      v.setAttribute('y2', r.y + r.h);
+      cropGridG.appendChild(v);
+      const h = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      h.setAttribute('x1', r.x);
+      h.setAttribute('y1', r.y + r.h * i / 3);
+      h.setAttribute('x2', r.x + r.w);
+      h.setAttribute('y2', r.y + r.h * i / 3);
+      cropGridG.appendChild(h);
+    }
+
+    // 8 handles
+    cropHandlesG.innerHTML = '';
+    const handleSize = 8;
+    const positions = [
+      ['tl', r.x, r.y],
+      ['tr', r.x + r.w, r.y],
+      ['bl', r.x, r.y + r.h],
+      ['br', r.x + r.w, r.y + r.h],
+      ['t',  r.x + r.w / 2, r.y],
+      ['b',  r.x + r.w / 2, r.y + r.h],
+      ['l',  r.x, r.y + r.h / 2],
+      ['r',  r.x + r.w, r.y + r.h / 2],
+    ];
+    for (const [name, hx, hy] of positions) {
+      const h = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      h.setAttribute('x', hx - handleSize / 2);
+      h.setAttribute('y', hy - handleSize / 2);
+      h.setAttribute('width', handleSize);
+      h.setAttribute('height', handleSize);
+      h.setAttribute('class', 'crop-handle ' + name);
+      h.dataset.handle = name;
+      cropHandlesG.appendChild(h);
+    }
+  }
+
+  // Convert a clientX/Y to canvas-pixel coords (similar to getCanvasCoords but
+  // simplified; works during crop mode regardless of brush state).
+  function clientToCanvasPx(clientX, clientY) {
+    const cRect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / cRect.width;
+    const scaleY = canvas.height / cRect.height;
+    return {
+      x: (clientX - cRect.left) * scaleX,
+      y: (clientY - cRect.top) * scaleY,
+    };
+  }
+
+  cropOverlay.addEventListener('mousedown', (e) => {
+    if (!state.cropMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.target;
+    const handle = target.dataset && target.dataset.handle;
+    const isBody = target === cropRectBody;
+    if (handle) {
+      cropDragMode = handle;
+    } else if (isBody) {
+      cropDragMode = 'move';
+    } else {
+      // Start drawing a new rect
+      cropDragMode = 'create';
+      const p = clientToCanvasPx(e.clientX, e.clientY);
+      cropRect = { x: p.x, y: p.y, w: 0, h: 0 };
+    }
+    cropDragStart = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      origRect: { ...cropRect },
+    };
+    drawCropOverlay();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!state.cropMode || !cropDragMode || !cropDragStart) return;
+    const p = clientToCanvasPx(e.clientX, e.clientY);
+    const start = clientToCanvasPx(cropDragStart.clientX, cropDragStart.clientY);
+    const dx = p.x - start.x;
+    const dy = p.y - start.y;
+    const orig = cropDragStart.origRect;
+    const ratio = aspectRatioValue();
+    let r = { ...orig };
+
+    if (cropDragMode === 'create') {
+      r.x = Math.min(start.x, p.x);
+      r.y = Math.min(start.y, p.y);
+      r.w = Math.abs(p.x - start.x);
+      r.h = Math.abs(p.y - start.y);
+      if (ratio) {
+        // For create, fit ratio: enlarge whichever dim is smaller relative
+        if (r.w / r.h > ratio) r.w = r.h * ratio;
+        else r.h = r.w / ratio;
+      }
+    } else if (cropDragMode === 'move') {
+      r.x = orig.x + dx;
+      r.y = orig.y + dy;
+    } else {
+      // Resize handle
+      let left = orig.x, right = orig.x + orig.w;
+      let top = orig.y, bottom = orig.y + orig.h;
+      if (cropDragMode.includes('l')) left = orig.x + dx;
+      if (cropDragMode.includes('r')) right = orig.x + orig.w + dx;
+      if (cropDragMode.includes('t')) top = orig.y + dy;
+      if (cropDragMode.includes('b')) bottom = orig.y + orig.h + dy;
+      r.x = Math.min(left, right);
+      r.y = Math.min(top, bottom);
+      r.w = Math.abs(right - left);
+      r.h = Math.abs(bottom - top);
+      if (ratio) {
+        // Constrain h based on w; for top/bottom-only edits, constrain w
+        if (cropDragMode === 't' || cropDragMode === 'b') {
+          const newW = r.h * ratio;
+          // Keep horizontal center
+          const cx = orig.x + orig.w / 2;
+          r.x = cx - newW / 2;
+          r.w = newW;
+        } else {
+          const newH = r.w / ratio;
+          if (cropDragMode.includes('t')) r.y = bottom - newH;
+          r.h = newH;
+        }
+      }
+    }
+
+    // Clamp to canvas
+    r.x = Math.max(0, Math.min(canvas.width - 1, r.x));
+    r.y = Math.max(0, Math.min(canvas.height - 1, r.y));
+    r.w = Math.max(10, Math.min(canvas.width - r.x, r.w));
+    r.h = Math.max(10, Math.min(canvas.height - r.y, r.h));
+
+    cropRect = r;
+    drawCropOverlay();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!cropDragMode) return;
+    cropDragMode = null;
+    cropDragStart = null;
+  });
+
+  // Aspect buttons
+  document.querySelectorAll('#cropAspect button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#cropAspect button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      cropAspect = b.dataset.aspect;
+      state.cropAspect = cropAspect;
+      if (cropRect && cropAspect !== 'free') {
+        applyAspectToRect(cropRect, cropAspect);
+        // Re-clamp
+        if (cropRect.x + cropRect.w > canvas.width) cropRect.x = canvas.width - cropRect.w;
+        if (cropRect.y + cropRect.h > canvas.height) cropRect.y = canvas.height - cropRect.h;
+        cropRect.x = Math.max(0, cropRect.x);
+        cropRect.y = Math.max(0, cropRect.y);
+        drawCropOverlay();
+      }
+    });
+  });
+
+  // Toolbar buttons
+  btnCrop.addEventListener('click', () => {
+    if (state.cropMode) exitCropMode();
+    else enterCropMode();
+  });
+
+  btnCropCancel.addEventListener('click', exitCropMode);
+
+  btnCropReset.addEventListener('click', () => {
+    if (state.cropRegion) {
+      state.cropRegion = null;
+      render();
+      pushGlobalHistory();
+    }
+    exitCropMode();
+  });
+
+  btnCropApply.addEventListener('click', () => {
+    if (!cropRect || !state.originalBitmap) { exitCropMode(); return; }
+    // Translate canvas-pixel rect to SOURCE coords.
+    // The canvas currently shows: padding around a sub-rect of the source.
+    // Map: canvas (padX, padY, padX+cropW, padY+cropH) ← source (cropX, cropY, cropX+cropW, cropY+cropH).
+    // We need to retrieve those values; replicate the logic from render().
+    const src = state.originalBitmap;
+    const srcW = src.width, srcH = src.height;
+    let outW = srcW, outH = srcH;
+    let baseCropX = 0, baseCropY = 0;
+    if (state.cropRegion) {
+      const r0 = state.cropRegion;
+      baseCropX = Math.max(0, Math.min(srcW, Math.round(r0.x)));
+      baseCropY = Math.max(0, Math.min(srcH, Math.round(r0.y)));
+      outW = Math.max(1, Math.min(srcW - baseCropX, Math.round(r0.w)));
+      outH = Math.max(1, Math.min(srcH - baseCropY, Math.round(r0.h)));
+    } else if (state.cropRatio !== 'original') {
+      const [rW, rH] = state.cropRatio.split(':').map(Number);
+      const targetAspect = rW / rH;
+      const srcAspect = srcW / srcH;
+      if (srcAspect > targetAspect) { outW = Math.floor(srcH * targetAspect); outH = srcH; }
+      else { outW = srcW; outH = Math.floor(srcW / targetAspect); }
+      baseCropX = Math.max(0, Math.floor((srcW - outW) / 2));
+      baseCropY = Math.max(0, Math.floor((srcH - outH) / 2));
+    }
+    const padPct = state.adjustments.padding / 100;
+    const padX = Math.floor(outW * padPct);
+    const padY = Math.floor(outH * padPct);
+
+    // canvasPx → source px. Inside the central image area:
+    //   srcX = baseCropX + (canvasX - padX) * outW / cropW
+    // where cropW = outW (clamped).
+    const cropW = Math.min(srcW - baseCropX, outW);
+    const cropH = Math.min(srcH - baseCropY, outH);
+    const toSrc = (cx, cy) => ({
+      x: baseCropX + (cx - padX) * (cropW / outW),
+      y: baseCropY + (cy - padY) * (cropH / outH),
+    });
+    const a = toSrc(cropRect.x, cropRect.y);
+    const b = toSrc(cropRect.x + cropRect.w, cropRect.y + cropRect.h);
+    const newRegion = {
+      x: Math.max(0, Math.min(srcW, a.x)),
+      y: Math.max(0, Math.min(srcH, a.y)),
+      w: Math.max(1, Math.min(srcW, b.x - a.x)),
+      h: Math.max(1, Math.min(srcH, b.y - a.y)),
+    };
+    // Clamp end inside source
+    if (newRegion.x + newRegion.w > srcW) newRegion.w = srcW - newRegion.x;
+    if (newRegion.y + newRegion.h > srcH) newRegion.h = srcH - newRegion.y;
+
+    state.cropRegion = newRegion;
+    state.cropRatio = 'original'; // override aspect crop with manual
+    document.querySelectorAll('#cropRatio button').forEach(x => x.classList.remove('active'));
+    const origBtn = document.querySelector('#cropRatio [data-ratio="original"]');
+    if (origBtn) origBtn.classList.add('active');
+
+    exitCropMode();
+    render();
+    pushGlobalHistory();
+  });
+
+  // Keyboard: C toggles crop, Esc cancels
+  window.addEventListener('keydown', (e) => {
+    if (!state.originalBitmap) return;
+    if (document.activeElement.tagName === 'INPUT') return;
+    if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey) {
+      btnCrop.click();
+      e.preventDefault();
+    }
+    if (e.key === 'Escape' && state.cropMode) {
+      exitCropMode();
+      e.preventDefault();
+    }
+    if (e.key === 'Enter' && state.cropMode) {
+      btnCropApply.click();
+      e.preventDefault();
+    }
+  });
+
+  // Re-draw crop overlay when wrapper resizes (e.g. zoom/preview changes)
+  window.addEventListener('resize', () => {
+    if (state.cropMode) drawCropOverlay();
+  });
+
+  // ============ PREVIEW ZOOM & PAN ============
+  const btnZoomIn = document.getElementById('btnZoomIn');
+  const btnZoomOut = document.getElementById('btnZoomOut');
+  const btnZoomLabel = document.getElementById('btnZoomLabel');
+  const canvasArea = document.getElementById('canvasArea');
+
+  function applyPreviewTransform() {
+    if (!canvasWrapper) return;
+    const z = state.previewZoom;
+    canvasWrapper.style.transform = `translate(${state.previewPanX}px, ${state.previewPanY}px) scale(${z})`;
+    if (btnZoomLabel) btnZoomLabel.textContent = Math.round(z * 100) + '%';
+    // Show "重設檢視" as enabled only when there's something to reset
+    const isDefault = z === 1 && state.previewPanX === 0 && state.previewPanY === 0;
+    if (typeof btnFit !== 'undefined' && btnFit) {
+      btnFit.disabled = isDefault;
+      btnFit.classList.toggle('inactive', isDefault);
+    }
+  }
+  function setPreviewZoom(newZoom, anchor) {
+    newZoom = Math.max(0.1, Math.min(8, newZoom));
+    if (anchor && canvasWrapper) {
+      // Keep the point under the cursor stationary
+      const rect = canvasWrapper.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = anchor.x - cx;
+      const dy = anchor.y - cy;
+      const factor = newZoom / state.previewZoom;
+      state.previewPanX += dx - dx * factor;
+      state.previewPanY += dy - dy * factor;
+    }
+    state.previewZoom = newZoom;
+    applyPreviewTransform();
+  }
+  function resetPreview() {
+    state.previewZoom = 1;
+    state.previewPanX = 0;
+    state.previewPanY = 0;
+    applyPreviewTransform();
+  }
+
+  btnZoomIn.addEventListener('click', () => setPreviewZoom(state.previewZoom * 1.25));
+  btnZoomOut.addEventListener('click', () => setPreviewZoom(state.previewZoom / 1.25));
+  btnZoomLabel.addEventListener('click', resetPreview);
+  applyPreviewTransform(); // initialize disabled state of btnFit
+
   // ============ FIT ============
   btnFit.addEventListener('click', () => {
-    // Scale reset is CSS-based, just a no-op visual confirmation
+    resetPreview();
     btnFit.classList.add('active');
     setTimeout(() => btnFit.classList.remove('active'), 300);
   });
 
-  // ============ RESET ============
-  btnReset.addEventListener('click', () => {
-    state.adjustments = defaultAdjustments();
-    refreshSliderValues();
-    document.querySelectorAll('.preset-chip').forEach(x => x.classList.remove('active'));
-    document.querySelector('[data-preset="none"]').classList.add('active');
-    render();
+  // Ctrl/Cmd + wheel = zoom toward cursor
+  canvasArea.addEventListener('wheel', (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    setPreviewZoom(state.previewZoom * factor, { x: e.clientX, y: e.clientY });
+  }, { passive: false });
+
+  // Middle-click drag (or space+drag) to pan the preview
+  let panState = null;
+  let spaceHeld = false;
+  canvasArea.addEventListener('mousedown', (e) => {
+    // Only middle button OR (left button + space held)
+    const isMiddle = e.button === 1;
+    const isSpacePan = e.button === 0 && spaceHeld;
+    if (!isMiddle && !isSpacePan) return;
+    e.preventDefault();
+    e.stopPropagation();
+    panState = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origPanX: state.previewPanX,
+      origPanY: state.previewPanY,
+    };
+    canvasWrapper.classList.add('dragging');
+  }, true); // capture phase so brush handler doesn't fire first
+  window.addEventListener('mousemove', (e) => {
+    if (!panState) return;
+    state.previewPanX = panState.origPanX + (e.clientX - panState.startX);
+    state.previewPanY = panState.origPanY + (e.clientY - panState.startY);
+    applyPreviewTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    if (!panState) return;
+    panState = null;
+    canvasWrapper.classList.remove('dragging');
   });
 
-  document.getElementById('fullResetBtn').addEventListener('click', () => {
+  // Track space key for pan mode
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !e.repeat && document.activeElement.tagName !== 'INPUT') {
+      spaceHeld = true;
+      canvasArea.style.cursor = 'grab';
+      e.preventDefault();
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      spaceHeld = false;
+      canvasArea.style.cursor = '';
+    }
+  });
+
+  // ============ RESET ============
+  function performFullReset() {
     state.adjustments = defaultAdjustments();
     state.watermark = { on: false, pos: 'br', size: 30, opacity: 70 };
     state.cropRatio = 'original';
+    state.paddingColorOn = false;
+    state.paddingColor = '#FFFFFF';
+    state.cropRegion = null;
+    state.cropAspect = 'free';
+    state.cropMode = false;
+    state.exportSize = 'original';
+    state.previewZoom = 1;
+    state.previewPanX = 0;
+    state.previewPanY = 0;
+    applyPreviewTransform();
     state.bgChoice = 'transparent';
     state.bgRemoved = false;
+    state.localAdj = { exposure: 0, contrast: 0, saturation: 0, temp: 0 };
+    state.brush = { size: 50, hardness: 60, opacity: 80, paintColor: '#B5733A' };
+
+    // UI sync
     bgRemoveToggle.classList.remove('on');
     watermarkToggle.classList.remove('on');
     refreshSliderValues();
     document.querySelectorAll('.bg-swatch').forEach(x => x.classList.remove('active'));
     document.querySelector('.bg-swatch.transparent').classList.add('active');
+    customColorRow.classList.remove('visible');
     document.querySelectorAll('#cropRatio button').forEach(x => x.classList.remove('active'));
     document.querySelector('#cropRatio [data-ratio="original"]').classList.add('active');
+    const exportSel = document.getElementById('exportSizeSelect');
+    if (exportSel) exportSel.value = 'original';
+    const pcToggleR = document.getElementById('paddingColorToggle');
+    const pcRowR = document.getElementById('paddingColorRow');
+    const pcPickerR = document.getElementById('paddingColorPicker');
+    const pcHexR = document.getElementById('paddingColorHex');
+    if (pcToggleR) pcToggleR.classList.remove('on');
+    if (pcRowR) pcRowR.classList.remove('visible');
+    if (pcPickerR) pcPickerR.value = '#FFFFFF';
+    if (pcHexR) pcHexR.value = '#FFFFFF';
     document.querySelectorAll('#watermarkPos button').forEach(x => x.classList.remove('active'));
     document.querySelector('#watermarkPos [data-pos="br"]').classList.add('active');
     document.querySelectorAll('.preset-chip').forEach(x => x.classList.remove('active'));
+
+    // Clear brush layers
+    if (state.maskCanvas) {
+      const cx = state.maskCanvas.getContext('2d');
+      cx.fillStyle = '#fff';
+      cx.fillRect(0, 0, state.maskCanvas.width, state.maskCanvas.height);
+    }
+    if (state.localMaskCanvas) {
+      const cx = state.localMaskCanvas.getContext('2d');
+      cx.fillStyle = '#000';
+      cx.fillRect(0, 0, state.localMaskCanvas.width, state.localMaskCanvas.height);
+    }
+    if (state.paintCanvas) {
+      const cx = state.paintCanvas.getContext('2d');
+      cx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+    }
+
+    // Sync local sliders
+    document.querySelectorAll('#localAdjSliders input').forEach(input => {
+      input.value = 0;
+      input.parentElement.querySelector('.val').textContent = '0';
+    });
+
+    // Sync brush sliders
+    const brushKeys = ['size', 'hardness', 'opacity'];
+    document.querySelectorAll('#brushSliders input').forEach((input, i) => {
+      input.value = state.brush[brushKeys[i]];
+      const valEl = input.parentElement.querySelector('.slider-value');
+      if (valEl) valEl.textContent = state.brush[brushKeys[i]];
+    });
+
     render();
+    pushGlobalHistory();
+  }
+
+  btnReset.addEventListener('click', () => {
+    performFullReset();
+  });
+
+  document.getElementById('fullResetBtn').addEventListener('click', () => {
+    performFullReset();
   });
 
   // ============ EXPORT ============
   btnExport.addEventListener('click', async () => {
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    let exportCanvas = canvas;
+    // Resize for export if user picked a target long-edge size
+    if (state.exportSize !== 'original') {
+      const target = parseInt(state.exportSize);
+      const longEdge = Math.max(canvas.width, canvas.height);
+      if (longEdge > target) {
+        const ratio = target / longEdge;
+        const outW = Math.round(canvas.width * ratio);
+        const outH = Math.round(canvas.height * ratio);
+        exportCanvas = document.createElement('canvas');
+        exportCanvas.width = outW;
+        exportCanvas.height = outH;
+        const ec = exportCanvas.getContext('2d');
+        ec.imageSmoothingEnabled = true;
+        ec.imageSmoothingQuality = 'high';
+        ec.drawImage(canvas, 0, 0, outW, outH);
+      }
+    }
+    const blob = await new Promise(res => exportCanvas.toBlob(res, 'image/png'));
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1581,6 +2663,10 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
+
+  // ============ GLOBAL HISTORY BUTTONS ============
+  document.getElementById('btnUndoGlobal').addEventListener('click', undoGlobal);
+  document.getElementById('btnRedoGlobal').addEventListener('click', redoGlobal);
 
   // ============ BRUSH SYSTEM ============
   const brushCursor = document.getElementById('brushCursor');
@@ -1642,9 +2728,20 @@
     const input = row.querySelector('input');
     const valEl = row.querySelector('.val');
     input.addEventListener('input', (e) => {
-      state.localAdj[def.key] = parseInt(e.target.value);
+      const v = parseInt(e.target.value);
+      if (v === state.localAdj[def.key]) {
+        valEl.textContent = v;
+        return;
+      }
+      state.localAdj[def.key] = v;
       valEl.textContent = e.target.value;
       scheduleRender();
+    });
+    input.addEventListener('change', (e) => {
+      const v = parseInt(e.target.value);
+      const lastSnap = globalHistory.snapshots[globalHistory.index];
+      if (lastSnap && lastSnap.localAdj[def.key] === v) return;
+      pushGlobalHistory();
     });
   });
 
@@ -1698,12 +2795,8 @@
   }
 
   function updateUndoBtn() {
-    const mode = state.brushMode;
-    if (mode === 'off' || !state.history[mode]) {
-      btnUndo.disabled = true;
-      return;
-    }
-    btnUndo.disabled = state.history[mode].length === 0;
+    // Now reflects global history availability for the brush panel button
+    btnUndo.disabled = globalHistory.index <= 0;
   }
 
   // Brush mode switching
@@ -1749,15 +2842,14 @@
     brushCursor.classList.add('erase');
   });
 
-  // Undo
+  // Undo (brush panel) — now wired to global history
   btnUndo.addEventListener('click', () => {
-    if (state.brushMode !== 'off') undoLayer(state.brushMode);
+    undoGlobal();
   });
 
   // Clear current brush layer
   btnClearBrush.addEventListener('click', () => {
     if (state.brushMode === 'off' || !state.originalBitmap) return;
-    pushHistory(state.brushMode);
     let target, initial;
     if (state.brushMode === 'mask') { target = state.maskCanvas; initial = 'white'; }
     else if (state.brushMode === 'local') { target = state.localMaskCanvas; initial = 'black'; }
@@ -1767,6 +2859,7 @@
     if (initial === 'white') { cx.fillStyle = '#fff'; cx.fillRect(0,0,target.width,target.height); }
     else if (initial === 'black') { cx.fillStyle = '#000'; cx.fillRect(0,0,target.width,target.height); }
     render();
+    pushGlobalHistory();
   });
 
   // Mask overlay toggle
@@ -1899,12 +2992,18 @@
     const scaleY = canvas.height / rect.height;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // Preview zoom (wrapper CSS transform). Cursor elements live INSIDE the
+    // wrapper so their style.left/top is in wrapper-local coords — must divide
+    // out the zoom from screen-pixel offsets.
+    const z = state.previewZoom || 1;
+    const screenX = clientX - rect.left;
+    const screenY = clientY - rect.top;
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
-      rectX: clientX - rect.left,
-      rectY: clientY - rect.top,
-      scale: rect.width / canvas.width,
+      x: screenX * scaleX,
+      y: screenY * scaleY,
+      rectX: screenX / z,
+      rectY: screenY / z,
+      scale: (rect.width / canvas.width) / z,
     };
   }
 
@@ -2033,7 +3132,6 @@
     }
     if (state.brushMode === 'off') return;
     e.preventDefault();
-    pushHistory(state.brushMode);
     state.isDrawing = true;
     const pt = getCanvasCoords(e);
     state.lastDrawPoint = pt;
@@ -2046,6 +3144,7 @@
       state.isDrawing = false;
       state.lastDrawPoint = null;
       render();
+      pushGlobalHistory();
     }
   });
 
@@ -2064,7 +3163,6 @@
     }
     if (state.brushMode === 'off') return;
     e.preventDefault();
-    pushHistory(state.brushMode);
     state.isDrawing = true;
     const pt = getCanvasCoords(e);
     state.lastDrawPoint = pt;
@@ -2093,14 +3191,30 @@
       state.isDrawing = false;
       state.lastDrawPoint = null;
       render();
+      pushGlobalHistory();
     }
   });
 
   // Keyboard shortcuts
   window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    // Skip if user is typing in an input
+    if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+
+    const isMod = e.ctrlKey || e.metaKey;
+    if (isMod && e.key.toLowerCase() === 'z') {
       e.preventDefault();
-      if (state.brushMode !== 'off') undoLayer(state.brushMode);
+      if (e.shiftKey) {
+        redoGlobal();
+      } else {
+        undoGlobal();
+      }
+      return;
+    }
+    if (isMod && (e.key === 'y' || e.key === 'Y')) {
+      // Ctrl+Y as alternate redo
+      e.preventDefault();
+      redoGlobal();
+      return;
     }
     // [ ] to resize brush
     if (e.key === '[' || e.key === ']') {
@@ -2145,7 +3259,16 @@
 
     // Determine output dimensions (for crop)
     let outW = srcW, outH = srcH;
-    if (state.cropRatio !== 'original') {
+    let manualCropX = 0, manualCropY = 0;
+
+    if (state.cropRegion) {
+      // Manual crop takes precedence — clamp to source bounds
+      const r = state.cropRegion;
+      manualCropX = Math.max(0, Math.min(srcW, Math.round(r.x)));
+      manualCropY = Math.max(0, Math.min(srcH, Math.round(r.y)));
+      outW = Math.max(1, Math.min(srcW - manualCropX, Math.round(r.w)));
+      outH = Math.max(1, Math.min(srcH - manualCropY, Math.round(r.h)));
+    } else if (state.cropRatio !== 'original') {
       const [rW, rH] = state.cropRatio.split(':').map(Number);
       const targetAspect = rW / rH;
       const srcAspect = srcW / srcH;
@@ -2171,10 +3294,29 @@
     // Paint background
     paintBackground(finalW, finalH);
 
-    const cropX = Math.max(0, Math.floor((srcW - outW) / 2));
-    const cropY = Math.max(0, Math.floor((srcH - outH) / 2));
-    const cropW = Math.min(srcW, outW);
-    const cropH = Math.min(srcH, outH);
+    // Paint independent frame/padding colour, if enabled and there's a padding ring
+    if (state.paddingColorOn && (padX > 0 || padY > 0)) {
+      ctx.fillStyle = state.paddingColor;
+      // Top ring
+      if (padY > 0) ctx.fillRect(0, 0, finalW, padY);
+      // Bottom ring
+      if (padY > 0) ctx.fillRect(0, finalH - padY, finalW, padY);
+      // Left ring
+      if (padX > 0) ctx.fillRect(0, padY, padX, finalH - padY * 2);
+      // Right ring
+      if (padX > 0) ctx.fillRect(finalW - padX, padY, padX, finalH - padY * 2);
+    }
+
+    let cropX, cropY;
+    if (state.cropRegion) {
+      cropX = manualCropX;
+      cropY = manualCropY;
+    } else {
+      cropX = Math.max(0, Math.floor((srcW - outW) / 2));
+      cropY = Math.max(0, Math.floor((srcH - outH) / 2));
+    }
+    const cropW = Math.min(srcW - cropX, outW);
+    const cropH = Math.min(srcH - cropY, outH);
 
     // ============ BUILD SUBJECT LAYER (with mask repair) ============
     // This composite will hold the image with any bg-removal + mask repair applied
@@ -2223,18 +3365,19 @@
   }
 
   function hasMaskEdits() {
-    // Quick check: we assume edits exist if history has anything, or the canvas has been drawn on
-    return state.history.mask && state.history.mask.length > 0;
+    // Always check the actual canvas — render whenever bg is removed and mask exists
+    return !!state.maskCanvas;
   }
 
   function hasLocalAdjustments() {
+    // Apply if any local adjustment is non-zero (mask layer is always available)
     const a = state.localAdj;
-    return (a.exposure || a.contrast || a.saturation || a.temp) &&
-           state.history.local && state.history.local.length > 0;
+    return !!(a.exposure || a.contrast || a.saturation || a.temp);
   }
 
   function hasPaintContent() {
-    return state.history.paint && state.history.paint.length > 0;
+    // Paint layer is always rendered — its transparency handles "no content"
+    return !!state.paintCanvas;
   }
 
   function applyMaskRepair(targetCtx, w, h) {

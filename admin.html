@@ -468,6 +468,15 @@ input.im-num:focus { border-color:var(--copper); }
           <span class="sidebar-icon">💵</span> 分潤結算
         </button>
       </div>
+      <div class="sidebar-section" style="margin-top:16px;">
+        <div class="sidebar-label">工具</div>
+        <a class="sidebar-btn" href="hm-pythons-studio.html" target="_blank" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+          <span class="sidebar-icon">🎨</span> Studio 照片編輯
+        </a>
+        <button class="sidebar-btn" onclick="showPage('scaleswap', this); ssRender();">
+          <span class="sidebar-icon">📤</span> ScaleSwap 刊登包
+        </button>
+      </div>
     </div>
 
     <div class="content">
@@ -615,10 +624,23 @@ input.im-num:focus { border-color:var(--copper); }
 
           <div style="border-top:1px solid rgba(181,115,58,0.15);margin:8px 0 20px;"></div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">性別</label>
+              <select class="form-select" id="f-sex">
+                <option value="">未填寫</option>
+                <option value="M">♂ 公</option>
+                <option value="F">♀ 母</option>
+                <option value="U">？ 未知</option>
+              </select>
+            </div>
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">出生日期</label>
               <input class="form-input" id="f-birth" placeholder="例：2025/06/04">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">體重 (g)</label>
+              <input class="form-input" id="f-weight" type="number" min="0" placeholder="例：120">
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">是否接受冷凍</label>
@@ -1015,6 +1037,34 @@ input.im-num:focus { border-color:var(--copper); }
         </div>
       </div>
 
+      <!-- SCALESWAP EXPORT PAGE -->
+      <div class="page" id="page-scaleswap">
+        <div class="page-title">📤 ScaleSwap 刊登包</div>
+        <div class="page-sub">把待售個體的資料整理成 ScaleSwap 表單格式，逐一複製貼上即可</div>
+
+        <div style="background:var(--cream); border-radius:8px; padding:16px 20px; margin-bottom:20px; border-left:3px solid var(--copper);">
+          <div style="font-size:13px;font-weight:500;color:var(--brown);margin-bottom:6px;">💡 使用方式</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;">
+            1. 開啟 <a href="https://www.scaleswap.co/create-listing" target="_blank" style="color:var(--copper);">ScaleSwap 刊登頁面</a>（建議用同一個瀏覽器分頁）<br>
+            2. 在下方選擇要刊登的個體，點擊「展開」<br>
+            3. 每個欄位都有「📋 複製」按鈕，按一下就能貼到 ScaleSwap 表單對應欄位<br>
+            4. 圖片網址列出後，可直接從 Cloudinary 下載再上傳，或在 ScaleSwap 用「從 URL 匯入」（如有支援）
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+          <select class="form-select" id="ss-filter" style="width:160px;padding:7px 10px" onchange="ssRender()">
+            <option value="sale">僅顯示待售中</option>
+            <option value="auction">僅顯示競標中</option>
+            <option value="all">全部（除已售出）</option>
+          </select>
+          <input class="form-input" id="ss-search" placeholder="搜尋編號/基因..." style="width:200px;padding:7px 10px" oninput="ssRender()">
+          <span id="ss-count" style="font-size:12px;color:var(--muted);margin-left:auto">—</span>
+        </div>
+
+        <div id="ss-list"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1095,6 +1145,7 @@ async function loadSnakes() {
   const q = query(collection(db, 'snakes'), orderBy('createdAt', 'desc'));
   const snap = await getDocs(q);
   allSnakes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  window.allSnakes = allSnakes;  // 暴露給其他 module（如 ScaleSwap 匯出）
   renderSnakes();
 }
 
@@ -1390,9 +1441,11 @@ window.submitSnake = async () => {
   const species = document.getElementById('f-species').value;
   const birth = document.getElementById('f-birth').value.trim();
   const frozen = document.getElementById('f-frozen').value;
+  const weight = document.getElementById('f-weight').value.trim();
   const sire = document.getElementById('f-sire').value.trim();
   const dam = document.getElementById('f-dam').value.trim();
   const nature = document.getElementById('f-nature').value;
+  const sex = document.getElementById('f-sex').value;
 
   if (!imgUrl) { showToast('❌ 請先上傳照片'); return; }
   if (!code || !nameZh) { showToast('❌ 請填寫編號和名稱'); return; }
@@ -1404,7 +1457,7 @@ window.submitSnake = async () => {
     await addDoc(collection(db, 'snakes'), {
       imgUrl, code, morph, nameZh, nameEn,
       tags: currentTags, status, auctionUrl, auctionEnd, price, species,
-      birth, frozen, sire, dam, nature,
+      birth, frozen, sire, dam, nature, sex, weight,
       createdAt: serverTimestamp()
     });
     showToast('✅ 新增成功！');
@@ -1412,9 +1465,10 @@ window.submitSnake = async () => {
     document.getElementById('img-url').value = '';
     document.getElementById('upload-preview').style.display = 'none';
     document.getElementById('upload-placeholder').style.display = 'block';
-    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-auction-end','f-price','f-birth','f-sire','f-dam'].forEach(id => document.getElementById(id).value = '');
+    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-auction-end','f-price','f-birth','f-sire','f-dam','f-weight'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-frozen').value = '';
     document.getElementById('f-nature').value = '';
+    document.getElementById('f-sex').value = '';
     currentTags = [];
     renderTags();
     await loadSnakes();
@@ -1477,6 +1531,8 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-auction-end').value = snake.auctionEnd || '';
     document.getElementById('edit-birth').value = snake.birth || '';
     document.getElementById('edit-frozen').value = snake.frozen || '';
+    document.getElementById('edit-sex').value = snake.sex || '';
+    document.getElementById('edit-weight').value = snake.weight || '';
     document.getElementById('edit-sire').value = snake.sire || '';
     document.getElementById('edit-dam').value = snake.dam || '';
     document.getElementById('edit-nature').value = snake.nature || '';
@@ -1545,6 +1601,8 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         auctionEnd: document.getElementById('edit-auction-end').value || '',
         birth: document.getElementById('edit-birth').value.trim(),
         frozen: document.getElementById('edit-frozen').value,
+        sex: document.getElementById('edit-sex').value,
+        weight: document.getElementById('edit-weight').value.trim(),
         sire: document.getElementById('edit-sire').value.trim(),
         dam: document.getElementById('edit-dam').value.trim(),
         nature: document.getElementById('edit-nature').value,
@@ -1802,10 +1860,23 @@ window.showToast = function showToast(msg) {
       <input class="form-input" id="edit-auction-end" type="datetime-local">
     </div>
     <div style="border-top:1px solid rgba(181,115,58,0.15);margin:4px 0 16px;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div>
+        <label class="form-label">性別</label>
+        <select class="form-select" id="edit-sex">
+          <option value="">未填寫</option>
+          <option value="M">♂ 公</option>
+          <option value="F">♀ 母</option>
+          <option value="U">？ 未知</option>
+        </select>
+      </div>
       <div>
         <label class="form-label">出生日期</label>
         <input class="form-input" id="edit-birth" placeholder="例：2025/06/04">
+      </div>
+      <div>
+        <label class="form-label">體重 (g)</label>
+        <input class="form-input" id="edit-weight" type="number" min="0" placeholder="例：120">
       </div>
       <div>
         <label class="form-label">是否接受冷凍</label>
@@ -2553,6 +2624,7 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">來源</label><input class="form-input" id="im-f-source" value="${esc(r.source||'')}"></div>
       <div class="form-group"><label class="form-label">飼養狀況</label><select class="form-select" id="im-f-status"><option ${(r.status||'安全穩定')==='安全穩定'?'selected':''}>安全穩定</option><option ${r.status==='隔離中'?'selected':''}>隔離中</option></select></div>
       <div class="form-group"><label class="form-label">解除隔離日期</label><input class="form-input" id="im-f-isoEnd" value="${esc(r.isoEnd||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">優先配對公蛇</label>
         <input class="form-input" id="im-f-pairPri" value="${esc(r.pairPri||'')}" list="im-male-list" placeholder="輸入或選擇">
@@ -2627,7 +2699,7 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">產品編號</label><input class="form-input" id="im-f-saleId" value="${esc(r.saleId||'')}"></div>
       <div class="form-group"><label class="form-label">物種</label><select class="form-select" id="im-f-species">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="im-f-sex"><option value="M" ${(r.sex||'M')==='M'?'selected':''}>♂ 公</option><option value="F" ${r.sex==='F'?'selected':''}>♀ 母</option></select></div>
+      <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="im-f-sex"><option value="M" ${(r.sex||'M')==='M'?'selected':''}>♂ 公</option><option value="F" ${r.sex==='F'?'selected':''}>♀ 母</option><option value="U" ${r.sex==='U'?'selected':''}>？ 未知</option></select></div>
       <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
       <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}" oninput="imAutoFund()"></div>
       <div class="form-group"><label class="form-label">售價 (NT$) *</label><input class="form-input" id="im-f-price" type="number" value="${r.price||''}" oninput="imAutoFund()"></div>
@@ -2639,6 +2711,7 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group im-form-full"><label class="form-label">買家資訊</label><input class="form-input" id="im-f-buyer" value="${esc(r.buyer||'')}"></div>
       <div class="form-group"><label class="form-label">出貨日期</label><input class="form-input" id="im-f-ship" value="${esc(r.ship||'')}"></div>
       <div class="form-group"><label class="form-label">出生/進貨日期</label><input class="form-input" id="im-f-birth" value="${esc(r.birth||'')}"></div>
+      <div class="form-group"><label class="form-label">體重 (g)</label><input class="form-input" id="im-f-weight" type="number" min="0" placeholder="例：120" value="${r.weight||''}"></div>
       <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">是否接受冷凍</label>
@@ -2780,6 +2853,12 @@ window.imOpenForm = async (section, id) => {
 
   document.getElementById('im-modal-body').innerHTML = html;
   document.getElementById('im-modal-overlay').classList.add('show');
+
+  // 為產品編號設置 baseline：目前值（資料庫原值或空）視為「未手動修改」
+  const saleIdInput = document.getElementById('im-f-saleId');
+  if (saleIdInput) {
+    saleIdInput.dataset.lastAuto = saleIdInput.value;
+  }
 };
 
 // ── CROSS-BREED PROFIT SPLIT ─────────────────────
@@ -2878,8 +2957,8 @@ window.imSave = async (section, id) => {
       cost:parseInt(g('im-f-cost').value)||0,
       saleId:g('im-f-saleId').value,
       source:g('im-f-source').value, status:g('im-f-status').value,
-      isoEnd:g('im-f-isoEnd').value, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
-      pairPri:g('im-f-pairPri').value, pairAlt:g('im-f-pairAlt').value, note:g('im-f-note').value,
+      isoEnd:g('im-f-isoEnd').value, sireA:g('im-f-sireA')?.value||'', damB:g('im-f-damB')?.value||'',
+      pairPri:g('im-f-pairPri')?.value||'', pairAlt:g('im-f-pairAlt')?.value||'', note:g('im-f-note')?.value||'',
       frozen:g('im-f-frozen')?.value||'',
       nature:g('im-f-nature')?.value||'' };
   }
@@ -2892,6 +2971,7 @@ window.imSave = async (section, id) => {
     data = { owner:g('im-f-owner').value, saleId:g('im-f-saleId').value,
       species:g('im-f-species').value, gene, sex:g('im-f-sex').value,
       birth:g('im-f-birth').value, cost,
+      weight:g('im-f-weight')?.value||'',
       price, fund: delivery==='免交付'?0:parseInt(g('im-f-fund').value)||0,
       source:g('im-f-source').value, status:g('im-f-status').value,
       channel:g('im-f-channel').value, buyer:g('im-f-buyer').value,
@@ -3373,7 +3453,7 @@ window.imPushToSite = (id) => {
     </div>
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">中文名稱（選填）</label>
-      <input class="form-input" id="push-name-zh" placeholder="例：沙漠幽靈（公）" value="${esc((r.gene||'')+'（'+(r.sex==='M'?'公':'母')+'）')}">
+      <input class="form-input" id="push-name-zh" placeholder="例：沙漠幽靈（公）" value="${esc((r.gene||'')+(r.sex==='M'?'（公）':r.sex==='F'?'（母）':''))}">
     </div>
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">個體年份</label>
@@ -3388,10 +3468,14 @@ window.imPushToSite = (id) => {
       <input class="form-input" id="push-auction-end" type="datetime-local">
     </div>
     <div style="border-top:1px solid rgba(181,115,58,0.15);margin:4px 0 16px;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">出生日期</label>
         <input class="form-input" id="push-birth" placeholder="例：2025/06/04" value="${r.birth?r.birth.replace(/\//g,'/').split(' ')[0]:''}">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">體重 (g)</label>
+        <input class="form-input" id="push-weight" type="number" min="0" placeholder="例：120" value="${r.weight||''}">
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">是否接受冷凍</label>
@@ -3452,6 +3536,7 @@ window.imDoPush = async (id) => {
   const year = document.getElementById('push-year').value.trim();
   const pushBirth = document.getElementById('push-birth').value.trim();
   const pushFrozen = document.getElementById('push-frozen').value;
+  const pushWeight = document.getElementById('push-weight').value.trim();
   const pushSire = document.getElementById('push-sire').value.trim();
   const pushDam = document.getElementById('push-dam').value.trim();
   const pushNature = document.getElementById('push-nature').value;
@@ -3459,12 +3544,15 @@ window.imDoPush = async (id) => {
   const speciesKey = SPECIES_MAP_PUSH[r.species] || 'ball_python';
   const tags = (r.gene||'').split(' ').filter(t=>t.length>1&&t.length<30);
 
+  // 性別英文標籤：M=Male, F=Female, 其他不加
+  const sexEnLabel = r.sex==='M' ? ' Male' : (r.sex==='F' ? ' Female' : '');
+
   const snakeDoc = {
     code: r.saleId || '',
     morph: r.gene || '',
     species: speciesKey,
     nameZh: nameZh || r.gene,
-    nameEn: r.gene + ' ' + (r.sex==='M'?'Male':'Female'),
+    nameEn: r.gene + sexEnLabel,
     tags,
     price: r.price ? 'NT$'+r.price.toLocaleString() : '洽詢',
     status,
@@ -3474,9 +3562,11 @@ window.imDoPush = async (id) => {
     year: year || '',
     birth: pushBirth || '',
     frozen: pushFrozen || '',
+    weight: pushWeight || '',
     sire: pushSire || '',
     dam: pushDam || '',
     nature: pushNature || '',
+    sex: r.sex || '',  // ← 從銷售紀錄同步性別到官網
     createdAt: serverTimestamp(),
     fromIM: true,
     imSaleId: id,
@@ -3486,9 +3576,22 @@ window.imDoPush = async (id) => {
     // 檢查是否已推送過（同一個 imSaleId）
     const existing = await getDocs(query(collection(db2, 'snakes'), where('imSaleId','==',id)));
     if (!existing.empty) {
+      // 自動補性別（如果舊資料 sex 是空的且 IM.sales 有 sex，就同步過去）
+      let synced = false;
+      if (r.sex && (r.sex === 'M' || r.sex === 'F' || r.sex === 'U')) {
+        for (const docSnap of existing.docs) {
+          const existingSex = docSnap.data().sex || '';
+          if (existingSex !== r.sex) {
+            await updateDoc(doc(db2, 'snakes', docSnap.id), { sex: r.sex });
+            synced = true;
+          }
+        }
+        if (synced && typeof loadSnakes === 'function') await loadSnakes();
+      }
+
       document.getElementById('im-modal-body').innerHTML = `
         <div class="im-modal-title" style="color:#8b5e10">⚠️ 已推送過</div>
-        <p class="im-confirm-msg">這筆資料已經推送到官網了。<br>如需更新，請到「所有個體」頁面直接編輯。</p>
+        <p class="im-confirm-msg">這筆資料已經推送到官網了。${synced ? '<br><span style="color:#2a6b3a">✅ 已自動同步性別欄位</span>' : ''}<br>如需更新其他欄位，請到「所有個體」頁面直接編輯。</p>
         <div class="im-form-actions">
           <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imCloseModal()">了解</button>
         </div>`;
@@ -3960,30 +4063,57 @@ window.imGenCode = (apply=false) => {
   const litter = litterRaw === '' ? 0 : (parseInt(litterRaw)||0);
   const prefix = `${ownerCode}${speciesCode}${dateCode}#${litter}-`;
 
-  // 序號邏輯：按產生(apply=true)永遠自動算最大+1；seqInput只用於即時預覽
+  // 序號邏輯：按產生(apply=true)時，若使用者有手動填序號就尊重，空白才自動算最大+1
   let seq;
   if (apply) {
-    const currentId = window._imEditingId || '';
-    const allRecords = [...(IM.males||[]), ...(IM.females||[])];
-    console.log('editingId:', currentId);
-    console.log('all saleIds:', allRecords.map(r=>r.saleId+' ('+r._id+')'));
-    const existing = allRecords
-      .filter(r => r._id !== currentId)
-      .map(r => r.saleId||'')
-      .filter(id => id.startsWith(prefix))
-      .map(id => parseInt(id.slice(prefix.length))||0);
-    console.log('prefix:', prefix, 'existing:', existing);
-    const autoSeq = existing.length > 0 ? Math.max(...existing) + 1 : 1;
-    seq = String(autoSeq).padStart(2,'0');
+    if (seqInput !== '') {
+      // 使用者已手動輸入序號，照填
+      seq = String(parseInt(seqInput)||1).padStart(2,'0');
+    } else {
+      // 空白才自動算
+      const currentId = window._imEditingId || '';
+      const allRecords = [...(IM.males||[]), ...(IM.females||[])];
+      console.log('editingId:', currentId);
+      console.log('all saleIds:', allRecords.map(r=>r.saleId+' ('+r._id+')'));
+      const existing = allRecords
+        .filter(r => r._id !== currentId)
+        .map(r => r.saleId||'')
+        .filter(id => id.startsWith(prefix))
+        .map(id => parseInt(id.slice(prefix.length))||0);
+      console.log('prefix:', prefix, 'existing:', existing);
+      const autoSeq = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+      seq = String(autoSeq).padStart(2,'0');
+    }
   } else {
     seq = String(parseInt(seqInput)||1).padStart(2,'0');
   }
   const code = `${prefix}${seq}`;
   const preview = document.getElementById('im-code-preview');
-  if (preview) preview.textContent = `預覽：${code}`;
+  const input = document.getElementById('im-f-saleId');
+
   if (apply) {
-    const input = document.getElementById('im-f-saleId');
-    if (input) { input.value = code; if (preview) preview.textContent = ''; }
+    // 按下「⚙ 產生」按鈕：強制覆蓋
+    if (input) {
+      input.value = code;
+      input.dataset.lastAuto = code;  // 記錄這是自動產生的值
+    }
+    if (preview) preview.textContent = '';
+  } else {
+    // 即時更新：只在「使用者沒手動改過產品編號」時自動填入
+    if (input) {
+      const currentVal = input.value;
+      const lastAuto = input.dataset.lastAuto || '';
+
+      // 如果目前的值就是上次自動產生／表單初始值，代表使用者沒手改 → 可覆蓋
+      if (currentVal === lastAuto || currentVal === '') {
+        input.value = code;
+        input.dataset.lastAuto = code;
+        if (preview) preview.textContent = '';
+      } else {
+        // 使用者已手動改過，只更新預覽，不覆蓋輸入框
+        if (preview) preview.textContent = `預覽：${code}（按「⚙ 產生」可套用）`;
+      }
+    }
   }
 };
 
@@ -4591,5 +4721,254 @@ window.showPage = (page, btn) => {
   if (window.innerWidth <= 768) closeSidebar();
   if (page === 'im-dashboard') imRenderDashboard();
 };
+
+// ===========================================
+// ScaleSwap 刊登包匯出
+// ===========================================
+
+// 物種對應（hm.pythons → ScaleSwap 常見英文名）
+const SS_SPECIES_MAP = {
+  '球蟒': 'Ball Python',
+  'ball_python': 'Ball Python',
+  '紅尾蚺': 'Boa Constrictor',
+  'boa': 'Boa Constrictor',
+  '玉米蛇': 'Corn Snake',
+  'corn_snake': 'Corn Snake',
+  '王蛇': 'King Snake',
+  'king_snake': 'King Snake',
+  '豹紋守宮': 'Leopard Gecko',
+  'leopard_gecko': 'Leopard Gecko'
+};
+
+// 直接讀 snake.sex（M/F/U/空字串）
+function ssGetSex(snake) {
+  const s = (snake.sex || '').toUpperCase();
+  if (s === 'M') return 'male';
+  if (s === 'F') return 'female';
+  if (s === 'U') return 'unknown';
+  return 'unset';  // 完全沒設過（舊資料）
+}
+
+// 從 birth 萃取年份（支援 2025/06/04、20250604、2025-06-04、2025）
+function ssExtractYear(birthStr) {
+  if (!birthStr) return new Date().getFullYear();
+  const match = String(birthStr).match(/\b(20\d{2})\b/);
+  return match ? parseInt(match[1]) : new Date().getFullYear();
+}
+
+// 從 price 萃取數字（"NT$8,500" → 8500，"洽詢" → null）
+function ssExtractPrice(priceStr) {
+  if (!priceStr) return null;
+  const cleaned = String(priceStr).replace(/[,\s]/g, '');
+  const match = cleaned.match(/(\d+)/);
+  return match ? parseInt(match[1]) : null;
+}
+
+// 自動產生 ScaleSwap 描述
+function ssBuildDescription(snake) {
+  const lines = [];
+  if (snake.morph) lines.push(`Morph: ${snake.morph}`);
+  if (snake.sire) lines.push(`Sire: ${snake.sire}`);
+  if (snake.dam) lines.push(`Dam: ${snake.dam}`);
+  if (snake.birth) lines.push(`Hatched: ${snake.birth}`);
+  if (snake.frozen === '是') lines.push('Feeding: Accepting frozen/thawed prey');
+  else if (snake.frozen === '否') lines.push('Feeding: Live prey only');
+  if (snake.nature) lines.push(`Temperament: ${snake.nature}`);
+  lines.push('');
+  lines.push('Bred by hm.pythons (Taiwan)');
+  lines.push('Healthy, well-handled individual.');
+  return lines.join('\n');
+}
+
+// 把一隻蛇的資料整理成 ScaleSwap 欄位
+function ssBuildPackage(snake) {
+  return {
+    species: SS_SPECIES_MAP[snake.species] || snake.species || 'Ball Python',
+    title: snake.nameZh || snake.nameEn || snake.morph || snake.code || '(請填寫標題)',
+    morph: snake.morph || '',
+    sire: snake.sire || '',
+    dam: snake.dam || '',
+    description: ssBuildDescription(snake),
+    sex: ssGetSex(snake),
+    birthYear: ssExtractYear(snake.birth),
+    weight: snake.weight || '',
+    source: 'CB',  // 預設自繁
+    frozen: snake.frozen === '是' ? 'yes' : (snake.frozen === '否' ? 'no' : ''),
+    price: ssExtractPrice(snake.price),
+    imgUrl: snake.imgUrl || ''
+  };
+}
+
+// 複製到剪貼簿
+window.ssCopy = (text, btn) => {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ 已複製';
+    btn.style.background = '#4a7fb5';
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.style.background = '';
+    }, 1500);
+  }).catch(err => {
+    alert('複製失敗：' + err.message);
+  });
+};
+
+// 切換展開/收合
+window.ssToggle = (id) => {
+  const el = document.getElementById('ss-detail-' + id);
+  const arrow = document.getElementById('ss-arrow-' + id);
+  if (!el) return;
+  if (el.style.display === 'block') {
+    el.style.display = 'none';
+    arrow.textContent = '▼';
+  } else {
+    el.style.display = 'block';
+    arrow.textContent = '▲';
+  }
+};
+
+// 渲染清單
+window.ssRender = () => {
+  const filter = document.getElementById('ss-filter')?.value || 'sale';
+  const search = (document.getElementById('ss-search')?.value || '').toLowerCase();
+  const list = document.getElementById('ss-list');
+  if (!list) return;
+
+  // window.allSnakes 是 Module 1 暴露的全域變數
+  const snakesData = window.allSnakes;
+  if (!snakesData || snakesData.length === 0) {
+    document.getElementById('ss-count').textContent = '—';
+    list.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px;">資料還在載入中...請稍等幾秒後重新點擊側邊欄按鈕<br><br><button class="action-btn" onclick="ssRender()" style="margin-top:12px">🔄 重新載入</button></div>';
+    return;
+  }
+
+  let snakes = snakesData.filter(s => {
+    if (filter === 'sale') return s.status === 'sale' || s.status === '待售' || s.status === 'available';
+    if (filter === 'auction') return s.status === 'auction' || s.status === '競標';
+    if (filter === 'all') return s.status !== 'sold' && s.status !== '已售出';
+    return true;
+  });
+
+  if (search) {
+    snakes = snakes.filter(s => {
+      const blob = ((s.code||'') + (s.morph||'') + (s.nameZh||'') + (s.nameEn||'')).toLowerCase();
+      return blob.includes(search);
+    });
+  }
+
+  document.getElementById('ss-count').textContent = `共 ${snakes.length} 隻`;
+
+  if (snakes.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px;">沒有符合條件的個體</div>';
+    return;
+  }
+
+  list.innerHTML = snakes.map((snake, idx) => {
+    const pkg = ssBuildPackage(snake);
+    const id = snake.id || ('idx' + idx);
+    const sexLabel = pkg.sex === 'male' ? '♂ 雄' : (pkg.sex === 'female' ? '♀ 雌' : (pkg.sex === 'unknown' ? '？ 未知' : '⚠️ 未填'));
+    const sexColor = pkg.sex === 'male' ? '#4a7fb5' : (pkg.sex === 'female' ? '#c97090' : (pkg.sex === 'unknown' ? '#888' : '#c45'));
+
+    return `
+      <div style="background:white; border:1px solid rgba(181,115,58,0.18); border-radius:10px; margin-bottom:12px; overflow:hidden;">
+        <div onclick="ssToggle('${id}')" style="display:flex; align-items:center; gap:14px; padding:12px 16px; cursor:pointer; user-select:none;">
+          <img src="${snake.imgUrl}" style="width:56px; height:56px; object-fit:cover; border-radius:6px; flex-shrink:0;" onerror="this.style.display='none'">
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; color:var(--brown); font-size:14px; margin-bottom:2px;">
+              ${esc(snake.nameZh || snake.morph || snake.code)}
+            </div>
+            <div style="font-size:11px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap;">
+              <span>${esc(snake.code || '')}</span>
+              <span style="color:${sexColor}; font-weight:600">${sexLabel}</span>
+              <span>${esc(pkg.species)}</span>
+              <span>${pkg.price ? 'NT$' + pkg.price.toLocaleString() : esc(snake.price || '—')}</span>
+            </div>
+          </div>
+          <span id="ss-arrow-${id}" style="color:var(--copper); font-size:14px;">▼</span>
+        </div>
+
+        <div id="ss-detail-${id}" style="display:none; padding:16px; border-top:1px solid rgba(181,115,58,0.12); background:var(--cream);">
+          ${ssRenderField('物種 Species', pkg.species, id+'-species')}
+          ${ssRenderField('刊登標題 Title', pkg.title, id+'-title')}
+          ${ssRenderField('品系 Morph', pkg.morph, id+'-morph')}
+          ${ssRenderField('親本 1 Sire (♂)', pkg.sire, id+'-sire')}
+          ${ssRenderField('親本 2 Dam (♀)', pkg.dam, id+'-dam')}
+          ${ssRenderField('描述 Description', pkg.description, id+'-desc', true)}
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">性別 Sex</div>
+              <div style="font-size:13px; font-weight:600; color:${sexColor}; padding:6px 10px; background:white; border-radius:5px; border:1px solid rgba(181,115,58,0.15);">${sexLabel}</div>
+              ${pkg.sex === 'unset' ? '<div style="font-size:10px; color:#c45; margin-top:3px;">⚠️ 請去「編輯個體」設定性別</div>' : ''}
+            </div>
+            <div>
+              <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">出生年份 Year</div>
+              <div style="font-size:13px; font-weight:600; padding:6px 10px; background:white; border-radius:5px; border:1px solid rgba(181,115,58,0.15);">${pkg.birthYear}</div>
+            </div>
+            <div>
+              <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">來源 Source</div>
+              <div style="font-size:13px; font-weight:600; padding:6px 10px; background:white; border-radius:5px; border:1px solid rgba(181,115,58,0.15);">CB（自繁）</div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">接受冷凍食物</div>
+              <div style="font-size:13px; font-weight:600; padding:6px 10px; background:white; border-radius:5px; border:1px solid rgba(181,115,58,0.15);">
+                ${pkg.frozen === 'yes' ? '✅ 是' : (pkg.frozen === 'no' ? '❌ 否' : '⚠️ 未填')}
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <div style="font-size:11px; color:var(--muted);">體重 Weight (g)</div>
+                ${pkg.weight ? `<button onclick="ssCopy('${pkg.weight}', this)" style="font-size:10px; padding:2px 8px; background:var(--copper); color:white; border:none; border-radius:3px; cursor:pointer;">📋</button>` : ''}
+              </div>
+              <div style="font-size:13px; font-weight:600; padding:6px 10px; background:white; border-radius:5px; border:1px solid rgba(181,115,58,0.15); ${pkg.weight ? '' : 'color:#c45;'}">${pkg.weight ? pkg.weight + ' g' : '⚠️ 未填'}</div>
+            </div>
+          </div>
+
+          ${ssRenderField('要價 Price (NT$)', pkg.price ? String(pkg.price) : '(請手動填寫)', id+'-price')}
+
+          <div style="margin-top:14px; padding:12px; background:white; border-radius:6px; border:1px solid rgba(181,115,58,0.15);">
+            <div style="font-size:11px; color:var(--muted); margin-bottom:8px; font-weight:600;">📷 圖片（封面）</div>
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <img src="${pkg.imgUrl}" style="width:80px; height:80px; object-fit:cover; border-radius:5px;" onerror="this.style.display='none'">
+              <div style="flex:1;">
+                <div style="font-size:10px; color:var(--muted); word-break:break-all; margin-bottom:6px;">${esc(pkg.imgUrl)}</div>
+                <button onclick="ssCopy('${pkg.imgUrl.replace(/'/g, "\\'")}', this)" style="font-size:11px; padding:4px 10px; background:var(--copper); color:white; border:none; border-radius:4px; cursor:pointer;">📋 複製網址</button>
+                <a href="${pkg.imgUrl}" download target="_blank" style="font-size:11px; padding:4px 10px; background:#4a7fb5; color:white; border:none; border-radius:4px; text-decoration:none; margin-left:6px;">⬇️ 下載</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+};
+
+// 單一欄位渲染（含複製按鈕）
+function ssRenderField(label, value, fieldId, multiline) {
+  const safeValue = String(value || '');
+  // 為 inline onclick 安全處理：先 \ 再 ' 再 \n（順序很重要）
+  const escaped = safeValue
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '');
+  const display = multiline
+    ? `<textarea readonly style="width:100%; min-height:90px; padding:8px 10px; font-size:12px; font-family:inherit; border:1px solid rgba(181,115,58,0.2); border-radius:5px; background:white; resize:vertical;">${esc(safeValue)}</textarea>`
+    : `<input readonly value="${esc(safeValue)}" style="width:100%; padding:6px 10px; font-size:13px; border:1px solid rgba(181,115,58,0.2); border-radius:5px; background:white;">`;
+
+  return `
+    <div style="margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <div style="font-size:11px; color:var(--muted); font-weight:600;">${label}</div>
+        <button onclick="ssCopy('${escaped}', this)" style="font-size:10px; padding:3px 10px; background:var(--copper); color:white; border:none; border-radius:4px; cursor:pointer; letter-spacing:0.5px;">📋 複製</button>
+      </div>
+      ${display}
+    </div>
+  `;
+}
 </script>
 </body>
