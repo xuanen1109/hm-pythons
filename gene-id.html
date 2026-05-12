@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>球蟒基因辨識 · hm.pythons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1614;
+  --bg-alt: #221d1a;
+  --surface: #2a2421;
+  --surface-hi: #332b27;
+  --line: #3d342e;
+  --ink: #ede4d8;
+  --ink-mute: #b8a99a;
+  --ink-dim: #7a6a5d;
+  --gold: #c9a96e;
+  --gold-soft: #8a7548;
+  --rust: #b85c3a;
+  --moss: #7a8c5a;
+  --shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Serif TC', 'Cormorant Garamond', serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at top left, rgba(201,169,110,0.06), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(184,92,58,0.05), transparent 60%);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+header {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2rem;
+  margin-bottom: 3rem;
+}
+
+.brand-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+h1 {
+  font-family: 'Cormorant Garamond', 'Noto Serif TC', serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+h1 .accent {
+  color: var(--gold);
+  font-style: italic;
+}
+
+.subtitle {
+  color: var(--ink-mute);
+  margin-top: 0.75rem;
+  font-size: 1.05rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .container { padding: 1.5rem 1rem; }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1.75rem;
+  position: relative;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 8px; left: 8px; right: 8px; bottom: 8px;
+  border: 1px solid var(--line);
+  pointer-events: none;
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+.panel-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.panel-title::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--gold);
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--ink-mute);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.upload-zone {
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  padding: 2rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 1rem;
+  background: var(--bg-alt);
+}
+
+.upload-zone:hover {
+  border-color: var(--gold-soft);
+  background: var(--surface-hi);
+}
+
+.upload-zone.has-image {
+  padding: 0;
+  border-style: solid;
+  overflow: hidden;
+}
+
+.upload-zone img {
+  width: 100%;
+  display: block;
+  max-height: 320px;
+  object-fit: contain;
+  background: var(--bg);
+}
+
+.upload-hint {
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+}
+
+.upload-hint .ic {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--gold-soft);
+}
+
+.parent-section {
+  margin-top: 1.5rem;
+}
+
+.parent-section h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  color: var(--ink);
+  font-style: italic;
+}
+
+.gene-picker {
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.75rem;
+  min-height: 60px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: flex-start;
+  cursor: text;
+}
+
+.gene-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--surface-hi);
+  border: 1px solid var(--gold-soft);
+  border-radius: 2px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+}
+
+.gene-chip.recessive {
+  border-color: var(--rust);
+  background: rgba(184,92,58,0.1);
+}
+
+.gene-chip.het {
+  border-color: var(--moss);
+  background: rgba(122,140,90,0.1);
+  font-style: italic;
+}
+
+.gene-chip .x {
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0 2px;
+}
+
+.gene-chip .x:hover { color: var(--rust); }
+
+.gene-input {
+  flex: 1;
+  min-width: 100px;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  padding: 0.3rem 0.4rem;
+}
+
+.gene-input-wrap {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.gene-add-btn {
+  background: var(--gold-soft);
+  color: var(--bg);
+  border: none;
+  border-radius: 2px;
+  padding: 0.3rem 0.7rem;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s, transform 0.15s, background 0.2s;
+  pointer-events: none;
+}
+
+.gene-add-btn.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.gene-add-btn:hover { background: var(--gold); }
+.gene-add-btn:active { transform: translateY(1px); }
+
+.gene-suggestions {
+  position: relative;
+}
+
+.suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface-hi);
+  border: 1px solid var(--gold-soft);
+  border-radius: 3px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: var(--shadow);
+  display: none;
+}
+
+.suggestions-list.show { display: block; }
+
+.suggestion-item {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover,
+.suggestion-item.active { background: var(--gold-soft); color: var(--bg); }
+
+.suggestion-item .type {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.suggestion-item:hover .type,
+.suggestion-item.active .type { color: var(--bg); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.5rem;
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: 2px;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn:hover { background: #d9b67c; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled {
+  background: var(--ink-dim);
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-mute);
+  border: 1px solid var(--line);
+}
+
+.btn-ghost:hover {
+  background: var(--surface-hi);
+  color: var(--ink);
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.results-section {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+}
+
+.results-section.hidden { display: none; }
+
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2rem;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.result-card::before {
+  content: '';
+  position: absolute;
+  top: 8px; left: 8px; right: 8px; bottom: 8px;
+  border: 1px solid var(--line);
+  pointer-events: none;
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+.result-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: var(--gold);
+  font-style: italic;
+}
+
+.ai-output {
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+  color: var(--ink);
+  line-height: 1.8;
+}
+
+.ai-output strong { color: var(--gold); font-weight: 600; }
+
+.probability-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.probability-table th {
+  text-align: left;
+  padding: 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--gold-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.probability-table td {
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.probability-table tr:last-child td { border-bottom: none; }
+
+.prob-bar {
+  display: inline-block;
+  width: 100%;
+  height: 4px;
+  background: var(--bg-alt);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.3rem;
+}
+
+.prob-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-soft), var(--gold));
+}
+
+.prob-pct {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  color: var(--gold);
+}
+
+.morph-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-size: 0.8rem;
+  margin: 0.15rem;
+}
+
+.morph-badge.super {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.morph-badge.recessive-vis {
+  border-color: var(--rust);
+  color: var(--rust);
+}
+
+.morph-badge.het {
+  border-color: var(--moss);
+  color: var(--moss);
+  font-style: italic;
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--bg);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.archive-section {
+  margin-top: 3rem;
+  border-top: 1px solid var(--line);
+  padding-top: 2rem;
+}
+
+.archive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.archive-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.75rem;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.archive-card:hover { border-color: var(--gold-soft); }
+
+.archive-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 2px;
+  background: var(--bg);
+}
+
+.archive-card .meta {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--ink-mute);
+}
+
+.archive-card .date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+}
+
+.archive-card .del {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0,0,0,0.6);
+  color: var(--ink-mute);
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.archive-card .del:hover { background: var(--rust); color: var(--ink); }
+
+.empty-archive {
+  color: var(--ink-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
+}
+
+.api-config {
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.api-config input {
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  border-radius: 2px;
+  margin-top: 0.5rem;
+}
+
+.notice {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.ornament {
+  text-align: center;
+  color: var(--gold-soft);
+  font-size: 1.2rem;
+  margin: 1.5rem 0;
+  letter-spacing: 1em;
+  opacity: 0.5;
+}
+
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="brand-tag">hm.pythons · gene atelier</div>
+    <h1>球蟒 <span class="accent">基因辨識</span> 工坊</h1>
+    <p class="subtitle">上傳幼體照片並輸入親代基因，AI 將結合視覺特徵與孟德爾遺傳推算可能的基因組合與後代機率。<br><span style="color:var(--gold-soft);font-size:0.9rem;">小提示：可直接貼上整串 morph 名稱（如「OD YB Lavender Pied」），系統會自動拆解。</span></p>
+  </header>
+
+  <div class="api-config">
+    <label for="apiKey">Gemini API Key（僅儲存於本機，不會上傳）</label>
+    <input type="password" id="apiKey" placeholder="AIza...">
+    <div class="notice">demo 階段需自備 key；正式整合到網站時建議改走後端代理。</div>
+  </div>
+
+  <div class="layout">
+    <!-- 左：圖片 -->
+    <div class="panel">
+      <div class="panel-title">Subject · 幼體</div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="imageInput" accept="image/*" hidden>
+        <div class="upload-hint" id="uploadHint">
+          <span class="ic">⌬</span>
+          點擊或拖曳上傳照片<br>
+          <small>建議：自然光、平鋪展示體色</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：親代 -->
+    <div class="panel">
+      <div class="panel-title">Lineage · 親代</div>
+
+      <div class="parent-section">
+        <h3>♀ 母本 (Dam)</h3>
+        <div class="gene-suggestions">
+          <div class="gene-picker" data-parent="dam">
+            <div class="gene-input-wrap">
+              <input type="text" class="gene-input" placeholder="輸入基因名稱…可加 het 前綴標帶因">
+              <button type="button" class="gene-add-btn" data-add="dam" title="加入此基因">＋ 加入</button>
+            </div>
+          </div>
+          <div class="suggestions-list" data-for="dam"></div>
+        </div>
+      </div>
+
+      <div class="parent-section">
+        <h3>♂ 父本 (Sire)</h3>
+        <div class="gene-suggestions">
+          <div class="gene-picker" data-parent="sire">
+            <div class="gene-input-wrap">
+              <input type="text" class="gene-input" placeholder="輸入基因名稱…可加 het 前綴標帶因">
+              <button type="button" class="gene-add-btn" data-add="sire" title="加入此基因">＋ 加入</button>
+            </div>
+          </div>
+          <div class="suggestions-list" data-for="sire"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="analyzeBtn">⌖ 開始分析</button>
+    <button class="btn btn-ghost" id="punnettBtn">⊞ 只算後代機率</button>
+    <button class="btn btn-ghost" id="resetBtn">↺ 重設</button>
+  </div>
+
+  <div class="results-section hidden" id="results">
+    <div class="ornament">✦ ✦ ✦</div>
+
+    <div class="result-card" id="punnettResult">
+      <h3>後代基因組合機率</h3>
+      <div id="punnettContent"></div>
+    </div>
+
+    <div class="result-card" id="aiResult" style="display:none;">
+      <h3>AI 視覺辨識</h3>
+      <div class="ai-output" id="aiContent"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="saveBtn">⌸ 存入紀錄</button>
+    </div>
+  </div>
+
+  <div class="archive-section">
+    <div class="panel-title">Archive · 已存紀錄</div>
+    <div class="archive-grid" id="archiveGrid">
+      <div class="empty-archive">尚無紀錄</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 基因資料庫 ============
+const GENE_DB = {
+  // ==== Co-dominant / Incomplete dominant ====
+  'Pastel':         { type: 'codom', super: 'Super Pastel', zh: '糊化', aliases: [] },
+  'Mojave':         { type: 'codom', super: 'Super Mojave (Blue Eyed Leucistic)', zh: '莫哈維', aliases: ['Moj'] },
+  'Lesser':         { type: 'codom', super: 'Blue Eyed Leucistic', zh: '輕微', aliases: [] },
+  'Butter':         { type: 'codom', super: 'Blue Eyed Leucistic', zh: '奶油', aliases: [] },
+  'Yellow Belly':   { type: 'codom', super: 'Ivory', zh: '黃肚', aliases: ['YB'] },
+  'Gravel':         { type: 'codom', super: 'Asphalt', zh: '碎石', aliases: [] },
+  'Asphalt':        { type: 'codom', super: 'Super Asphalt', zh: '柏油', aliases: [] },
+  'Spider':         { type: 'codom', super: 'lethal', zh: '蜘蛛', warning: 'Super Spider 為致死', aliases: [] },
+  'Pinstripe':      { type: 'codom', super: 'Super Pinstripe', zh: '細紋', aliases: ['Pin'] },
+  'Cinnamon':       { type: 'codom', super: 'Super Cinnamon (Black)', zh: '肉桂', aliases: ['Cinny', 'Cinn'] },
+  'Black Pastel':   { type: 'codom', super: 'Super Black Pastel', zh: '黑糊', aliases: ['BP'] },
+  'Enchi':          { type: 'codom', super: 'Super Enchi', zh: '恩奇', aliases: [] },
+  'Leopard':        { type: 'codom', super: 'Super Leopard', zh: '豹紋', aliases: ['Leo'] },
+  'Fire':           { type: 'codom', super: 'Super Fire (BlackEyed Leucistic)', zh: '火焰', aliases: [] },
+  'Vanilla':        { type: 'codom', super: 'Super Vanilla', zh: '香草', aliases: ['Van'] },
+  'Specter':        { type: 'codom', super: 'Super Specter', zh: '幽靈', aliases: ['Spectre'] },
+  'GHI':            { type: 'codom', super: 'Super GHI', zh: 'GHI', aliases: [] },
+  'Banana':         { type: 'codom', super: 'Super Banana', zh: '香蕉', aliases: ['Coral Glow', 'CG'] },
+  'Mystic':         { type: 'codom', super: 'Super Mystic', zh: '神秘', aliases: [] },
+  'Phantom':        { type: 'codom', super: 'Super Phantom', zh: '幻影', aliases: [] },
+  'Russo':          { type: 'codom', super: 'Super Russo', zh: 'Russo', aliases: ['Russo Het Leucistic', 'RHL'] },
+  'Hidden Gene Woma': { type: 'codom', super: 'Super HGW', zh: '隱基因 Woma', aliases: ['HGW'] },
+  'Mahogany':       { type: 'codom', super: 'Super Mahogany', zh: '紅木', aliases: [] },
+  'Confusion':      { type: 'codom', super: 'Super Confusion', zh: 'Confusion', aliases: [] },
+  'Sable':          { type: 'codom', super: 'Super Sable', zh: 'Sable', aliases: [] },
+  'Black Head':     { type: 'codom', super: 'Super Black Head', zh: '黑頭', aliases: ['BHB'] },
+  'Acid':           { type: 'codom', super: 'Super Acid', zh: 'Acid', aliases: [] },
+  'Granite':        { type: 'codom', super: 'Super Granite', zh: '花崗岩', aliases: [] },
+  'Trick':           { type: 'codom', super: 'Super Trick', zh: 'Trick', aliases: [] },
+  'Orange Dream':   { type: 'codom', super: 'Super Orange Dream', zh: '橘夢', aliases: ['OD'] },
+  'Het Red Axanthic': { type: 'codom', super: 'Red Axanthic', zh: 'het 紅消黑', aliases: ['HRA'] },
+
+  // ==== Recessive ====
+  'Desert Ghost':   { type: 'recessive', zh: '沙漠魂', aliases: ['DG'] },
+  'Cryptic':        { type: 'recessive', zh: 'Cryptic', aliases: [] },
+  'Sugar':          { type: 'recessive', zh: 'Sugar', aliases: [] },
+  'Pied':           { type: 'recessive', zh: '熊貓', aliases: ['Piebald'] },
+  'Clown':          { type: 'recessive', zh: '小丑', aliases: [] },
+  'Albino':         { type: 'recessive', zh: '白化', aliases: ['T- Albino', 'Amel'] },
+  'Lavender Albino':{ type: 'recessive', zh: '薰衣草白化', aliases: ['Lav', 'Lavender'] },
+  'Axanthic':       { type: 'recessive', zh: '消黑', aliases: ['Axanthic VPI', 'Axanthic TSK', 'Axanthic Jolliff', 'Ax'] },
+  'Ghost (Hypo)':   { type: 'recessive', zh: '低黑', aliases: ['Hypo', 'Ghost'] },
+  'Candy':          { type: 'recessive', zh: '糖果', aliases: [] },
+  'Toffee':         { type: 'recessive', zh: '太妃', aliases: [] },
+  'Genetic Stripe': { type: 'recessive', zh: '遺傳條紋', aliases: ['G-Stripe', 'GStripe'] },
+  'Sunset':         { type: 'recessive', zh: '日落', aliases: [] },
+  'Monsoon':        { type: 'recessive', zh: '季風', aliases: [] },
+  'Ultramel':       { type: 'recessive', zh: 'Ultramel', aliases: [] },
+  'Caramel Albino': { type: 'recessive', zh: '焦糖白化', aliases: ['Caramel'] },
+  'Stranger':       { type: 'recessive', zh: 'Stranger', aliases: [] },
+};
+
+// ==== 別名查找：把任意輸入文字（縮寫/中文/全名）對應到 GENE_DB 的 key ====
+function resolveGeneName(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+  // 1. 完全匹配 key
+  for (const name of Object.keys(GENE_DB)) {
+    if (name.toLowerCase() === q) return name;
+  }
+  // 2. 完全匹配 alias
+  for (const [name, info] of Object.entries(GENE_DB)) {
+    if (info.aliases && info.aliases.some(a => a.toLowerCase() === q)) return name;
+  }
+  // 3. 完全匹配中文
+  for (const [name, info] of Object.entries(GENE_DB)) {
+    if (info.zh && info.zh === query.trim()) return name;
+  }
+  // 4. 部分匹配 key 或 alias 或中文
+  for (const [name, info] of Object.entries(GENE_DB)) {
+    if (name.toLowerCase().includes(q)) return name;
+    if (info.aliases && info.aliases.some(a => a.toLowerCase().includes(q))) return name;
+    if (info.zh && info.zh.includes(query.trim())) return name;
+  }
+  return null;
+}
+
+// ==== 串列解析：把「OD YB Lavender Pied」這類複合 morph 名稱拆成多個基因 ====
+// 支援 het 修飾詞：「Pied het Desert Ghost」會解析為 [Pied 顯性, Desert Ghost het]
+// 支援連接詞：「Pastel and Pied」、「Pastel & Pied」、「Pastel + Pied」
+// 回傳 matched: [{ name, hetMode }]
+function parseGeneString(input) {
+  let s = input.trim();
+  if (!s) return { matched: [], remainder: '' };
+
+  // 預處理：把連接詞替換成空白；標準化 het / poss het / 100% het 等變體
+  s = s.replace(/\b(and|&|\+|,|、|及|和|與)\b/gi, ' ')
+       .replace(/\b(100%\s*het|100het|hethet|poss\.?\s*het|possible\s*het|可能het|帶因)\b/gi, 'het')
+       .replace(/\s+/g, ' ')
+       .trim();
+
+  // 構建 token 列表 [{ token, geneName }] 按 token 長度由長至短排序
+  const tokens = [];
+  for (const [name, info] of Object.entries(GENE_DB)) {
+    tokens.push({ token: name, geneName: name });
+    if (info.aliases) info.aliases.forEach(a => tokens.push({ token: a, geneName: name }));
+  }
+  tokens.sort((a, b) => b.token.length - a.token.length);
+
+  // 找出所有匹配的位置與 token
+  // 策略：在原字串上做位置標記，再左→右掃描，遇到 het 標記下一個基因為 het
+  const matches = []; // [{ start, end, geneName }]
+  let working = s;
+  let offset = 0;
+
+  // 反覆找最長 token 匹配，記錄位置
+  while (true) {
+    let bestMatch = null;
+    for (const { token, geneName } of tokens) {
+      const re = new RegExp(`(^|[\\s,+/\\-])${token.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}($|[\\s,+/\\-])`, 'i');
+      const m = working.match(re);
+      if (m) {
+        const start = m.index + m[1].length;
+        const end = start + token.length;
+        if (!bestMatch || start < bestMatch.start) {
+          bestMatch = { start, end, geneName, fullMatchLen: m[0].length, leadLen: m[1].length };
+        }
+      }
+    }
+    if (!bestMatch) break;
+    matches.push({
+      start: offset + bestMatch.start,
+      end: offset + bestMatch.end,
+      geneName: bestMatch.geneName
+    });
+    // 切到匹配後繼續找
+    const cutTo = bestMatch.end;
+    offset += cutTo;
+    working = working.slice(cutTo);
+  }
+
+  // 依出現順序排序
+  matches.sort((a, b) => a.start - b.start);
+
+  // 掃描原字串，找 het 詞出現位置
+  const hetPositions = [];
+  const hetRe = /\bhet\b/gi;
+  let hm;
+  while ((hm = hetRe.exec(s)) !== null) hetPositions.push(hm.index);
+
+  // 對每個匹配的基因：往前看看在它和上一個基因之間有沒有 het
+  const matched = [];
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    const prevEnd = i === 0 ? 0 : matches[i-1].end;
+    const hetBefore = hetPositions.some(p => p >= prevEnd && p < m.start);
+    matched.push({ name: m.geneName, hetMode: hetBefore });
+  }
+
+  // 計算殘餘：把所有匹配的 token 和 het 移除，看剩什麼
+  // 用一個 mask 陣列標記已使用字元
+  const used = new Array(s.length).fill(false);
+  matches.forEach(m => { for (let i = m.start; i < m.end; i++) used[i] = true; });
+  hetPositions.forEach(p => { for (let i = p; i < p + 3; i++) used[i] = true; });
+  let remainder = '';
+  for (let i = 0; i < s.length; i++) {
+    if (!used[i]) remainder += s[i];
+  }
+  remainder = remainder.replace(/[\s,+/\-]+/g, ' ').trim();
+
+  return { matched, remainder };
+}
+
+// ============ 父母基因狀態 ============
+const parents = { dam: [], sire: [] };
+// 每個基因物件：{ name, copies: 1|2, hetMode: bool（僅對 recessive 標 1 份）}
+
+// ============ 自動完成 ============
+function setupGenePicker(parent) {
+  const picker = document.querySelector(`.gene-picker[data-parent="${parent}"]`);
+  const input = picker.querySelector('.gene-input');
+  const list = document.querySelector(`.suggestions-list[data-for="${parent}"]`);
+  const addBtn = picker.querySelector(`.gene-add-btn[data-add="${parent}"]`);
+
+  // 共用：把目前輸入或選中的建議加入
+  function commitGene(name) {
+    // 路徑 1：明確指定基因名（從下拉建議點選）
+    if (name) {
+      addGene(parent, name, false);
+      input.value = '';
+      list.classList.remove('show');
+      addBtn.classList.remove('visible');
+      input.focus();
+      return;
+    }
+
+    // 路徑 2：從輸入框文字解析。先試串列解析（多個基因），失敗再試單一匹配
+    const raw = input.value.trim();
+    if (!raw) return;
+
+    const { matched, remainder } = parseGeneString(raw);
+
+    if (matched.length === 0) {
+      // 串列解析失敗 → 試一般 resolve
+      const single = resolveGeneName(raw);
+      if (!single) {
+        alert(`找不到基因「${raw}」。\n\n常見原因：\n• 拼字錯誤\n• 是複合 morph 名稱（請改用空格分開，例如「Pastel Pied」）\n• 資料庫尚未收錄此基因\n\n請從下拉清單參考可用基因。`);
+        return;
+      }
+      addGene(parent, single, false);
+    } else {
+      // 解析結果可能含 het 標記（從輸入文字推得）
+      matched.forEach(g => addGene(parent, g.name, g.hetMode));
+      if (remainder) {
+        const names = matched.map(g => g.hetMode ? `het ${g.name}` : g.name).join('、');
+        setTimeout(() => alert(`已加入 ${matched.length} 個基因：${names}\n\n但這部分無法識別：「${remainder}」`), 50);
+      }
+    }
+    input.value = '';
+    list.classList.remove('show');
+    addBtn.classList.remove('visible');
+    input.focus();
+  }
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    addBtn.classList.toggle('visible', q.length > 0);
+    if (!q) { list.classList.remove('show'); return; }
+    const matches = Object.entries(GENE_DB)
+      .filter(([name, info]) =>
+        name.toLowerCase().includes(q) ||
+        (info.zh && info.zh.includes(input.value.trim())) ||
+        (info.aliases && info.aliases.some(a => a.toLowerCase().includes(q))))
+      .slice(0, 10);
+    list.innerHTML = matches.map(([name, info], i) => {
+      const aliasText = info.aliases && info.aliases.length > 0 ? ` · ${info.aliases.slice(0,2).join(', ')}` : '';
+      return `<div class="suggestion-item${i === 0 ? ' active' : ''}" data-name="${name}">
+        <span>${name} <span style="color:var(--ink-dim)">${info.zh || ''}${aliasText}</span></span>
+        <span class="type">${info.type === 'codom' ? 'co-dom' : 'rec'}</span>
+      </div>`;
+    }).join('');
+    list.classList.toggle('show', matches.length > 0);
+  });
+
+  // Enter / 上下方向鍵支援
+  input.addEventListener('keydown', e => {
+    const items = list.querySelectorAll('.suggestion-item');
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitGene();
+      return;
+    }
+    if (items.length === 0) return;
+    const activeIdx = [...items].findIndex(it => it.classList.contains('active'));
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = (activeIdx + 1) % items.length;
+      items.forEach(it => it.classList.remove('active'));
+      items[next].classList.add('active');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = (activeIdx - 1 + items.length) % items.length;
+      items.forEach(it => it.classList.remove('active'));
+      items[prev].classList.add('active');
+    } else if (e.key === 'Escape') {
+      list.classList.remove('show');
+    }
+  });
+
+  // 加入按鈕（用 mousedown 比 click 早，避免 input 的 blur 先把建議關掉）
+  addBtn.addEventListener('mousedown', e => {
+    e.preventDefault();
+    commitGene();
+  });
+
+  list.addEventListener('mousedown', e => {
+    const item = e.target.closest('.suggestion-item');
+    if (!item) return;
+    e.preventDefault();
+    commitGene(item.dataset.name);
+  });
+
+  input.addEventListener('blur', () => setTimeout(() => list.classList.remove('show'), 200));
+
+  picker.addEventListener('click', e => {
+    if (e.target.classList.contains('x')) {
+      const idx = parseInt(e.target.dataset.idx);
+      parents[parent].splice(idx, 1);
+      renderParent(parent);
+    } else if (!e.target.classList.contains('gene-input') &&
+               !e.target.classList.contains('gene-add-btn') &&
+               !e.target.closest('.gene-add-btn')) {
+      input.focus();
+    }
+  });
+}
+
+function addGene(parent, name, hetMode) {
+  const info = GENE_DB[name];
+  if (!info) return;
+  // 隱性 het 模式：1 份；否則 codom 預設 1 份、recessive 預設 2 份（顯性表現）
+  let copies;
+  if (info.type === 'recessive') {
+    copies = hetMode ? 1 : 2;
+  } else {
+    copies = 1; // codom 預設 1，使用者可點擊切換 super
+  }
+  parents[parent].push({ name, copies });
+  renderParent(parent);
+}
+
+function renderParent(parent) {
+  const picker = document.querySelector(`.gene-picker[data-parent="${parent}"]`);
+  const inputWrap = picker.querySelector('.gene-input-wrap') || picker.querySelector('.gene-input');
+  // 清掉舊 chip
+  picker.querySelectorAll('.gene-chip').forEach(c => c.remove());
+  parents[parent].forEach((g, i) => {
+    const info = GENE_DB[g.name];
+    const chip = document.createElement('span');
+    let cls = 'gene-chip';
+    let label = g.name;
+    if (info.type === 'recessive') {
+      if (g.copies === 1) { cls += ' het'; label = `het ${g.name}`; }
+      else { cls += ' recessive'; label = g.name; }
+    } else {
+      // codom
+      if (g.copies === 2) { label = `Super ${g.name}`; cls += ' recessive'; }
+    }
+    chip.className = cls;
+    chip.innerHTML = `<span title="點擊切換顯現份數">${label}</span><span class="x" data-idx="${i}">×</span>`;
+    chip.querySelector('span:first-child').addEventListener('click', () => toggleCopies(parent, i));
+    picker.insertBefore(chip, inputWrap);
+  });
+}
+
+function toggleCopies(parent, idx) {
+  const g = parents[parent][idx];
+  const info = GENE_DB[g.name];
+  if (info.type === 'recessive') {
+    g.copies = g.copies === 1 ? 2 : 1;
+  } else {
+    g.copies = g.copies === 1 ? 2 : 1;
+  }
+  renderParent(parent);
+}
+
+setupGenePicker('dam');
+setupGenePicker('sire');
+
+// ============ 圖片上傳 ============
+let uploadedImage = null;
+const uploadZone = document.getElementById('uploadZone');
+const imageInput = document.getElementById('imageInput');
+const uploadHint = document.getElementById('uploadHint');
+
+uploadZone.addEventListener('click', () => imageInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.style.borderColor = 'var(--gold)'; });
+uploadZone.addEventListener('dragleave', () => uploadZone.style.borderColor = '');
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.style.borderColor = '';
+  if (e.dataTransfer.files[0]) handleImage(e.dataTransfer.files[0]);
+});
+imageInput.addEventListener('change', e => { if (e.target.files[0]) handleImage(e.target.files[0]); });
+
+function handleImage(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    uploadedImage = { dataUrl: e.target.result, mediaType: file.type };
+    uploadZone.classList.add('has-image');
+    uploadZone.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    uploadZone.appendChild(img);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============ Punnett Square 後代機率計算 ============
+// 把單一親代 → 配子（gamete）機率分佈
+// 對每個 locus 獨立：codom 或 recessive
+function getGametes(parent) {
+  // 收集所有 locus（不同基因）
+  const lociMap = {};
+  parents[parent].forEach(g => {
+    lociMap[g.name] = g.copies; // 1 or 2
+  });
+  // 每個 locus 出 + 或 - 配子：copies=1 → 50%/50%；copies=2 → 100% +
+  // 配子表示：物件 { 'GeneName': true/false }
+  let gametes = [{ alleles: {}, prob: 1 }];
+  for (const name in lociMap) {
+    const copies = lociMap[name];
+    const next = [];
+    for (const gam of gametes) {
+      if (copies === 2) {
+        next.push({ alleles: { ...gam.alleles, [name]: true }, prob: gam.prob });
+      } else {
+        next.push({ alleles: { ...gam.alleles, [name]: true }, prob: gam.prob * 0.5 });
+        next.push({ alleles: { ...gam.alleles, [name]: false }, prob: gam.prob * 0.5 });
+      }
+    }
+    gametes = next;
+  }
+  return gametes;
+}
+
+function computeOffspring() {
+  const damGams = getGametes('dam');
+  const sireGams = getGametes('sire');
+  // 收集所有 locus
+  const allLoci = new Set([...Object.keys(damGams[0].alleles), ...Object.keys(sireGams[0].alleles)]);
+  // 結果：基因型 → 機率
+  const offspringMap = {};
+  for (const d of damGams) {
+    for (const s of sireGams) {
+      // 子代每個 locus 的拷貝數 = (d 有?1:0) + (s 有?1:0)
+      const genotype = {};
+      allLoci.forEach(name => {
+        genotype[name] = (d.alleles[name] ? 1 : 0) + (s.alleles[name] ? 1 : 0);
+      });
+      const key = Object.entries(genotype).map(([n,c]) => `${n}:${c}`).sort().join('|');
+      offspringMap[key] = (offspringMap[key] || 0) + d.prob * s.prob;
+      offspringMap[key + '__data'] = genotype;
+    }
+  }
+  // 整理為陣列
+  const results = [];
+  for (const key in offspringMap) {
+    if (key.endsWith('__data')) continue;
+    results.push({ genotype: offspringMap[key + '__data'], prob: offspringMap[key] });
+  }
+  results.sort((a, b) => b.prob - a.prob);
+  return results;
+}
+
+function genotypeToPhenotype(genotype) {
+  // 顯現 morph 列表
+  const visible = [];
+  const hets = [];
+  for (const name in genotype) {
+    const copies = genotype[name];
+    if (copies === 0) continue;
+    const info = GENE_DB[name];
+    if (info.type === 'recessive') {
+      if (copies === 2) visible.push({ name, kind: 'recessive-vis' });
+      else hets.push(name);
+    } else {
+      // codom
+      if (copies === 2) visible.push({ name: info.super || `Super ${name}`, kind: 'super', warning: info.warning });
+      else visible.push({ name, kind: 'codom' });
+    }
+  }
+  return { visible, hets };
+}
+
+function renderPunnett() {
+  const results = computeOffspring();
+  const container = document.getElementById('punnettContent');
+  if (results.length === 0 || (results.length === 1 && Object.keys(results[0].genotype).length === 0)) {
+    container.innerHTML = '<p style="color:var(--ink-dim);font-style:italic;">請先輸入至少一個親代基因</p>';
+    return;
+  }
+  // 過濾掉「全 0」（野生型）以外的，也保留全 0 為 normal
+  const rows = results.map(r => {
+    const { visible, hets } = genotypeToPhenotype(r.genotype);
+    const isNormal = visible.length === 0 && hets.length === 0;
+    const lethal = visible.some(v => v.warning && v.warning.includes('致死'));
+    return { ...r, visible, hets, isNormal, lethal };
+  });
+
+  // 致死的不算進活仔機率（重整剩餘機率）
+  const aliveTotal = rows.filter(r => !r.lethal).reduce((s, r) => s + r.prob, 0);
+
+  let html = `
+    <table class="probability-table">
+      <thead>
+        <tr>
+          <th style="width:18%;">機率</th>
+          <th>表現型 / Het</th>
+        </tr>
+      </thead>
+      <tbody>`;
+  rows.forEach(r => {
+    const adjustedProb = r.lethal ? 0 : (r.prob / aliveTotal);
+    const pct = (adjustedProb * 100).toFixed(2);
+    let phenoHtml = '';
+    if (r.lethal) {
+      phenoHtml = `<span style="color:var(--rust);">⚠ 致死組合（不計入活仔）</span><br>`;
+      r.visible.forEach(v => {
+        phenoHtml += `<span class="morph-badge ${v.kind}">${v.name}</span> `;
+      });
+    } else if (r.isNormal) {
+      phenoHtml = '<span class="morph-badge">Normal（野生型）</span>';
+    } else {
+      r.visible.forEach(v => {
+        phenoHtml += `<span class="morph-badge ${v.kind}">${v.name}</span> `;
+      });
+      if (r.hets.length > 0) {
+        r.hets.forEach(h => {
+          phenoHtml += `<span class="morph-badge het">het ${h}</span> `;
+        });
+      }
+    }
+    html += `
+      <tr ${r.lethal ? 'style="opacity:0.5;"' : ''}>
+        <td>
+          <span class="prob-pct">${r.lethal ? '—' : pct + '%'}</span>
+          ${r.lethal ? '' : `<div class="prob-bar"><div class="prob-bar-fill" style="width:${pct}%;"></div></div>`}
+        </td>
+        <td>${phenoHtml}</td>
+      </tr>`;
+  });
+  html += '</tbody></table>';
+  if (rows.some(r => r.lethal)) {
+    html += '<p class="notice" style="margin-top:1rem;">機率已扣除致死胚胎並重新分配至活仔。</p>';
+  }
+  container.innerHTML = html;
+}
+
+// ============ Gemini API 視覺辨識 ============
+async function callClaudeVision() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) {
+    alert('請先填入 Gemini API Key');
+    return null;
+  }
+  if (!uploadedImage) return null;
+
+  const formatParent = (arr) => {
+    if (arr.length === 0) return 'Normal（野生型，無已知基因）';
+    return arr.map(g => {
+      const info = GENE_DB[g.name];
+      if (info.type === 'recessive') return g.copies === 2 ? g.name : `het ${g.name}`;
+      return g.copies === 2 ? `Super ${g.name}` : g.name;
+    }).join(' + ');
+  };
+  const damText = formatParent(parents.dam);
+  const sireText = formatParent(parents.sire);
+  const hasPedigree = parents.dam.length > 0 || parents.sire.length > 0;
+
+  // 取出可能後代清單作為提示——完整列出含 Normal 與 het，按機率排序，排除致死組合
+  const offspring = computeOffspring();
+  const aliveOffspring = offspring.filter(r => {
+    const { visible } = genotypeToPhenotype(r.genotype);
+    return !visible.some(v => v.warning && v.warning.includes('致死'));
+  });
+  const aliveTotal = aliveOffspring.reduce((s, r) => s + r.prob, 0) || 1;
+  const possibleMorphs = aliveOffspring.map(r => {
+    const { visible, hets, isNormal } = genotypeToPhenotype(r.genotype);
+    const pct = ((r.prob / aliveTotal) * 100).toFixed(1);
+    let label;
+    if (isNormal) {
+      label = 'Normal（野生型）';
+    } else {
+      const v = visible.map(x => x.name).join(' ');
+      const h = hets.length > 0 ? ` (het ${hets.join(', het ')})` : '';
+      label = `${v}${h}`.trim();
+    }
+    return `- ${pct}%：${label}`;
+  }).join('\n');
+
+  const prompt = `你是專業球蟒（Ball Python / Python regius）基因鑑別師。
+
+【任務說明】
+這張照片中的幼體，是以下這對親代交配所產的後代之一。
+你的工作是：**只能從下方「可能後代清單」中**選擇最符合照片視覺特徵的基因組合，**不可以**判斷為清單外的基因。
+這是孟德爾遺傳的硬性約束——清單外的基因組合在這對親代下不可能出現。
+
+【親代資訊】
+♀ 母本：${damText}
+♂ 父本：${sireText}
+
+【可能後代清單（已依孟德爾遺傳計算，依機率由高至低排列）】
+${hasPedigree ? possibleMorphs : '（使用者未提供親代基因，本次僅能做純視覺判斷）'}
+
+【你必須回答的格式】
+1. **視覺特徵描述**：色調、底色、紋路類型（blushing / striping / alien heads）、頭部花紋、腹部、眼睛顏色等。
+2. **基因判斷**：
+${hasPedigree
+  ? '   從上面「可能後代清單」中挑出最符合視覺證據的 1–3 個選項，按可能性排序。每個選項標示：機率（從清單複製）、可信度（高/中/低）、判斷理由（指出哪些視覺特徵支持這個判斷）。\n   **嚴禁**提出清單外的基因。如果照片視覺與清單中所有選項都不符合，請明確說「視覺特徵與遺傳預期不符，建議重拍或檢查親代資料」。'
+  : '   依視覺特徵列出 2–3 個可能基因組合與可信度。'}
+3. **拍攝品質警示**：若光線、角度、年齡（剛出殼 vs. 第一次蛻皮後）影響判斷，請註明。
+4. **試交提醒**：能見的顯性/共顯基因可從外觀判斷，但隱性帶因（het）只能透過試交（test breeding）確認，無法由單張照片得知。
+
+請以繁體中文回答，分段清晰、簡潔，不要冗長鋪陳。`;
+
+  try {
+    const base64 = uploadedImage.dataUrl.split(',')[1];
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-2.0-flash'];
+    let lastError = null;
+    for (const model of models) {
+      // 2.5 系列預設會吃掉一部分 token 做 thinking，要顯式關掉才能留給實際回答
+      const generationConfig = { maxOutputTokens: 4096 };
+      if (model.startsWith('gemini-2.5')) {
+        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      }
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: uploadedImage.mediaType, data: base64 } },
+                { text: prompt }
+              ]
+            }],
+            generationConfig
+          })
+        }
+      );
+      const data = await response.json();
+      if (data.error) {
+        lastError = data.error.message;
+        // 若是配額問題則試下一個 model，其他錯誤直接拋出
+        if (data.error.code === 429 || data.error.status === 'RESOURCE_EXHAUSTED') continue;
+        throw new Error(data.error.message);
+      }
+      const candidate = data.candidates?.[0];
+      const text = candidate?.content?.parts?.map(p => p.text || '').join('\n') || '（無回應）';
+      const truncated = candidate?.finishReason === 'MAX_TOKENS';
+      const suffix = truncated ? '\n\n⚠ 回應因長度上限被截斷，請減少親代基因數量或簡化輸入再試。' : '';
+      return `[${model}]\n${text}${suffix}`;
+    }
+    throw new Error(`所有模型配額已用盡：${lastError}`);
+  } catch (err) {
+    return `⚠ API 呼叫失敗：${err.message}`;
+  }
+}
+
+// ============ 按鈕事件 ============
+// 共用：如果輸入框還有未送出的文字，嘗試自動解析提交。失敗才擋下流程。
+function autoCommitPendingInputs() {
+  const dirty = [];
+  document.querySelectorAll('.gene-input').forEach(inp => {
+    if (inp.value.trim()) {
+      const parent = inp.closest('.gene-picker').dataset.parent;
+      dirty.push({ parent, text: inp.value.trim(), inp });
+    }
+  });
+  if (dirty.length === 0) return false; // 沒問題，繼續
+
+  // 嘗試自動提交每個未送出的輸入
+  const failed = [];
+  for (const d of dirty) {
+    const { matched, remainder } = parseGeneString(d.text);
+
+    if (matched.length > 0) {
+      matched.forEach(g => addGene(d.parent, g.name, g.hetMode));
+      d.inp.value = '';
+      const addBtn = d.inp.closest('.gene-picker').querySelector('.gene-add-btn');
+      if (addBtn) addBtn.classList.remove('visible');
+      if (remainder) failed.push({ parent: d.parent, text: remainder, partial: true });
+    } else {
+      const single = resolveGeneName(d.text);
+      if (single) {
+        addGene(d.parent, single, false);
+        d.inp.value = '';
+        const addBtn = d.inp.closest('.gene-picker').querySelector('.gene-add-btn');
+        if (addBtn) addBtn.classList.remove('visible');
+      } else {
+        failed.push({ parent: d.parent, text: d.text, partial: false });
+      }
+    }
+  }
+
+  if (failed.length > 0) {
+    const msg = failed.map(f =>
+      `${f.parent === 'dam' ? '母本' : '父本'}：「${f.text}」${f.partial ? '（部分無法識別）' : ''}`
+    ).join('\n');
+    alert(`以下基因無法識別，請手動修正：\n${msg}\n\n常見原因：拼字錯誤、複合 morph 請用空格分開、或資料庫未收錄。`);
+    return true; // 擋下流程
+  }
+  return false; // 已自動補上，繼續流程
+}
+
+document.getElementById('analyzeBtn').addEventListener('click', async () => {
+  if (autoCommitPendingInputs()) return;
+  if (parents.dam.length === 0 && parents.sire.length === 0 && !uploadedImage) {
+    alert('請至少提供圖片或親代基因');
+    return;
+  }
+  document.getElementById('results').classList.remove('hidden');
+  // 只有圖片、沒有親代時隱藏後代機率區塊
+  const hasPedigree = parents.dam.length > 0 || parents.sire.length > 0;
+  document.getElementById('punnettResult').style.display = hasPedigree ? 'block' : 'none';
+  if (hasPedigree) renderPunnett();
+
+  if (uploadedImage) {
+    const aiCard = document.getElementById('aiResult');
+    const aiContent = document.getElementById('aiContent');
+    aiCard.style.display = 'block';
+    aiContent.innerHTML = '<span class="spinner"></span> AI 分析中…';
+    const result = await callClaudeVision();
+    if (result) {
+      // 完整 markdown 渲染
+      const rendered = result
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        // 移除開頭的模型標籤行
+        .replace(/^\[gemini[^\]]*\]\n?/, '')
+        // 標題
+        .replace(/^#{1,3} (.+)$/gm, '<h4 style="color:var(--gold);margin:1rem 0 0.4rem;font-family:\'Cormorant Garamond\',serif;font-size:1.1rem;">$1</h4>')
+        // 粗體
+        .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--gold);">$1</strong>')
+        // 斜體
+        .replace(/\*([^*\n]+?)\*/g, '<em>$1</em>')
+        // 分隔線
+        .replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--line);margin:0.75rem 0;">')
+        // 有序清單
+        .replace(/^\d+\.\s+(.+)$/gm, '<div style="margin:0.3rem 0 0.3rem 1rem;">$1</div>')
+        // 無序清單（*、-）
+        .replace(/^[*\-]\s+(.+)$/gm, '<div style="margin:0.2rem 0 0.2rem 1rem; display:flex;gap:0.5rem;"><span style="color:var(--gold-soft);">◆</span><span>$1</span></div>')
+        // 空行 → 段落間距
+        .replace(/\n{2,}/g, '<div style="height:0.6rem;"></div>')
+        // 單換行
+        .replace(/\n/g, '<br>');
+      aiContent.innerHTML = rendered;
+    }
+  } else {
+    document.getElementById('aiResult').style.display = 'none';
+  }
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+});
+
+document.getElementById('punnettBtn').addEventListener('click', () => {
+  if (autoCommitPendingInputs()) return;
+  if (parents.dam.length === 0 && parents.sire.length === 0) {
+    alert('請至少輸入一個親代基因');
+    return;
+  }
+  document.getElementById('results').classList.remove('hidden');
+  document.getElementById('aiResult').style.display = 'none';
+  renderPunnett();
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('確定要重設所有輸入？')) return;
+  parents.dam = []; parents.sire = [];
+  renderParent('dam'); renderParent('sire');
+  // 清掉輸入框殘留文字、加入按鈕
+  document.querySelectorAll('.gene-input').forEach(inp => inp.value = '');
+  document.querySelectorAll('.gene-add-btn').forEach(b => b.classList.remove('visible'));
+  uploadedImage = null;
+  uploadZone.classList.remove('has-image');
+  uploadZone.innerHTML = `<input type="file" id="imageInput" accept="image/*" hidden>
+    <div class="upload-hint"><span class="ic">⌬</span>點擊或拖曳上傳照片<br><small>建議：自然光、平鋪展示體色</small></div>`;
+  // 重新綁定 input
+  document.getElementById('imageInput').addEventListener('change', e => { if (e.target.files[0]) handleImage(e.target.files[0]); });
+  document.getElementById('results').classList.add('hidden');
+});
+
+// ============ 存檔 ============
+const STORAGE_KEY = 'hm_gene_archive_v1';
+
+function loadArchive() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+function saveArchive(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
+
+function renderArchive() {
+  const grid = document.getElementById('archiveGrid');
+  const arr = loadArchive();
+  if (arr.length === 0) {
+    grid.innerHTML = '<div class="empty-archive">尚無紀錄</div>';
+    return;
+  }
+  grid.innerHTML = arr.map((r, i) => `
+    <div class="archive-card" data-idx="${i}">
+      <button class="del" data-del="${i}">×</button>
+      ${r.image ? `<img src="${r.image}">` : '<div style="height:140px;background:var(--bg-alt);display:flex;align-items:center;justify-content:center;color:var(--ink-dim);">無圖片</div>'}
+      <div class="meta">
+        <div class="date">${new Date(r.date).toLocaleString('zh-TW')}</div>
+        <div>♀ ${r.damText || '—'}</div>
+        <div>♂ ${r.sireText || '—'}</div>
+      </div>
+    </div>`).join('');
+  grid.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.del);
+      const arr = loadArchive();
+      arr.splice(idx, 1);
+      saveArchive(arr);
+      renderArchive();
+    });
+  });
+  grid.querySelectorAll('.archive-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.classList.contains('del')) return;
+      const idx = parseInt(card.dataset.idx);
+      const r = loadArchive()[idx];
+      const w = window.open('', '_blank');
+      w.document.write(`<title>紀錄詳情</title><body style="font-family:serif;background:#1a1614;color:#ede4d8;padding:2rem;line-height:1.7;">
+        <h2 style="color:#c9a96e;">紀錄 · ${new Date(r.date).toLocaleString('zh-TW')}</h2>
+        <p>♀ ${r.damText || '—'}</p>
+        <p>♂ ${r.sireText || '—'}</p>
+        ${r.image ? `<img src="${r.image}" style="max-width:400px;display:block;margin:1rem 0;">` : ''}
+        <h3 style="color:#c9a96e;">AI 分析</h3>
+        <pre style="white-space:pre-wrap;font-family:inherit;">${(r.aiText||'（無）').replace(/</g,'&lt;')}</pre>
+      </body>`);
+    });
+  });
+}
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const arr = loadArchive();
+  arr.unshift({
+    date: Date.now(),
+    image: uploadedImage ? uploadedImage.dataUrl : null,
+    damText: parents.dam.map(g => {
+      const info = GENE_DB[g.name];
+      if (info.type === 'recessive') return g.copies === 2 ? g.name : `het ${g.name}`;
+      return g.copies === 2 ? `Super ${g.name}` : g.name;
+    }).join(', '),
+    sireText: parents.sire.map(g => {
+      const info = GENE_DB[g.name];
+      if (info.type === 'recessive') return g.copies === 2 ? g.name : `het ${g.name}`;
+      return g.copies === 2 ? `Super ${g.name}` : g.name;
+    }).join(', '),
+    aiText: document.getElementById('aiContent').innerText,
+  });
+  saveArchive(arr);
+  renderArchive();
+  alert('已存入紀錄');
+});
+
+// 載入存儲的 API key（僅 demo 方便）
+document.getElementById('apiKey').addEventListener('change', e => {
+  localStorage.setItem('hm_gemini_key', e.target.value);
+});
+const savedKey = localStorage.getItem('hm_gemini_key');
+if (savedKey) document.getElementById('apiKey').value = savedKey;
+
+renderArchive();
+</script>
+</body>
+</html>
