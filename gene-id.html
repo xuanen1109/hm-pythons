@@ -575,8 +575,66 @@ label {
   font-size: 0.85rem;
 }
 
+.back-link {
+  display: inline-block;
+  color: var(--ink-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  margin-bottom: 1.5rem;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.back-link:hover {
+  color: var(--gold-soft);
+  border-color: var(--gold-soft);
+}
+
+.api-config-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.api-config-header label {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  color: var(--gold-soft);
+  letter-spacing: 0.05em;
+}
+
+.api-status {
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0.15rem 0.6rem;
+  border-radius: 10px;
+  letter-spacing: 0.05em;
+}
+
+.api-status.saved {
+  background: rgba(140, 110, 60, 0.2);
+  color: var(--gold-soft);
+  border: 1px solid var(--gold-soft);
+}
+
+.api-status.empty {
+  background: rgba(120, 60, 60, 0.15);
+  color: #b88;
+  border: 1px solid #644;
+}
+
+.api-input-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
 .api-config input {
-  width: 100%;
+  flex: 1;
   padding: 0.5rem;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -584,15 +642,51 @@ label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
   border-radius: 2px;
-  margin-top: 0.5rem;
+}
+
+.btn-icon {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.btn-icon:hover {
+  border-color: var(--gold-soft);
+  color: var(--gold-soft);
 }
 
 .notice {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--ink-dim);
-  margin-top: 0.5rem;
-  font-style: italic;
+  margin-top: 0.6rem;
+  line-height: 1.6;
 }
+
+.notice strong {
+  color: var(--gold-soft);
+  font-style: normal;
+  letter-spacing: 0.1em;
+}
+
+.notice a {
+  color: var(--gold-soft);
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+  display: inline-block;
+  margin: 0.2rem 0.6rem 0.2rem 0;
+}
+
+.notice a:hover { text-decoration-color: var(--gold-soft); }
 
 .ornament {
   text-align: center;
@@ -607,6 +701,7 @@ label {
 </head>
 <body>
 <div class="container">
+  <a href="admin.html" class="back-link">← 回到後台</a>
   <header>
     <div class="brand-tag">hm.pythons · gene atelier</div>
     <h1>球蟒 <span class="accent">基因辨識</span> 工坊</h1>
@@ -614,9 +709,20 @@ label {
   </header>
 
   <div class="api-config">
-    <label for="apiKey">Gemini API Key（僅儲存於本機，不會上傳）</label>
-    <input type="password" id="apiKey" placeholder="AIza...">
-    <div class="notice">demo 階段需自備 key；正式整合到網站時建議改走後端代理。</div>
+    <div class="api-config-header">
+      <label for="apiKey">Gemini API Key</label>
+      <span class="api-status" id="apiStatus"></span>
+    </div>
+    <div class="api-input-row">
+      <input type="password" id="apiKey" placeholder="貼上您的 Gemini API Key（AIza...）" autocomplete="off">
+      <button type="button" class="btn-icon" id="toggleKeyView" title="顯示／隱藏">👁</button>
+      <button type="button" class="btn-icon" id="clearKey" title="清除已儲存的 Key">✕</button>
+    </div>
+    <div class="notice">
+      <strong>內部工具</strong>　僅供 hm.pythons 管理者與授權朋友使用。請使用您個人申請的 Gemini API Key — 免費且額度充足。<br>
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">前往 Google AI Studio 申請 Key →</a>
+      Key 僅儲存於您本機瀏覽器，不會上傳到任何伺服器。
+    </div>
   </div>
 
   <div class="layout">
@@ -705,7 +811,7 @@ const GENE_DB = {
   'Mojave':         { type: 'codom', super: 'Super Mojave (Blue Eyed Leucistic)', zh: '莫哈維', aliases: ['Moj'] },
   'Lesser':         { type: 'codom', super: 'Blue Eyed Leucistic', zh: '輕微', aliases: [] },
   'Butter':         { type: 'codom', super: 'Blue Eyed Leucistic', zh: '奶油', aliases: [] },
-  'Yellow Belly':   { type: 'codom', super: 'Ivory', zh: '黃肚', aliases: ['YB'] },
+  'Yellow Belly':   { type: 'codom', super: 'Ivory', zh: '黃腹', aliases: ['YB', 'Yellow Billy', 'YBilly'] },
   'Gravel':         { type: 'codom', super: 'Asphalt', zh: '碎石', aliases: [] },
   'Asphalt':        { type: 'codom', super: 'Super Asphalt', zh: '柏油', aliases: [] },
   'Spider':         { type: 'codom', super: 'lethal', zh: '蜘蛛', warning: 'Super Spider 為致死', aliases: [] },
@@ -723,15 +829,40 @@ const GENE_DB = {
   'Phantom':        { type: 'codom', super: 'Super Phantom', zh: '幻影', aliases: [] },
   'Russo':          { type: 'codom', super: 'Super Russo', zh: 'Russo', aliases: ['Russo Het Leucistic', 'RHL'] },
   'Hidden Gene Woma': { type: 'codom', super: 'Super HGW', zh: '隱基因 Woma', aliases: ['HGW'] },
-  'Mahogany':       { type: 'codom', super: 'Super Mahogany', zh: '紅木', aliases: [] },
+  'Mahogany':       { type: 'codom', super: 'Super Mahogany', zh: '紅木', aliases: ['Suma (Super Mahogany)'] },
   'Confusion':      { type: 'codom', super: 'Super Confusion', zh: 'Confusion', aliases: [] },
   'Sable':          { type: 'codom', super: 'Super Sable', zh: 'Sable', aliases: [] },
-  'Black Head':     { type: 'codom', super: 'Super Black Head', zh: '黑頭', aliases: ['BHB'] },
+  'Black Head':     { type: 'codom', super: 'Super Black Head', zh: '黑頭', aliases: ['BHB', 'Blackhead'] },
+  'Champagne':      { type: 'codom', super: 'lethal', zh: '香檳', warning: 'Super Champagne 為致死', aliases: ['Champ'] },
+  'Powerball':      { type: 'codom', super: 'lethal', zh: '能量球', warning: 'Super Powerball 為致死', aliases: [] },
+  'Hidden Gene Champagne': { type: 'codom', super: 'lethal', zh: '隱基因香檳', warning: 'Super HGC 為致死', aliases: ['HGC'] },
+  'Spotnose':       { type: 'codom', super: 'Super Spotnose', zh: '點鼻', aliases: ['SN'] },
+  'Lace':           { type: 'codom', super: 'Super Lace', zh: '蕾絲', aliases: [] },
+  'Sterling':       { type: 'codom', super: 'Super Sterling', zh: 'Sterling', aliases: [] },
+  'Bongo':          { type: 'codom', super: 'Super Bongo', zh: 'Bongo', aliases: [] },
+  'Disco':          { type: 'codom', super: 'Super Disco', zh: 'Disco', aliases: [] },
+  'Mocha':          { type: 'codom', super: 'Super Mocha', zh: '摩卡', aliases: [] },
+  'Stinger':        { type: 'codom', super: 'Super Stinger', zh: 'Stinger', aliases: [] },
+  'Special':        { type: 'codom', super: 'Super Special', zh: 'Special', aliases: [] },
   'Acid':           { type: 'codom', super: 'Super Acid', zh: 'Acid', aliases: [] },
   'Granite':        { type: 'codom', super: 'Super Granite', zh: '花崗岩', aliases: [] },
   'Trick':           { type: 'codom', super: 'Super Trick', zh: 'Trick', aliases: [] },
   'Orange Dream':   { type: 'codom', super: 'Super Orange Dream', zh: '橘夢', aliases: ['OD'] },
   'Het Red Axanthic': { type: 'codom', super: 'Red Axanthic', zh: 'het 紅消黑', aliases: ['HRA'] },
+  // —— hm.pythons 資料庫新增 ——
+  'Wookie':         { type: 'codom', super: 'Super Wookie', zh: '伍基', aliases: [] },
+  'Chocolate':      { type: 'codom', super: 'Super Chocolate', zh: '巧克力', aliases: [] },
+  'Nightra':        { type: 'codom', super: 'Super Nightra', zh: 'Nightra', aliases: [] },
+  'Cypress':        { type: 'codom', super: 'Super Cypress', zh: 'Cypress', aliases: [] },
+  'Calico':         { type: 'codom', super: 'Super Calico', zh: 'Calico', warning: 'Super Calico 胚胎死亡率高', aliases: [] },
+  'Scaleless Head': { type: 'codom', super: 'Scaleless', zh: '無鱗頭', aliases: ['Scaleless'] }, // Super = full Scaleless
+  'Puzzle':         { type: 'codom', super: 'Super Puzzle', zh: 'Puzzle', aliases: [] },
+  'Tessera':        { type: 'codom', super: 'Super Tessera', zh: 'Tessera', aliases: [] },
+  'Spark':          { type: 'codom', super: 'Super Spark', zh: 'Spark', aliases: [] },
+  'Arroyo':         { type: 'codom', super: 'Super Arroyo', zh: 'Arroyo', aliases: [] },
+  'Crypton':        { type: 'codom', super: 'Super Crypton', zh: 'Crypton', aliases: [] },
+  'Jungle':         { type: 'codom', super: 'Super Jungle', zh: 'Jungle', aliases: [] },
+  'Red Stripe':     { type: 'codom', super: 'Super Red Stripe', zh: '紅條紋', aliases: [] },
 
   // ==== Recessive ====
   'Desert Ghost':   { type: 'recessive', zh: '沙漠魂', aliases: ['DG'] },
@@ -741,8 +872,14 @@ const GENE_DB = {
   'Clown':          { type: 'recessive', zh: '小丑', aliases: [] },
   'Albino':         { type: 'recessive', zh: '白化', aliases: ['T- Albino', 'Amel'] },
   'Lavender Albino':{ type: 'recessive', zh: '薰衣草白化', aliases: ['Lav', 'Lavender'] },
-  'Axanthic':       { type: 'recessive', zh: '消黑', aliases: ['Axanthic VPI', 'Axanthic TSK', 'Axanthic Jolliff', 'Ax'] },
+  // Axanthic 三條獨立 line（不互補，所以分開計算）
+  'TSK Axanthic':   { type: 'recessive', zh: '消黑 (TSK)', aliases: ['TSK', 'TSKax', 'Tsk axanthic', 'TSK AX', 'Tsk ax', 'Axanthic TSK'] },
+  'VPI Axanthic':   { type: 'recessive', zh: '消黑 (VPI)', aliases: ['VPI', 'Axanthic VPI'] },
+  'Jolliff Axanthic': { type: 'recessive', zh: '消黑 (Jolliff)', aliases: ['Jolliff', 'Axanthic Jolliff'] },
+  // 通用 Axanthic（不指定 line 時預設 = TSK，因為你最常用）
+  'Axanthic':       { type: 'recessive', zh: '消黑 (未指定 line)', aliases: ['Ax'] },
   'Ghost (Hypo)':   { type: 'recessive', zh: '低黑', aliases: ['Hypo', 'Ghost'] },
+  'Orange Ghost':   { type: 'recessive', zh: 'Orange Ghost', aliases: ['OG'] },
   'Candy':          { type: 'recessive', zh: '糖果', aliases: [] },
   'Toffee':         { type: 'recessive', zh: '太妃', aliases: [] },
   'Genetic Stripe': { type: 'recessive', zh: '遺傳條紋', aliases: ['G-Stripe', 'GStripe'] },
@@ -751,6 +888,10 @@ const GENE_DB = {
   'Ultramel':       { type: 'recessive', zh: 'Ultramel', aliases: [] },
   'Caramel Albino': { type: 'recessive', zh: '焦糖白化', aliases: ['Caramel'] },
   'Stranger':       { type: 'recessive', zh: 'Stranger', aliases: [] },
+  'Red Axanthic':   { type: 'recessive', zh: '紅消黑', aliases: [] },
+  'Genetic Banded': { type: 'recessive', zh: '遺傳寬紋', aliases: ['G-Banded', 'GBanded'] },
+  'Highway':        { type: 'recessive', zh: '公路', aliases: [] },
+  'Goblin':         { type: 'recessive', zh: 'Goblin', aliases: [] },
 };
 
 // ==== 別名查找：把任意輸入文字（縮寫/中文/全名）對應到 GENE_DB 的 key ====
@@ -786,13 +927,33 @@ function parseGeneString(input) {
   let s = input.trim();
   if (!s) return { matched: [], remainder: '' };
 
-  // 預處理：把連接詞替換成空白；標準化 het / poss het / 100% het 等變體
-  s = s.replace(/\b(and|&|\+|,|、|及|和|與)\b/gi, ' ')
-       .replace(/\b(100%\s*het|100het|hethet|poss\.?\s*het|possible\s*het|可能het|帶因)\b/gi, 'het')
+  // 預處理：
+  // 1. 移除括號註記
+  // 2. 把「super morph 暱稱」展開成「Super 基因名」（讓主邏輯標記為 2 份）
+  // 3. 連接詞替換成空白
+  // 4. 標準化 het / dh / th / 百分比 het 等變體
+  const SUPER_NICKNAMES = {
+    'suma': 'Super Mahogany',
+    'ivory': 'Super Yellow Belly',
+    // 注意：BEL/Crystal/Stormtrooper 是多基因 combo，不在這裡列
+  };
+
+  s = s.replace(/[\(（][^\)）]*[\)）]/g, ' ');   // 移除所有 () 與（）內容
+  // 展開 super-nickname（必須在 token 識別前，且要 case-insensitive）
+  for (const [nick, expansion] of Object.entries(SUPER_NICKNAMES)) {
+    const re = new RegExp(`\\b${nick}\\b`, 'gi');
+    s = s.replace(re, expansion);
+  }
+  s = s.replace(/\b(and|&|\+|,|、|及|和|與|or|\/)\b/gi, ' ')
+       .replace(/\b\d+\s*%\s*het\b/gi, 'het')
+       .replace(/\b\d+\s*%\s*(dh|th)\b/gi, '$1')
+       .replace(/\b\d+\s*%/g, ' ')
+       .replace(/\b(100het|hethet|poss\.?\s*het|pos\.?\s*het|ph|possible\s*het|可能het|可能\s*het|帶因)\b/gi, 'het')
+       .replace(/\b(poss\.?|pos\.?|possible|可能)\b(?!\s*het)/gi, 'het')
        .replace(/\s+/g, ' ')
        .trim();
 
-  // 構建 token 列表 [{ token, geneName }] 按 token 長度由長至短排序
+  // 構建 token 列表（包含 het / dh / th 為「修飾詞」token）
   const tokens = [];
   for (const [name, info] of Object.entries(GENE_DB)) {
     tokens.push({ token: name, geneName: name });
@@ -800,13 +961,10 @@ function parseGeneString(input) {
   }
   tokens.sort((a, b) => b.token.length - a.token.length);
 
-  // 找出所有匹配的位置與 token
-  // 策略：在原字串上做位置標記，再左→右掃描，遇到 het 標記下一個基因為 het
-  const matches = []; // [{ start, end, geneName }]
+  // 步驟 1：識別所有基因 token 的位置（保留原順序）
+  const matches = [];
   let working = s;
   let offset = 0;
-
-  // 反覆找最長 token 匹配，記錄位置
   while (true) {
     let bestMatch = null;
     for (const { token, geneName } of tokens) {
@@ -815,50 +973,77 @@ function parseGeneString(input) {
       if (m) {
         const start = m.index + m[1].length;
         const end = start + token.length;
-        if (!bestMatch || start < bestMatch.start) {
-          bestMatch = { start, end, geneName, fullMatchLen: m[0].length, leadLen: m[1].length };
-        }
+        if (!bestMatch || start < bestMatch.start) bestMatch = { start, end, geneName };
       }
     }
     if (!bestMatch) break;
-    matches.push({
-      start: offset + bestMatch.start,
-      end: offset + bestMatch.end,
-      geneName: bestMatch.geneName
-    });
-    // 切到匹配後繼續找
+    matches.push({ start: offset + bestMatch.start, end: offset + bestMatch.end, geneName: bestMatch.geneName });
     const cutTo = bestMatch.end;
     offset += cutTo;
     working = working.slice(cutTo);
   }
-
-  // 依出現順序排序
   matches.sort((a, b) => a.start - b.start);
 
-  // 掃描原字串，找 het 詞出現位置
+  // 步驟 2：找 het、dh、th、Super 修飾詞的位置
   const hetPositions = [];
   const hetRe = /\bhet\b/gi;
   let hm;
   while ((hm = hetRe.exec(s)) !== null) hetPositions.push(hm.index);
 
-  // 對每個匹配的基因：往前看看在它和上一個基因之間有沒有 het
+  const dhPositions = [];
+  const dhRe = /\b(dh|th)\b/gi;
+  let dm;
+  while ((dm = dhRe.exec(s)) !== null) {
+    dhPositions.push({ pos: dm.index, count: dm[1].toLowerCase() === 'dh' ? 2 : 3 });
+  }
+
+  // Super 位置：之後緊跟的「下一個基因」要標 forceSuper
+  const superPositions = [];
+  const superRe = /\bsuper\b/gi;
+  let sm;
+  while ((sm = superRe.exec(s)) !== null) superPositions.push(sm.index);
+
+  // 步驟 3：對每個匹配的基因，判斷是否該標 het 或 forceSuper
   const matched = [];
   for (let i = 0; i < matches.length; i++) {
     const m = matches[i];
     const prevEnd = i === 0 ? 0 : matches[i-1].end;
-    const hetBefore = hetPositions.some(p => p >= prevEnd && p < m.start);
-    matched.push({ name: m.geneName, hetMode: hetBefore });
+
+    // (a) 該基因和前一個基因之間是否有 het？
+    let hetBefore = hetPositions.some(p => p >= prevEnd && p < m.start);
+
+    // (b) 該基因是否落在某個 dh/th 的影響範圍內？
+    for (const { pos, count } of dhPositions) {
+      if (pos < m.start) {
+        const followingGenes = matches.filter(g => g.start > pos).slice(0, count);
+        if (followingGenes.some(g => g.start === m.start)) {
+          hetBefore = true;
+          break;
+        }
+      }
+    }
+
+    // (c) 該基因前面緊接著 Super？
+    // Super 只影響「緊接著的下一個基因」（不像 dh/th 影響多個）
+    const forceSuper = superPositions.some(p => {
+      if (p >= m.start) return false;
+      // p 後面有沒有其他基因在 m 之前？若無，則 m 是 super 的目標
+      return !matches.some(g => g.start > p && g.start < m.start);
+    });
+
+    matched.push({ name: m.geneName, hetMode: hetBefore, forceSuper });
   }
 
-  // 計算殘餘：把所有匹配的 token 和 het 移除，看剩什麼
-  // 用一個 mask 陣列標記已使用字元
+  // 步驟 4：計算殘餘
   const used = new Array(s.length).fill(false);
   matches.forEach(m => { for (let i = m.start; i < m.end; i++) used[i] = true; });
   hetPositions.forEach(p => { for (let i = p; i < p + 3; i++) used[i] = true; });
+  dhPositions.forEach(({ pos }) => { for (let i = pos; i < pos + 2; i++) used[i] = true; });
+  superPositions.forEach(p => { for (let i = p; i < p + 5; i++) used[i] = true; });
   let remainder = '';
-  for (let i = 0; i < s.length; i++) {
-    if (!used[i]) remainder += s[i];
-  }
+  for (let i = 0; i < s.length; i++) if (!used[i]) remainder += s[i];
+  // 移除一般註記詞：Normal / Wildtype / WT / 野生 / 普通 等不需提示
+  remainder = remainder.replace(/\b(normal|wild\s*type|wt|野生|普通|wildtype)\b/gi, ' ');
   remainder = remainder.replace(/[\s,+/\-]+/g, ' ').trim();
 
   return { matched, remainder };
@@ -902,8 +1087,8 @@ function setupGenePicker(parent) {
       }
       addGene(parent, single, false);
     } else {
-      // 解析結果可能含 het 標記（從輸入文字推得）
-      matched.forEach(g => addGene(parent, g.name, g.hetMode));
+      // 解析結果可能含 het 標記與 forceSuper 標記（從輸入文字推得）
+      matched.forEach(g => addGene(parent, g.name, g.hetMode, g.forceSuper));
       if (remainder) {
         const names = matched.map(g => g.hetMode ? `het ${g.name}` : g.name).join('、');
         setTimeout(() => alert(`已加入 ${matched.length} 個基因：${names}\n\n但這部分無法識別：「${remainder}」`), 50);
@@ -990,15 +1175,16 @@ function setupGenePicker(parent) {
   });
 }
 
-function addGene(parent, name, hetMode) {
+function addGene(parent, name, hetMode, forceSuper) {
   const info = GENE_DB[name];
   if (!info) return;
   // 隱性 het 模式：1 份；否則 codom 預設 1 份、recessive 預設 2 份（顯性表現）
+  // forceSuper：用於「Suma → Super Mahogany」等 super-nickname 情境，強制 codom 為 2 份
   let copies;
   if (info.type === 'recessive') {
     copies = hetMode ? 1 : 2;
   } else {
-    copies = 1; // codom 預設 1，使用者可點擊切換 super
+    copies = forceSuper ? 2 : 1; // codom 預設 1，使用者可點擊切換 super
   }
   parents[parent].push({ name, copies });
   renderParent(parent);
@@ -1281,8 +1467,9 @@ ${hasPedigree
 
   try {
     const base64 = uploadedImage.dataUrl.split(',')[1];
-    const models = ['gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-2.0-flash'];
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
     let lastError = null;
+    let attemptIdx = 0;
     for (const model of models) {
       // 2.5 系列預設會吃掉一部分 token 做 thinking，要顯式關掉才能留給實際回答
       const generationConfig = { maxOutputTokens: 4096 };
@@ -1308,17 +1495,23 @@ ${hasPedigree
       const data = await response.json();
       if (data.error) {
         lastError = data.error.message;
-        // 若是配額問題則試下一個 model，其他錯誤直接拋出
-        if (data.error.code === 429 || data.error.status === 'RESOURCE_EXHAUSTED') continue;
+        // 暫時性錯誤（過載、配額、超時、內部錯誤）→ 試下一個 model
+        const transientCodes = [429, 500, 503, 504];
+        const transientStatuses = ['RESOURCE_EXHAUSTED', 'UNAVAILABLE', 'INTERNAL', 'DEADLINE_EXCEEDED'];
+        const isTransient = transientCodes.includes(data.error.code)
+          || transientStatuses.includes(data.error.status)
+          || /high demand|overload|unavailable|try again/i.test(data.error.message || '');
+        if (isTransient) { attemptIdx++; continue; }
         throw new Error(data.error.message);
       }
       const candidate = data.candidates?.[0];
       const text = candidate?.content?.parts?.map(p => p.text || '').join('\n') || '（無回應）';
       const truncated = candidate?.finishReason === 'MAX_TOKENS';
-      const suffix = truncated ? '\n\n⚠ 回應因長度上限被截斷，請減少親代基因數量或簡化輸入再試。' : '';
-      return `[${model}]\n${text}${suffix}`;
+      const truncSuffix = truncated ? '\n\n⚠ 回應因長度上限被截斷，請減少親代基因數量或簡化輸入再試。' : '';
+      const fallbackPrefix = attemptIdx > 0 ? `（首選模型暫時不可用，已自動切換到 ${model}）\n\n` : '';
+      return `${fallbackPrefix}[${model}]\n${text}${truncSuffix}`;
     }
-    throw new Error(`所有模型配額已用盡：${lastError}`);
+    throw new Error(`所有候選模型暫時不可用（${lastError}）。請稍後再試。`);
   } catch (err) {
     return `⚠ API 呼叫失敗：${err.message}`;
   }
@@ -1342,7 +1535,7 @@ function autoCommitPendingInputs() {
     const { matched, remainder } = parseGeneString(d.text);
 
     if (matched.length > 0) {
-      matched.forEach(g => addGene(d.parent, g.name, g.hetMode));
+      matched.forEach(g => addGene(d.parent, g.name, g.hetMode, g.forceSuper));
       d.inp.value = '';
       const addBtn = d.inp.closest('.gene-picker').querySelector('.gene-add-btn');
       if (addBtn) addBtn.classList.remove('visible');
@@ -1524,12 +1717,47 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   alert('已存入紀錄');
 });
 
-// 載入存儲的 API key（僅 demo 方便）
-document.getElementById('apiKey').addEventListener('change', e => {
-  localStorage.setItem('hm_gemini_key', e.target.value);
+// 載入並管理 API key（僅儲存於本機 localStorage）
+const apiKeyInput = document.getElementById('apiKey');
+const apiStatus = document.getElementById('apiStatus');
+const toggleKeyBtn = document.getElementById('toggleKeyView');
+const clearKeyBtn = document.getElementById('clearKey');
+
+function updateApiStatus() {
+  const v = apiKeyInput.value.trim();
+  if (v) {
+    apiStatus.textContent = '● 已儲存於本機';
+    apiStatus.className = 'api-status saved';
+  } else {
+    apiStatus.textContent = '○ 尚未輸入';
+    apiStatus.className = 'api-status empty';
+  }
+}
+
+apiKeyInput.addEventListener('input', () => {
+  localStorage.setItem('hm_gemini_key', apiKeyInput.value);
+  updateApiStatus();
 });
+
+toggleKeyBtn.addEventListener('click', () => {
+  const showing = apiKeyInput.type === 'text';
+  apiKeyInput.type = showing ? 'password' : 'text';
+  toggleKeyBtn.textContent = showing ? '👁' : '🙈';
+});
+
+clearKeyBtn.addEventListener('click', () => {
+  if (!apiKeyInput.value && !localStorage.getItem('hm_gemini_key')) return;
+  if (!confirm('確定清除已儲存的 API Key？')) return;
+  apiKeyInput.value = '';
+  localStorage.removeItem('hm_gemini_key');
+  apiKeyInput.type = 'password';
+  toggleKeyBtn.textContent = '👁';
+  updateApiStatus();
+});
+
 const savedKey = localStorage.getItem('hm_gemini_key');
-if (savedKey) document.getElementById('apiKey').value = savedKey;
+if (savedKey) apiKeyInput.value = savedKey;
+updateApiStatus();
 
 renderArchive();
 </script>
