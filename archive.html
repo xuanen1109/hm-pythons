@@ -90,15 +90,84 @@ footer {
 
 #tab-history { display:none; }
 
+/* ── 平板 ──────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .navbar { padding: 0 32px; }
+  .page-hero { padding: 60px 40px 48px; }
+  .tabs { padding: 0 40px; }
+  .section { padding: 56px 40px; }
+  footer { padding: 32px 40px; }
+  .morph-grid,
+  .sold-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+
+/* ── 手機 ──────────────────────────────────────── */
 @media (max-width: 768px) {
+  .navbar {
+    padding: 0 20px;
+    height: 60px;
+  }
+  .nav-logo img { width: 38px; height: 38px; }
+  .logo-name { font-size: 16px; letter-spacing: 0.5px; }
+  .logo-sub { font-size: 8px; letter-spacing: 2px; }
+  .nav-links { display: none; }
+  .back-btn {
+    padding: 7px 14px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+  }
+
+  .page-hero {
+    padding: 44px 20px 32px;
+  }
+  .eyebrow { font-size: 9px; letter-spacing: 3px; }
+
+  .tabs {
+    padding: 0 20px;
+    top: 60px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab {
+    padding: 14px 18px;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .section {
+    padding: 40px 20px;
+  }
+  .section-sub {
+    font-size: 13px;
+    margin-bottom: 28px;
+  }
+
   .morph-grid,
   .sold-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
+
+  footer {
+    padding: 24px 20px;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  .footer-logo { font-size: 15px; }
+  .footer-copy { font-size: 9px; }
 }
 
+/* ── 小型手機 ──────────────────────────────────── */
 @media (max-width: 480px) {
+  .navbar { padding: 0 16px; }
+  .page-hero { padding: 36px 16px 28px; }
+  .tabs { padding: 0 16px; }
+  .section { padding: 32px 16px; }
+  footer { padding: 20px 16px; }
+
   .morph-grid,
   .sold-grid {
     grid-template-columns: 1fr;
