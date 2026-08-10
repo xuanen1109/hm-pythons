@@ -1570,7 +1570,7 @@ function makeCard(s, num) {
       </div>
       <div class="auction-info-col">
         <div class="auction-badge">🔨 競標中</div>
-        ${speciesTagAuction}<div class="auction-main-name">${s.nameZh||''}</div>
+        ${speciesTagAuction}<div class="auction-main-name">${s.birth ? String(s.birth).match(/\d{4}/)?.[0] + ' ' : ''}${s.nameZh||''}</div>
         <div class="auction-en-name">${s.nameEn||''}</div>
         <div class="auction-code">${s.code||''}</div>
         <div class="auction-tags">${tags}</div>
@@ -1590,7 +1590,7 @@ function makeCard(s, num) {
       <div class="species-art" style="position:relative;width:calc(100% + 64px);margin-left:-32px;margin-top:-44px;margin-bottom:28px;aspect-ratio:1/1;overflow:hidden;">
         <img src="${s.imgUrl||''}" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;">
       </div>
-      ${speciesTag}<div class="species-name">${s.nameZh||''}</div>
+      ${speciesTag}<div class="species-name">${s.birth ? String(s.birth).match(/\d{4}/)?.[0] + ' ' : ''}${s.nameZh||''}</div>
       <div class="species-tags">${tags}</div>
       <div class="species-footer"><div class="species-price">${s.price||'洽詢價格'}</div><span class="species-arrow">↗</span></div>
     </div>`;
@@ -1607,6 +1607,18 @@ function renderSaleGrid(snakes, speciesFilter) {
   if (speciesFilter && speciesFilter !== 'all') {
     visible = visible.filter(s => (s.species||'ball_python') === speciesFilter);
   }
+
+  // 待售個體依出生年份由新到舊排序；沒填年份的放最後
+  visible.sort((a, b) => {
+    const yearA = String(a.birth || '').match(/\d{4}/)?.[0];
+    const yearB = String(b.birth || '').match(/\d{4}/)?.[0];
+
+    if (yearA && yearB) return Number(yearB) - Number(yearA);
+    if (yearA) return -1;
+    if (yearB) return 1;
+    return 0;
+  });
+
   if (visible.length === 0) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);font-size:14px;">目前沒有此物種的個體</div>';
   } else {
