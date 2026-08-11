@@ -1223,6 +1223,7 @@ footer {
   <div class="species-grid" id="sale-grid">
     <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);font-size:14px;">載入中...</div>
   </div>
+  <div id="sale-pagination" style="display:none;align-items:center;justify-content:center;gap:8px;margin-top:34px;flex-wrap:wrap;"></div>
 </section>
 
 
@@ -1591,6 +1592,7 @@ function makeCard(s, num) {
         <img src="${s.imgUrl||''}" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;">
       </div>
       ${speciesTag}<div class="species-name">${s.birth ? String(s.birth).match(/\d{4}/)?.[0] + ' ' : ''}${s.nameZh||''}</div>
+      ${s.nameEn ? `<div class="species-name-en" style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:10px;letter-spacing:.3px;">${s.nameEn}</div>` : ''}
       <div class="species-tags">${tags}</div>
       <div class="species-footer"><div class="species-price">${s.price||'洽詢價格'}</div><span class="species-arrow">↗</span></div>
     </div>`;
@@ -1601,11 +1603,61 @@ function padToMultipleOf3(count) {
   return remainder === 0 ? 0 : 3 - remainder;
 }
 
+const SALE_PAGE_SIZE = 12;
+
+function renderSalePagination(totalPages) {
+  const pager = document.getElementById('sale-pagination');
+  if (!pager) return;
+
+  if (totalPages <= 1) {
+    pager.style.display = 'none';
+    pager.innerHTML = '';
+    return;
+  }
+
+  pager.style.display = 'flex';
+  const current = window._salePage || 1;
+
+  const baseStyle = "min-width:36px;height:36px;padding:0 11px;border-radius:3px;font-family:'Noto Sans TC',sans-serif;font-size:12px;cursor:pointer;transition:.2s;";
+  let html = '';
+
+  html += `<button onclick="changeSalePage(${current - 1})" ${current === 1 ? 'disabled' : ''}
+    style="${baseStyle}border:1px solid rgba(59,26,16,.18);background:${current === 1 ? 'rgba(255,255,255,.35)' : '#fff'};color:${current === 1 ? 'rgba(59,26,16,.3)' : 'var(--brown-deep)'};">‹</button>`;
+
+  for (let page = 1; page <= totalPages; page++) {
+    const active = page === current;
+    html += `<button onclick="changeSalePage(${page})"
+      style="${baseStyle}border:1px solid ${active ? 'var(--brown-deep)' : 'rgba(59,26,16,.18)'};background:${active ? 'var(--brown-deep)' : '#fff'};color:${active ? 'var(--copper-pale)' : 'var(--brown-deep)'};font-weight:${active ? '600' : '400'};">${page}</button>`;
+  }
+
+  html += `<button onclick="changeSalePage(${current + 1})" ${current === totalPages ? 'disabled' : ''}
+    style="${baseStyle}border:1px solid rgba(59,26,16,.18);background:${current === totalPages ? 'rgba(255,255,255,.35)' : '#fff'};color:${current === totalPages ? 'rgba(59,26,16,.3)' : 'var(--brown-deep)'};">›</button>`;
+
+  pager.innerHTML = html;
+}
+
+window.changeSalePage = function(page) {
+  if (!window._allSnakes) return;
+
+  let visible = window._allSnakes.filter(s => s.status === 'sale');
+  if (window._currentSpecies && window._currentSpecies !== 'all') {
+    visible = visible.filter(s => (s.species || 'ball_python') === window._currentSpecies);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(visible.length / SALE_PAGE_SIZE));
+  window._salePage = Math.min(Math.max(1, page), totalPages);
+  renderSaleGrid(window._allSnakes, window._currentSpecies);
+
+  const section = document.getElementById('species');
+  if (section) section.scrollIntoView({ behavior:'smooth', block:'start' });
+};
+
 function renderSaleGrid(snakes, speciesFilter) {
   const grid = document.getElementById('sale-grid');
   let visible = snakes.filter(s => s.status === 'sale');
+
   if (speciesFilter && speciesFilter !== 'all') {
-    visible = visible.filter(s => (s.species||'ball_python') === speciesFilter);
+    visible = visible.filter(s => (s.species || 'ball_python') === speciesFilter);
   }
 
   // 待售個體依出生年份由新到舊排序；沒填年份的放最後
@@ -1619,12 +1671,24 @@ function renderSaleGrid(snakes, speciesFilter) {
     return 0;
   });
 
+  const totalPages = Math.max(1, Math.ceil(visible.length / SALE_PAGE_SIZE));
+  window._salePage = Math.min(Math.max(1, window._salePage || 1), totalPages);
+
   if (visible.length === 0) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);font-size:14px;">目前沒有此物種的個體</div>';
-  } else {
-    const padCount = padToMultipleOf3(visible.length);
-    grid.innerHTML = visible.map((s,i) => makeCard(s, i+1)).join('') + PLACEHOLDER_LIGHT.repeat(padCount);
+    renderSalePagination(0);
+    return;
   }
+
+  const startIndex = (window._salePage - 1) * SALE_PAGE_SIZE;
+  const pageItems = visible.slice(startIndex, startIndex + SALE_PAGE_SIZE);
+  const padCount = padToMultipleOf3(pageItems.length);
+
+  grid.innerHTML =
+    pageItems.map((s, i) => makeCard(s, startIndex + i + 1)).join('') +
+    PLACEHOLDER_LIGHT.repeat(padCount);
+
+  renderSalePagination(totalPages);
 }
 
 function renderAuctionGrid(snakes) {
@@ -1658,6 +1722,7 @@ async function loadSnakes() {
 
     window._allSnakes = snakes;
     window._currentSpecies = window._currentSpecies || 'all';
+    window._salePage = window._salePage || 1;
 
     renderSaleGrid(snakes, window._currentSpecies);
     renderAuctionGrid(snakes);
@@ -1670,6 +1735,7 @@ async function loadSnakes() {
 
 window.filterBySpecies = function(species, btn) {
   window._currentSpecies = species;
+  window._salePage = 1;
   document.querySelectorAll('.species-tab').forEach(b => {
     b.style.background = 'none';
     b.style.color = 'var(--brown-deep)';
