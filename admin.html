@@ -1051,15 +1051,15 @@ input.im-num:focus { border-color:var(--copper); }
       <!-- SCALESWAP EXPORT PAGE -->
       <div class="page" id="page-scaleswap">
         <div class="page-title">📤 ScaleSwap 刊登包</div>
-        <div class="page-sub">把待售個體的資料整理成 ScaleSwap 表單格式，逐一複製貼上即可</div>
+        <div class="page-sub">可逐欄複製刊登資料，也可勾選球蟒後批次匯出 ScaleSwap 官方 CSV</div>
 
         <div style="background:var(--cream); border-radius:8px; padding:16px 20px; margin-bottom:20px; border-left:3px solid var(--copper);">
           <div style="font-size:13px;font-weight:500;color:var(--brown);margin-bottom:6px;">💡 使用方式</div>
           <div style="font-size:12px;color:var(--muted);line-height:1.7;">
-            1. 開啟 <a href="https://www.scaleswap.co/create-listing" target="_blank" style="color:var(--copper);">ScaleSwap 刊登頁面</a>（建議用同一個瀏覽器分頁）<br>
-            2. 在下方選擇要刊登的個體，點擊「展開」<br>
-            3. 每個欄位都有「📋 複製」按鈕，按一下就能貼到 ScaleSwap 表單對應欄位<br>
-            4. 圖片網址列出後，可直接從 Cloudinary 下載再上傳，或在 ScaleSwap 用「從 URL 匯入」（如有支援）
+            1. <b>批次上傳：</b>勾選要上架的球蟒，再按「匯出已選 CSV」；只會匯出你勾選的個體<br>
+            2. CSV 欄位完全依照 ScaleSwap 官方 Ball Python 範本；上傳後會先建立為 Coming Soon，再到 ScaleSwap 補照片並改成 Active<br>
+            3. 仍可點擊個體「展開」，使用原本逐欄「📋 複製」方式刊登<br>
+            4. 匯出成功後，本瀏覽器會標記「已匯出」，再次匯出同一隻時會先提醒，降低重複上傳風險
           </div>
         </div>
 
@@ -1071,6 +1071,26 @@ input.im-num:focus { border-color:var(--copper); }
           </select>
           <input class="form-input" id="ss-search" placeholder="搜尋編號/基因..." style="width:200px;padding:7px 10px" oninput="ssRender()">
           <span id="ss-count" style="font-size:12px;color:var(--muted);margin-left:auto">—</span>
+        </div>
+
+        <div style="background:white;border:1px solid rgba(181,115,58,0.22);border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--brown);margin-bottom:3px;">📦 ScaleSwap CSV 批次匯出</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">僅球蟒可勾選；已匯出標記只儲存在這台瀏覽器，不會改動資料庫。</div>
+            </div>
+            <div id="ss-selected-count" style="font-size:12px;font-weight:700;color:var(--copper);">已選 0 隻</div>
+          </div>
+          <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
+            <button class="action-btn" onclick="ssSelectVisible()" style="padding:7px 11px;">☑ 全選目前</button>
+            <button class="action-btn" onclick="ssClearSelection()" style="padding:7px 11px;">取消全選</button>
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;padding:6px 4px;">
+              <input type="checkbox" id="ss-hide-exported" onchange="ssRender()"> 隱藏已匯出
+            </label>
+            <button class="action-btn" onclick="ssClearExportedMarks()" style="padding:7px 11px;color:var(--muted);">清除已匯出標記</button>
+            <button id="ss-export-csv-btn" class="submit-btn" onclick="ssExportSelectedCsv()" disabled
+              style="width:auto;padding:8px 14px;margin-left:auto;white-space:nowrap;opacity:.45;">⬇️ 匯出已選 CSV</button>
+          </div>
         </div>
 
         <div id="ss-list"></div>
@@ -5138,6 +5158,197 @@ window.ssCopy = (text, btn) => {
   });
 };
 
+
+// ScaleSwap 官方 Ball Python CSV 欄位（依使用者下載的官方範本，順序不可改）
+const SS_CSV_HEADERS = [
+  'category','ID','title','internationalTitle','morph','parent1','parent2',
+  'sexM','sexF','sexU','bornYear','weight','frozenThawed','origin',
+  'description','price','currency','acceptOffers','inquireOnly',
+  'exportPossible','localShipping','localPickup'
+];
+
+const SS_EXPORTED_STORAGE_KEY = 'hm_scaleswap_exported_ball_pythons_v1';
+const ssSelectedIds = new Set();
+
+function ssSnakeKey(snake) {
+  return String(snake.id || snake.code || '');
+}
+
+function ssIsBallPython(snake) {
+  const species = String(snake.species || '').toLowerCase();
+  return species === 'ball_python' || species === '球蟒' || species === 'ball python' || species === 'ball-python' || species === 'ball-pythons';
+}
+
+function ssGetExportedSet() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SS_EXPORTED_STORAGE_KEY) || '[]');
+    return new Set(Array.isArray(raw) ? raw.map(String) : []);
+  } catch (_) {
+    return new Set();
+  }
+}
+
+function ssSaveExportedSet(set) {
+  localStorage.setItem(SS_EXPORTED_STORAGE_KEY, JSON.stringify([...set]));
+}
+
+function ssExtractYearStrict(birthStr) {
+  if (!birthStr) return '';
+  const match = String(birthStr).match(/(?:19|20)\d{2}/);
+  return match ? match[0] : '';
+}
+
+function ssExtractWeight(weightStr) {
+  if (weightStr === null || weightStr === undefined || weightStr === '') return '';
+  const match = String(weightStr).replace(/,/g, '').match(/(\d+(?:\.\d+)?)/);
+  return match ? match[1] : '';
+}
+
+function ssFrozenValue(snake) {
+  const v = String(snake.frozen || '').trim().toLowerCase();
+  if (['是','yes','y','true','1'].includes(v)) return 'Yes';
+  if (['否','no','n','false','0'].includes(v)) return 'No';
+  return '';
+}
+
+function ssCsvRowFromSnake(snake) {
+  const sex = ssGetSex(snake);
+  const price = ssExtractPrice(snake.price);
+  const title = snake.nameZh || snake.nameEn || snake.morph || snake.code || '';
+  const internationalTitle = snake.nameEn || snake.morph || '';
+
+  return {
+    category: 'ball-pythons',
+    ID: snake.code || '',
+    title,
+    internationalTitle,
+    morph: snake.morph || '',
+    parent1: snake.sire || '',
+    parent2: snake.dam || '',
+    sexM: sex === 'male' ? '1' : '0',
+    sexF: sex === 'female' ? '1' : '0',
+    sexU: (sex === 'unknown' || sex === 'unset') ? '1' : '0',
+    bornYear: ssExtractYearStrict(snake.birth),
+    weight: ssExtractWeight(snake.weight),
+    frozenThawed: ssFrozenValue(snake),
+    origin: 'CB',
+    description: ssBuildDescription(snake),
+    price: price === null ? '' : String(price),
+    currency: 'TWD',
+    acceptOffers: '',
+    inquireOnly: price === null ? 'true' : '',
+    exportPossible: '',
+    localShipping: '',
+    localPickup: ''
+  };
+}
+
+function ssCsvEscape(value) {
+  const s = String(value ?? '');
+  if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function ssUpdateSelectionUi() {
+  const count = ssSelectedIds.size;
+  const label = document.getElementById('ss-selected-count');
+  const btn = document.getElementById('ss-export-csv-btn');
+  if (label) label.textContent = `已選 ${count} 隻`;
+  if (btn) {
+    btn.disabled = count === 0;
+    btn.style.opacity = count === 0 ? '.45' : '1';
+    btn.textContent = count === 0 ? '⬇️ 匯出已選 CSV' : `⬇️ 匯出已選 ${count} 隻 CSV`;
+  }
+}
+
+window.ssToggleSelect = (id, checked) => {
+  id = String(id);
+  if (checked) ssSelectedIds.add(id);
+  else ssSelectedIds.delete(id);
+  ssUpdateSelectionUi();
+};
+
+window.ssSelectVisible = () => {
+  document.querySelectorAll('.ss-select-checkbox:not(:disabled)').forEach(cb => {
+    cb.checked = true;
+    ssSelectedIds.add(String(cb.dataset.snakeId || ''));
+  });
+  ssSelectedIds.delete('');
+  ssUpdateSelectionUi();
+};
+
+window.ssClearSelection = () => {
+  ssSelectedIds.clear();
+  document.querySelectorAll('.ss-select-checkbox').forEach(cb => cb.checked = false);
+  ssUpdateSelectionUi();
+};
+
+window.ssClearExportedMarks = () => {
+  if (!confirm('要清除這台瀏覽器上的 ScaleSwap「已匯出」標記嗎？\\n不會刪除任何蛇的資料。')) return;
+  localStorage.removeItem(SS_EXPORTED_STORAGE_KEY);
+  showToast('✅ 已清除 ScaleSwap 已匯出標記');
+  ssRender();
+};
+
+window.ssExportSelectedCsv = () => {
+  const all = window.allSnakes || [];
+  const selected = all.filter(s => ssSelectedIds.has(ssSnakeKey(s)));
+
+  if (!selected.length) {
+    showToast('❌ 請先勾選要匯出的球蟒');
+    return;
+  }
+
+  const nonBall = selected.filter(s => !ssIsBallPython(s));
+  if (nonBall.length) {
+    showToast('❌ 官方範本是 Ball Python，只能匯出球蟒');
+    return;
+  }
+
+  // ScaleSwap 說明中 frozenThawed 為必填；缺少時先阻止匯出，避免整批上傳失敗。
+  const missingFrozen = selected.filter(s => !ssFrozenValue(s));
+  if (missingFrozen.length) {
+    const names = missingFrozen.slice(0, 8).map(s => s.code || s.nameZh || s.morph || '未命名').join('\\n');
+    alert(`以下 ${missingFrozen.length} 隻尚未設定「接受冷凍食物」，請先到編輯個體補上：\\n\\n${names}${missingFrozen.length > 8 ? '\\n…' : ''}`);
+    return;
+  }
+
+  const exported = ssGetExportedSet();
+  const repeated = selected.filter(s => exported.has(ssSnakeKey(s)));
+  if (repeated.length) {
+    const names = repeated.slice(0, 8).map(s => s.code || s.nameZh || s.morph || '未命名').join('\\n');
+    if (!confirm(`⚠️ 你選的個體中有 ${repeated.length} 隻曾在這台瀏覽器匯出過：\\n\\n${names}${repeated.length > 8 ? '\\n…' : ''}\\n\\n仍要再次匯出嗎？`)) return;
+  }
+
+  const rows = selected.map(ssCsvRowFromSnake);
+  const csv = [
+    SS_CSV_HEADERS.join(','),
+    ...rows.map(row => SS_CSV_HEADERS.map(h => ssCsvEscape(row[h])).join(','))
+  ].join('\n');
+
+  // UTF-8 BOM：避免 Excel / Numbers 開啟中文字亂碼
+  const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `scaleswap-ball-pythons-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  selected.forEach(s => exported.add(ssSnakeKey(s)));
+  ssSaveExportedSet(exported);
+
+  const exportedCount = selected.length;
+  ssSelectedIds.clear();
+  showToast(`✅ 已匯出 ${exportedCount} 隻 ScaleSwap CSV，並標記為已匯出`);
+  ssRender();
+};
+
 // 切換展開/收合
 window.ssToggle = (id) => {
   const el = document.getElementById('ss-detail-' + id);
@@ -5181,7 +5392,14 @@ window.ssRender = () => {
     });
   }
 
+  const exportedSet = ssGetExportedSet();
+  const hideExported = document.getElementById('ss-hide-exported')?.checked;
+  if (hideExported) {
+    snakes = snakes.filter(s => !exportedSet.has(ssSnakeKey(s)));
+  }
+
   document.getElementById('ss-count').textContent = `共 ${snakes.length} 隻`;
+  ssUpdateSelectionUi();
 
   if (snakes.length === 0) {
     list.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px;">沒有符合條件的個體</div>';
@@ -5191,12 +5409,19 @@ window.ssRender = () => {
   list.innerHTML = snakes.map((snake, idx) => {
     const pkg = ssBuildPackage(snake);
     const id = snake.id || ('idx' + idx);
+    const snakeKey = ssSnakeKey(snake);
+    const isBallPython = ssIsBallPython(snake);
+    const isSelected = ssSelectedIds.has(snakeKey);
+    const isExported = exportedSet.has(snakeKey);
     const sexLabel = pkg.sex === 'male' ? '♂ 雄' : (pkg.sex === 'female' ? '♀ 雌' : (pkg.sex === 'unknown' ? '？ 未知' : '⚠️ 未填'));
     const sexColor = pkg.sex === 'male' ? '#4a7fb5' : (pkg.sex === 'female' ? '#c97090' : (pkg.sex === 'unknown' ? '#888' : '#c45'));
 
     return `
       <div style="background:white; border:1px solid rgba(181,115,58,0.18); border-radius:10px; margin-bottom:12px; overflow:hidden;">
-        <div onclick="ssToggle('${id}')" style="display:flex; align-items:center; gap:14px; padding:12px 16px; cursor:pointer; user-select:none;">
+        <div onclick="ssToggle('${id}')" style="display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; user-select:none;">
+          <div onclick="event.stopPropagation()" style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            ${isBallPython ? `<input class="ss-select-checkbox" type="checkbox" data-snake-id="${esc(snakeKey)}" ${isSelected ? 'checked' : ''} onchange="ssToggleSelect('${snakeKey.replace(/'/g,"\'")}', this.checked)" style="width:18px;height:18px;accent-color:var(--copper);cursor:pointer;">` : `<span title="目前只有 Ball Python 官方範本" style="font-size:10px;color:var(--muted);">—</span>`}
+          </div>
           <img src="${snake.imgUrl}" style="width:56px; height:56px; object-fit:cover; border-radius:6px; flex-shrink:0;" onerror="this.style.display='none'">
           <div style="flex:1; min-width:0;">
             <div style="font-weight:600; color:var(--brown); font-size:14px; margin-bottom:2px;">
@@ -5209,6 +5434,7 @@ window.ssRender = () => {
               <span>${pkg.price ? 'NT$' + pkg.price.toLocaleString() : esc(snake.price || '—')}</span>
             </div>
           </div>
+          ${isExported ? '<span style="font-size:10px;color:#2e7d32;background:#edf7ee;border:1px solid #b9dfbe;border-radius:4px;padding:3px 6px;white-space:nowrap;">✓ 已匯出</span>' : ''}
           <span id="ss-arrow-${id}" style="color:var(--copper); font-size:14px;">▼</span>
         </div>
 
