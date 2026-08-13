@@ -804,12 +804,13 @@ input.im-num:focus { border-color:var(--copper); }
       <div class="page" id="page-im-food">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div class="page-title">鼠量庫存</div>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="im-food-drag-toggle" class="submit-btn" style="width:auto;padding:8px 16px;background:#777;border:none" onclick="imToggleFoodDragMode()">🔒 拖移關閉</button>
             <button class="submit-btn" style="width:auto;padding:8px 16px;background:var(--copper);border:none" onclick="imOpenCombinedFoodReport()">📋 生成訂購報表</button>
             <button class="submit-btn" style="width:auto;padding:8px 16px" onclick="imOpenFoodForm(null,null)">＋ 新增規格</button>
           </div>
         </div>
-        <div class="page-sub">點擊數字直接修改庫存 · 「實際訂購」可手動調整</div>
+        <div class="page-sub">點擊數字直接修改庫存 · 「實際訂購」可手動調整 · 需要排序時再開啟拖移模式</div>
         <div id="im-food-panels"></div>
       </div>
 
@@ -2385,9 +2386,120 @@ window.imRenderTable = (section) => {
   }
 };
 
+// ── FOOD DRAG MODE ───────────────────────────────
+window._imFoodDragMode = false;
+
+window.imToggleFoodDragMode = () => {
+  window._imFoodDragMode = !window._imFoodDragMode;
+  const btn = document.getElementById('im-food-drag-toggle');
+  if (btn) {
+    btn.textContent = window._imFoodDragMode ? '🔓 拖移開啟' : '🔒 拖移關閉';
+    btn.style.background = window._imFoodDragMode ? 'var(--copper)' : '#777';
+  }
+  window._dragFoodId = null;
+  imRenderFood();
+};
+
+// ── FOOD SHARED CATALOG ──────────────────────────
+// 第一個「宣恩」作為鼠量品項主表。
+// 品項資料與價格同步給「有剛 / Neil」；每週用量、庫存、實際訂購量各自獨立。
+const FOOD_MASTER_OWNER = '宣恩';
+const FOOD_FOLLOWER_OWNERS = ['有剛','Neil'];
+const FOOD_SHARED_FIELDS = ['type','size','grams','perPkg','unitPrice','price','sortOrder'];
+
+function imFoodSpecKey(r) {
+  return `${String(r?.type||'').trim()}|${String(r?.size||'').trim()}`;
+}
+
+function imFoodSharedData(r) {
+  const out = {};
+  FOOD_SHARED_FIELDS.forEach(k => {
+    if (r && r[k] !== undefined) out[k] = r[k];
+  });
+  return out;
+}
+
+async function imSyncFoodCatalogFromMaster() {
+  const masters = IM.foodRows
+    .filter(r => r.owner === FOOD_MASTER_OWNER)
+    .sort((a,b)=>(a.sortOrder??999)-(b.sortOrder??999));
+
+  if (!masters.length) return;
+
+  for (const owner of FOOD_FOLLOWER_OWNERS) {
+    const followers = IM.foodRows.filter(r => r.owner === owner);
+    const followerMap = new Map(followers.map(r => [imFoodSpecKey(r), r]));
+
+    for (const master of masters) {
+      const key = imFoodSpecKey(master);
+      const shared = imFoodSharedData(master);
+      const follower = followerMap.get(key);
+
+      if (follower) {
+        const patch = {};
+        let changed = false;
+        FOOD_SHARED_FIELDS.forEach(field => {
+          const next = shared[field] ?? null;
+          const cur = follower[field] ?? null;
+          if (String(cur) !== String(next)) {
+            patch[field] = shared[field] ?? '';
+            changed = true;
+          }
+        });
+        if (changed) {
+          await updateDoc(doc(db2, COL.foodRows, follower._id), patch);
+          Object.assign(follower, patch);
+        }
+      } else {
+        const data = {
+          owner,
+          ...shared,
+          weeklyUse: 0,
+          stock: 0,
+          actualOrder: 0,
+          createdAt: serverTimestamp()
+        };
+        const ref = await addDoc(collection(db2, COL.foodRows), data);
+        IM.foodRows.push({_id: ref.id, ...data});
+      }
+    }
+  }
+}
+
+async function imPropagateFoodSharedFields(masterRow, oldKey='') {
+  if (!masterRow || masterRow.owner !== FOOD_MASTER_OWNER) return;
+
+  const shared = imFoodSharedData(masterRow);
+  const newKey = imFoodSpecKey(masterRow);
+
+  for (const owner of FOOD_FOLLOWER_OWNERS) {
+    let follower = IM.foodRows.find(r =>
+      r.owner === owner &&
+      (imFoodSpecKey(r) === oldKey || imFoodSpecKey(r) === newKey)
+    );
+
+    if (follower) {
+      await updateDoc(doc(db2, COL.foodRows, follower._id), shared);
+      Object.assign(follower, shared);
+    } else {
+      const data = {
+        owner,
+        ...shared,
+        weeklyUse: 0,
+        stock: 0,
+        actualOrder: 0,
+        createdAt: serverTimestamp()
+      };
+      const ref = await addDoc(collection(db2, COL.foodRows), data);
+      IM.foodRows.push({_id: ref.id, ...data});
+    }
+  }
+}
+
 // ── FOOD RENDER ──────────────────────────────────
 window.imRenderFood = async () => {
   await imLoadAll();
+  await imSyncFoodCatalogFromMaster();
   const owners = ['宣恩','有剛','Neil'];
   let html = '';
   owners.forEach(name => {
@@ -2404,7 +2516,9 @@ window.imRenderFood = async () => {
           <span>保險庫存：<b style="color:var(--brown)">${p.保險庫存週}週</b></span>
           ${totalNeed>0?`<span style="color:#8b5e10">需叫：<b>${fmtMoney(totalNeed)}</b></span>`:''}
           <button class="action-btn" style="padding:3px 10px;font-size:11px" onclick="imOpenFoodParams('${name}')">調整參數</button>
-          <button class="action-btn" style="padding:3px 10px;font-size:11px" onclick="imOpenFoodForm('${name}',null)">＋ 新增</button>
+          ${name===FOOD_MASTER_OWNER
+            ? `<button class="action-btn" style="padding:3px 10px;font-size:11px" onclick="imOpenFoodForm('${name}',null)">＋ 新增品項</button>`
+            : `<span style="font-size:10px;color:var(--muted);padding:3px 6px;">品項／價格同步自宣恩</span>`}
         </span>
       </div>
       ${lowRows.length?`<div class="im-alert" style="margin:10px 14px 0">⚠️ ${lowRows.map(r=>r.type+' '+r.size).join('、')} 低於保險庫存</div>`:''}
@@ -2418,8 +2532,9 @@ window.imRenderFood = async () => {
           const pct = r.weeklyUse>0?Math.min(100,(r.stock/(p.保險庫存週*r.weeklyUse))*100):100;
           const bc = low?'#c0392b':'#2a6b3a';
           const actualOrder = r.actualOrder!=null ? r.actualOrder : need;
-          return `<tr draggable="true" data-id="${r._id}" data-owner="${name}">
-            <td style="cursor:grab;color:var(--copper);padding-left:10px;font-size:16px" title="拖拉調整順序">⠿</td>
+          const canDrag = window._imFoodDragMode && name===FOOD_MASTER_OWNER;
+          return `<tr draggable="${canDrag ? 'true' : 'false'}" data-id="${r._id}" data-owner="${name}">
+            <td style="cursor:${canDrag ? 'grab' : 'default'};color:var(--copper);padding-left:10px;font-size:16px;opacity:${canDrag ? '1' : '.20'}" title="${canDrag ? '拖拉調整順序（後兩組會同步）' : (name===FOOD_MASTER_OWNER ? '請先開啟拖移模式' : '順序同步自宣恩')}">⠿</td>
             <td>${r.type||''}</td>
             <td>${r.size||''}</td>
             <td style="color:var(--muted)">${r.grams||''}</td>
@@ -2429,7 +2544,14 @@ window.imRenderFood = async () => {
               <span class="im-prog"><span class="im-prog-fill" style="width:${pct}%;background:${bc};display:block"></span></span>
             </td>
             <td style="color:${low?'#c0392b':'#2a6b3a'};font-weight:600">${weeks}週</td>
-            <td><input type="number" min="0" class="im-num" value="${r.price||0}" onchange="imUpdateFoodField('${r._id}','price',parseInt(this.value)||0)"></td>
+            <td>
+              ${name===FOOD_MASTER_OWNER
+                ? `<input type="number" min="0" class="im-num" value="${r.price||0}" onchange="imUpdateFoodField('${r._id}','price',parseInt(this.value)||0)">`
+                : `<div title="價格同步自宣恩" style="display:inline-flex;align-items:center;gap:4px;">
+                    <span style="font-weight:600;color:var(--brown)">${r.price||0}</span>
+                    <span style="font-size:9px;color:var(--muted)">🔗</span>
+                  </div>`}
+            </td>
             <td>${low?`<span class="im-tag im-tag-iso">低庫存</span>`:`<span class="im-tag im-tag-safe">正常</span>`}</td>
             <td style="color:${need>0?'#8b5e10':'var(--muted);'};font-weight:600">${need>0?need:'—'}</td>
             <td>
@@ -2439,8 +2561,10 @@ window.imRenderFood = async () => {
               ${actualOrder>0?`<span style="font-size:10px;color:var(--muted);display:block;margin-top:2px">${fmtMoney(actualOrder*(r.price||0))}</span>`:''}
             </td>
             <td style="white-space:nowrap">
-              <button class="action-btn" onclick="imOpenFoodForm('${name}','${r._id}')">編輯</button>
-              <button class="action-btn danger" onclick="imConfirmDeleteFood('${r._id}','${esc(r.type+' '+r.size)}')">刪除</button>
+              <button class="action-btn" onclick="imOpenFoodForm('${name}','${r._id}')">${name===FOOD_MASTER_OWNER?'編輯':'調整用量'}</button>
+              ${name===FOOD_MASTER_OWNER
+                ? `<button class="action-btn danger" onclick="imConfirmDeleteFood('${r._id}','${esc(r.type+' '+r.size)}')">刪除</button>`
+                : ''}
             </td>
           </tr>`;
         }).join('')||`<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted)">沒有資料</td></tr>`}
@@ -2457,24 +2581,52 @@ window.imRenderFood = async () => {
   });
   document.getElementById('im-food-panels').innerHTML = html;
 
-  // 綁定 drag & drop 事件
-  document.querySelectorAll('#im-food-panels tbody[id^="food-tbody-"]').forEach(tbody => {
-    const owner = tbody.id.replace('food-tbody-', '');
-    tbody.addEventListener('dragover', e => e.preventDefault());
-    tbody.addEventListener('drop', e => imFoodDrop(e, owner));
-    tbody.querySelectorAll('tr[data-id]').forEach(tr => {
-      tr.addEventListener('dragstart', e => { _dragFoodId = tr.dataset.id; e.dataTransfer.effectAllowed = 'move'; });
-      tr.addEventListener('dragover', e => { e.preventDefault(); tr.style.outline = '2px solid var(--copper)'; });
-      tr.addEventListener('dragleave', () => { tr.style.outline = ''; });
-      tr.addEventListener('drop', e => { tr.style.outline = ''; imFoodDrop(e, owner); });
+  // 只有在拖移模式開啟時才綁定 drag & drop，避免輸入數字時誤拖動整列
+  if (window._imFoodDragMode) {
+    document.querySelectorAll('#im-food-panels tbody[id^="food-tbody-"]').forEach(tbody => {
+      const owner = tbody.id.replace('food-tbody-', '');
+      tbody.addEventListener('dragover', e => e.preventDefault());
+      tbody.addEventListener('drop', e => imFoodDrop(e, owner));
+      tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+        tr.addEventListener('dragstart', e => {
+          if (!window._imFoodDragMode) { e.preventDefault(); return; }
+          _dragFoodId = tr.dataset.id;
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        tr.addEventListener('dragover', e => {
+          if (!window._imFoodDragMode) return;
+          e.preventDefault();
+          tr.style.outline = '2px solid var(--copper)';
+        });
+        tr.addEventListener('dragleave', () => { tr.style.outline = ''; });
+        tr.addEventListener('drop', e => {
+          if (!window._imFoodDragMode) return;
+          tr.style.outline = '';
+          imFoodDrop(e, owner);
+        });
+      });
     });
-  });
+  }
 };
 
 window.imUpdateFoodField = async (id, field, val) => {
-  await updateDoc(doc(db2, COL.foodRows, id), { [field]: val });
   const r = IM.foodRows.find(x => x._id===id);
-  if (r) r[field] = val;
+  const sharedField = FOOD_SHARED_FIELDS.includes(field);
+
+  if (r && sharedField && r.owner !== FOOD_MASTER_OWNER) {
+    showToast('ℹ️ 品項與價格請在宣恩那一組修改，後兩組會自動同步');
+    imRenderFood();
+    return;
+  }
+
+  await updateDoc(doc(db2, COL.foodRows, id), { [field]: val });
+  if (r) {
+    const oldKey = imFoodSpecKey(r);
+    r[field] = val;
+    if (sharedField && r.owner === FOOD_MASTER_OWNER) {
+      await imPropagateFoodSharedFields(r, oldKey);
+    }
+  }
   imRenderFood();
   imRenderDashboard();
 };
@@ -3366,16 +3518,18 @@ window.imOpenFoodForm = (owner, id) => {
   const r = id ? IM.foodRows.find(x=>x._id===id) : {};
   const isNew = !id;
   const ownerOpts = ['宣恩','有剛','Neil'];
-  document.getElementById('im-modal-body').innerHTML = `<div class="im-modal-title">${isNew?'新增鼠種規格':'編輯鼠種規格'}</div>
+  const sharedLocked = !!id && (r?.owner || owner) !== FOOD_MASTER_OWNER;
+  document.getElementById('im-modal-body').innerHTML = `<div class="im-modal-title">${isNew?'新增鼠種規格':(sharedLocked?'調整個人用量／庫存':'編輯鼠種規格')}</div>
+  ${sharedLocked?`<div style="margin-bottom:12px;padding:9px 11px;background:#f7f1e7;border:1px solid rgba(181,115,58,.2);border-radius:6px;font-size:11px;color:var(--muted);">🔗 品項、規格、重量、每包隻數與價格由「宣恩」主表同步；這裡只調整你自己的每週用量與庫存。</div>`:''}
   <div class="im-form-grid">
     ${isNew?`<div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-food-owner">${ownerOpts.map(x=>`<option ${x===owner?'selected':''}>${x}</option>`).join('')}</select></div>`:''}
-    <div class="form-group"><label class="form-label">種類</label><select class="form-select" id="im-f-food-type"><option ${(r?.type||'小白鼠')==='小白鼠'?'selected':''}>小白鼠</option><option ${r?.type==='大白鼠'?'selected':''}>大白鼠</option><option ${r?.type==='其他'?'selected':''}>其他</option></select></div>
-    <div class="form-group"><label class="form-label">規格名稱 *</label><input class="form-input" id="im-f-food-size" value="${esc(r?.size||'')}"></div>
-    <div class="form-group"><label class="form-label">重量範圍(g)</label><input class="form-input" id="im-f-food-grams" value="${esc(r?.grams||'')}"></div>
-    <div class="form-group"><label class="form-label">每包隻數</label><div class="im-stepper"><button type="button" onclick="imStep('im-f-food-perPkg',-1,1)">−</button><input class="form-input" id="im-f-food-perPkg" type="number" min="1" value="${r?.perPkg||10}"><button type="button" onclick="imStep('im-f-food-perPkg',1,1)">＋</button></div></div>
+    <div class="form-group"><label class="form-label">種類</label><select class="form-select" id="im-f-food-type" ${sharedLocked?'disabled':''}><option ${(r?.type||'小白鼠')==='小白鼠'?'selected':''}>小白鼠</option><option ${r?.type==='大白鼠'?'selected':''}>大白鼠</option><option ${r?.type==='其他'?'selected':''}>其他</option></select></div>
+    <div class="form-group"><label class="form-label">規格名稱 *</label><input class="form-input" id="im-f-food-size" value="${esc(r?.size||'')}" ${sharedLocked?'readonly':''}></div>
+    <div class="form-group"><label class="form-label">重量範圍(g)</label><input class="form-input" id="im-f-food-grams" value="${esc(r?.grams||'')}" ${sharedLocked?'readonly':''}></div>
+    <div class="form-group"><label class="form-label">每包隻數</label><div class="im-stepper"><button type="button" ${sharedLocked?'disabled':''} onclick="imStep('im-f-food-perPkg',-1,1)">−</button><input class="form-input" id="im-f-food-perPkg" type="number" min="1" value="${r?.perPkg||10}" ${sharedLocked?'readonly':''}><button type="button" ${sharedLocked?'disabled':''} onclick="imStep('im-f-food-perPkg',1,1)">＋</button></div></div>
     <div class="form-group"><label class="form-label">每週用量(包)</label><div class="im-stepper"><button type="button" onclick="imStep('im-f-food-weeklyUse',-0.5,0,0.5)">−</button><input class="form-input" id="im-f-food-weeklyUse" type="number" step="0.5" min="0" value="${r?.weeklyUse||0}"><button type="button" onclick="imStep('im-f-food-weeklyUse',0.5,0,0.5)">＋</button></div></div>
     <div class="form-group"><label class="form-label">目前庫存(包)</label><div class="im-stepper"><button type="button" onclick="imStep('im-f-food-stock',-1,0)">−</button><input class="form-input" id="im-f-food-stock" type="number" min="0" value="${r?.stock||0}"><button type="button" onclick="imStep('im-f-food-stock',1,0)">＋</button></div></div>
-    <div class="form-group"><label class="form-label">單包金額(NT$)</label><div class="im-stepper"><button type="button" onclick="imStep('im-f-food-price',-10,0)">−</button><input class="form-input" id="im-f-food-price" type="number" min="0" value="${r?.price||0}"><button type="button" onclick="imStep('im-f-food-price',10,0)">＋</button></div></div>
+    <div class="form-group"><label class="form-label">單包金額(NT$)</label><div class="im-stepper"><button type="button" ${sharedLocked?'disabled':''} onclick="imStep('im-f-food-price',-10,0)">−</button><input class="form-input" id="im-f-food-price" type="number" min="0" value="${r?.price||0}" ${sharedLocked?'readonly':''}><button type="button" ${sharedLocked?'disabled':''} onclick="imStep('im-f-food-price',10,0)">＋</button></div></div>
   </div>
   <div class="im-form-actions">
     <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
@@ -3386,8 +3540,11 @@ window.imOpenFoodForm = (owner, id) => {
 
 window.imSaveFoodRow = async (owner, id) => {
   const g = x => document.getElementById(x);
-  const ownerVal = owner || g('im-f-food-owner')?.value || '有剛';
-  const data = {
+  const ownerVal = owner || g('im-f-food-owner')?.value || FOOD_MASTER_OWNER;
+  const existing = id ? IM.foodRows.find(x=>x._id===id) : null;
+  const oldKey = existing ? imFoodSpecKey(existing) : '';
+
+  let data = {
     owner: ownerVal,
     type: g('im-f-food-type').value,
     size: g('im-f-food-size').value,
@@ -3397,16 +3554,47 @@ window.imSaveFoodRow = async (owner, id) => {
     stock: parseInt(g('im-f-food-stock').value)||0,
     price: parseInt(g('im-f-food-price').value)||0,
   };
+
+  // 後兩組的共用品項欄位永遠以宣恩主表為準，只保留自己的用量 / 庫存。
+  if (ownerVal !== FOOD_MASTER_OWNER && existing) {
+    const master = IM.foodRows.find(r =>
+      r.owner === FOOD_MASTER_OWNER && imFoodSpecKey(r) === imFoodSpecKey(existing)
+    );
+    if (master) {
+      data = {
+        ...data,
+        ...imFoodSharedData(master),
+        weeklyUse: parseFloat(g('im-f-food-weeklyUse').value)||0,
+        stock: parseInt(g('im-f-food-stock').value)||0,
+        owner: ownerVal
+      };
+    }
+  }
+
   try {
+    let savedRow;
     if (id) {
       await updateDoc(doc(db2, COL.foodRows, id), data);
       const idx = IM.foodRows.findIndex(x=>x._id===id);
-      if (idx>-1) IM.foodRows[idx] = {...IM.foodRows[idx], ...data};
+      if (idx>-1) {
+        IM.foodRows[idx] = {...IM.foodRows[idx], ...data};
+        savedRow = IM.foodRows[idx];
+      }
     } else {
+      if (ownerVal !== FOOD_MASTER_OWNER) {
+        showToast('ℹ️ 新品項請在宣恩那一組新增，後兩組會自動建立');
+        return;
+      }
       const ref = await addDoc(collection(db2, COL.foodRows), {...data, createdAt: serverTimestamp()});
-      IM.foodRows.push({_id: ref.id, ...data});
+      savedRow = {_id: ref.id, ...data};
+      IM.foodRows.push(savedRow);
     }
-    window.showToast('✅ 儲存成功！');
+
+    if (savedRow && savedRow.owner === FOOD_MASTER_OWNER) {
+      await imPropagateFoodSharedFields(savedRow, oldKey);
+    }
+
+    window.showToast(savedRow?.owner === FOOD_MASTER_OWNER ? '✅ 已儲存，品項與價格已同步另外兩組' : '✅ 個人用量／庫存已儲存');
     imCloseModal();
     imRenderFood();
   } catch(e) { window.showToast('❌ 儲存失敗：'+e.message); }
@@ -3995,9 +4183,25 @@ window.imConfirmDeleteFood = (id, label) => {
 };
 window.imDoDeleteFood = async (id) => {
   try {
-    await deleteDoc(doc(db2, COL.foodRows, id));
-    IM.foodRows = IM.foodRows.filter(x=>x._id!==id);
-    window.showToast('🗑️ 已刪除');
+    const target = IM.foodRows.find(x=>x._id===id);
+    if (!target) return;
+
+    if (target.owner !== FOOD_MASTER_OWNER) {
+      showToast('ℹ️ 品項請從宣恩主表刪除');
+      imCloseModal();
+      return;
+    }
+
+    const key = imFoodSpecKey(target);
+    const sameItems = IM.foodRows.filter(r =>
+      r.owner === FOOD_MASTER_OWNER || FOOD_FOLLOWER_OWNERS.includes(r.owner)
+    ).filter(r => imFoodSpecKey(r) === key);
+
+    await Promise.all(sameItems.map(r => deleteDoc(doc(db2, COL.foodRows, r._id))));
+    const ids = new Set(sameItems.map(r=>r._id));
+    IM.foodRows = IM.foodRows.filter(x=>!ids.has(x._id));
+
+    window.showToast(`🗑️ 已刪除「${target.type} ${target.size}」，三組同步移除`);
     imCloseModal();
     imRenderFood();
   } catch(e) { window.showToast('❌ 刪除失敗：'+e.message); }
@@ -4337,6 +4541,7 @@ window.imFoodDragStart = (e) => {
   e.dataTransfer.effectAllowed = 'move';
 };
 window.imFoodDrop = async (e, owner) => {
+  if (!window._imFoodDragMode) return;
   e.preventDefault();
   const targetRow = e.target.closest('tr[data-id]');
   if (!targetRow || !_dragFoodId || targetRow.dataset.id === _dragFoodId) return;
@@ -4357,7 +4562,26 @@ window.imFoodDrop = async (e, owner) => {
     return updateDoc(doc(db2, COL.foodRows, tr.dataset.id), { sortOrder: i });
   });
   await Promise.all(writes);
+
+  // 宣恩主表重新排序後，另外兩組依相同品項同步順序。
+  if (owner === FOOD_MASTER_OWNER) {
+    const masterRows = IM.foodRows.filter(r=>r.owner===FOOD_MASTER_OWNER);
+    const syncWrites = [];
+    masterRows.forEach(master => {
+      const key = imFoodSpecKey(master);
+      FOOD_FOLLOWER_OWNERS.forEach(followerOwner => {
+        const follower = IM.foodRows.find(r=>r.owner===followerOwner && imFoodSpecKey(r)===key);
+        if (follower) {
+          follower.sortOrder = master.sortOrder;
+          syncWrites.push(updateDoc(doc(db2, COL.foodRows, follower._id), {sortOrder: master.sortOrder}));
+        }
+      });
+    });
+    await Promise.all(syncWrites);
+  }
+
   _dragFoodId = null;
+  imRenderFood();
 };
 
 window.imStep = (id, delta, min=0, step=1) => {
