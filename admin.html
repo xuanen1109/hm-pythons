@@ -366,6 +366,110 @@ input.im-num:focus { border-color:var(--copper); }
 .im-prog-fill { height:100%; border-radius:3px; }
 /* IM CONFIRM */
 .im-confirm-msg { color:var(--brown); margin-bottom:20px; line-height:1.8; font-size:13px; }
+
+@media (max-width: 700px) {
+  #breeding-group-modal-overlay .modal > div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .bg-pair-form-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── 繁殖組顯示美化：只改版面，不碰合併/儲存邏輯 ── */
+.breeding-group-card-v2 {
+  grid-column: span 2 !important;
+  border-color: rgba(181,115,58,.22) !important;
+  box-shadow: 0 5px 18px rgba(59,26,16,.06) !important;
+}
+.breeding-group-card-v2 > div:first-child > div {
+  min-width: 0;
+}
+.breeding-group-card-v2 > div:first-child > div > div:first-child {
+  aspect-ratio: 4 / 3 !important;
+}
+.breeding-group-card-v2 > div:first-child > div > div:nth-child(2) {
+  min-height: 94px !important;
+  padding: 12px 14px 13px !important;
+}
+.breeding-group-card-v2 > .snake-card-body {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  padding:10px 12px !important;
+  min-height:0 !important;
+  border-top:1px solid rgba(181,115,58,.10);
+}
+.breeding-group-card-v2 > .snake-card-body > div:first-child {
+  display:none;
+}
+.breeding-group-card-v2 > .snake-card-body .card-actions {
+  margin-top:0 !important;
+}
+@media (max-width: 768px) {
+  .breeding-group-card-v2 {
+    grid-column: span 1 !important;
+  }
+  .breeding-group-card-v2 > div:first-child > div > div:first-child {
+    aspect-ratio: 1 / 1 !important;
+  }
+}
+
+/* ── 繁殖組：與一般個體卡相同比例，用按鍵切換公／母 ── */
+.breeding-group-card-switch {
+  grid-column: span 1 !important;
+}
+.breeding-group-card-switch .breeding-switch-wrap {
+  position:relative;
+}
+.breeding-group-card-switch .breeding-group-badge {
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:6;
+  background:#6a4b21;
+  color:#fff0d0;
+  padding:5px 8px;
+  border-radius:4px;
+  font-size:10px;
+  font-weight:700;
+}
+.breeding-group-card-switch .breeding-switcher {
+  position:absolute;
+  left:50%;
+  bottom:10px;
+  transform:translateX(-50%);
+  z-index:6;
+  display:flex;
+  gap:4px;
+  padding:4px;
+  border-radius:7px;
+  background:rgba(20,20,20,.72);
+  backdrop-filter:blur(5px);
+  box-shadow:0 2px 10px rgba(0,0,0,.22);
+}
+.breeding-group-card-switch .breeding-switch-btn {
+  border:0;
+  border-radius:5px;
+  padding:5px 10px;
+  font-size:10px;
+  font-weight:700;
+  color:#fff;
+  background:transparent;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.breeding-group-card-switch .breeding-switch-btn.active {
+  background:#fff;
+  color:var(--brown);
+}
+.breeding-group-card-switch .snake-card-name,
+.breeding-group-card-switch .snake-card-code {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
 </style>
 </head>
 <body>
@@ -397,7 +501,7 @@ input.im-num:focus { border-color:var(--copper); }
     </button>
     <div class="nav-brand">hm.pythons 後台</div>
     <div class="nav-right">
-      <span class="user-name" id="user-name"></span>
+      <span class="user-name" id="user-name"></span><span style="font-size:9px;opacity:.5;margin-left:6px;" title="繁殖組修正版">BG-CLOUD2</span>
       <button class="logout-btn" onclick="doLogout()">登出</button>
       <a href="index.html" target="_blank" style="font-size:11px;color:rgba(255,255,255,0.5);text-decoration:none;letter-spacing:1px;">← 前往官網</a>
     </div>
@@ -491,10 +595,21 @@ input.im-num:focus { border-color:var(--copper); }
             <div class="page-sub" id="list-sub">載入中...</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="startBreedingGroupSelection()">🧬 新增繁殖組</button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleText()">📋 匯出待售文字</button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleTextNoPrice()">📋 匯出無售價</button>
           </div>
         </div>
+
+        <div id="bg-selection-bar" style="display:none;margin:14px 0 4px;background:#fff;border:1px solid rgba(181,115,58,.25);border-radius:8px;padding:11px 13px;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:12px;color:var(--brown);font-weight:700;">🧬 請從現有個體勾選 1 隻公蛇＋1 隻母蛇</div>
+          <div id="bg-selection-count" style="font-size:11px;color:var(--muted);">已選 0 / 2</div>
+          <div style="margin-left:auto;display:flex;gap:7px;">
+            <button class="action-btn" onclick="cancelBreedingGroupSelection()">取消</button>
+            <button id="bg-merge-btn" class="submit-btn" style="width:auto;padding:7px 14px;opacity:.45;" disabled onclick="saveBreedingGroupSelection()">合併成繁殖組</button>
+          </div>
+        </div>
+
         <div class="snake-grid" id="snake-grid"></div>
       </div>
 
@@ -702,6 +817,7 @@ input.im-num:focus { border-color:var(--copper); }
           <button class="submit-btn" id="submit-btn" onclick="submitSnake()">新增個體</button>
         </div>
       </div>
+
 
       <!-- IM: DASHBOARD -->
       <div class="page" id="page-im-dashboard">
@@ -1101,6 +1217,297 @@ input.im-num:focus { border-color:var(--copper); }
   </div>
 </div>
 
+
+<!-- BREEDING GROUP MODAL -->
+<div class="modal-overlay" id="breeding-group-modal-overlay">
+  <div class="modal" style="width:1120px;max-width:96vw;max-height:94vh;overflow-y:auto;">
+    <div class="modal-title" id="breeding-group-modal-title">新增繁殖組</div>
+    <div class="modal-sub">就是兩隻一般個體資料放在同一組：左邊公蛇、右邊母蛇。</div>
+
+    <div class="bg-pair-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:start;">
+
+      <div class="bg-side-card" style="border:1px solid rgba(181,115,58,.18);border-radius:10px;padding:14px;background:#fff;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:800;color:#3d6ea8;">♂ 公蛇</div>
+          <div style="font-size:10px;color:var(--muted);">資料格式與一般個體相同</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">個體照片</label>
+          <div class="upload-area" style="min-height:210px;" onclick="document.getElementById('bg-male-input').click()">
+            <img id="bg-male-preview" class="upload-preview" style="display:none;max-height:270px;object-fit:contain;">
+            <div id="bg-male-placeholder">
+              <div class="upload-icon">📷</div>
+              <div class="upload-text">點擊上傳公蛇照片</div>
+            </div>
+            <div id="bg-male-upload-status" style="display:none;font-size:11px;color:var(--muted);margin-top:8px;"></div>
+          </div>
+          <input type="file" id="bg-male-input" accept="image/*" style="display:none" onchange="bgUploadImage(this,'male')">
+          <input type="hidden" id="bg-male-imgUrl">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">個體編號</label>
+            <input class="form-input" id="bg-male-code" placeholder="例：GPR260707#1-01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">色型標籤</label>
+            <input class="form-input" id="bg-male-morph" placeholder="例：Cypress Enchi OG">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">物種</label>
+          <select class="form-select" id="bg-male-species">
+<option value="ball_python">球蟒 Ball Python</option>
+<option value="boa">紅尾蚺 Boa Constrictor</option>
+<option value="leopard_gecko">豹紋守宮 Leopard Gecko</option>
+<option value="corn_snake">玉米蛇 Corn Snake</option>
+<option value="king_snake">王蛇 King Snake</option>
+<option value="other">其他 Other</option></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">中文名稱</label>
+          <input class="form-input" id="bg-male-nameZh" placeholder="例：賽普勒斯恩奇橘幽靈（公）">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">英文名稱</label>
+          <input class="form-input" id="bg-male-nameEn" placeholder="例：Cypress Enchi Orange Ghost Male">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">基因標籤 <span style="font-size:11px;color:var(--muted);">（輸入後按 Enter）</span></label>
+          <div class="tags-input-wrap" id="bg-male-tags-wrap" onclick="document.getElementById('bg-male-tags-input').focus()">
+            <input class="tags-input" id="bg-male-tags-input" placeholder="輸入基因名稱..." onkeydown="bgHandleTagInput(event,'male')">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">狀態</label>
+            <select class="form-select" id="bg-male-status">
+<option value="sale">待售中</option>
+<option value="auction">競標中</option>
+<option value="sold">已售出</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">售價</label>
+            <input class="form-input" id="bg-male-price" placeholder="例：NT$8,500 / 洽詢">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">競標連結</label>
+          <input class="form-input" id="bg-male-auctionUrl" placeholder="https://www.auc-tion.com/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">結標時間</label>
+          <input class="form-input" id="bg-male-auctionEnd" type="datetime-local">
+        </div>
+
+        <div style="border-top:1px solid rgba(181,115,58,.15);margin:8px 0 16px;"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">性別</label>
+            <input class="form-input" value="♂ 公" disabled>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">出生日期</label>
+            <input class="form-input" id="bg-male-birth" placeholder="例：2026/07/07">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">體重 (g)</label>
+            <input class="form-input" id="bg-male-weight" type="number" min="0" placeholder="例：850">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">是否接受冷凍</label>
+            <select class="form-select" id="bg-male-frozen">
+<option value="">未填寫</option>
+<option value="是">✅ 接受冷凍</option>
+<option value="否">❌ 不接受冷凍</option>
+<option value="看心情">😏 看心情</option></select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:16px;">
+          <label class="form-label">親代A（公）</label>
+          <input class="form-input" id="bg-male-sire" placeholder="例：Super Pastel Butter YB">
+        </div>
+        <div class="form-group">
+          <label class="form-label">親代B（母）</label>
+          <input class="form-input" id="bg-male-dam" placeholder="例：Enchi het OG">
+        </div>
+        <div class="form-group">
+          <label class="form-label">個性 🎮</label>
+          <select class="form-select" id="bg-male-nature">
+<option value="">未填寫</option>
+<optgroup label="── 不影響能力值 ──">
+  <option>勤奮</option><option>坦率</option><option>認真</option><option>溫順</option><option>慎重</option>
+</optgroup>
+<optgroup label="── 活潑系 ──">
+  <option>活潑</option><option>爽朗</option><option>天真</option><option>浮躁</option><option>頑皮</option>
+</optgroup>
+<optgroup label="── 固執系 ──">
+  <option>固執</option><option>勇敢</option><option>大膽</option><option>樂天</option><option>淘氣</option>
+</optgroup>
+<optgroup label="── 內斂系 ──">
+  <option>內斂</option><option>冷靜</option><option>溫和</option><option>悠閒</option><option>馬虎</option>
+</optgroup>
+<optgroup label="── 害羞系 ──">
+  <option>害羞</option><option>慢吞吞</option><option>自大</option><option>急躁</option><option>膽小</option>
+</optgroup></select>
+        </div>
+      </div>
+
+      <div class="bg-side-card" style="border:1px solid rgba(181,115,58,.18);border-radius:10px;padding:14px;background:#fff;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:800;color:#c97090;">♀ 母蛇</div>
+          <div style="font-size:10px;color:var(--muted);">資料格式與一般個體相同</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">個體照片</label>
+          <div class="upload-area" style="min-height:210px;" onclick="document.getElementById('bg-female-input').click()">
+            <img id="bg-female-preview" class="upload-preview" style="display:none;max-height:270px;object-fit:contain;">
+            <div id="bg-female-placeholder">
+              <div class="upload-icon">📷</div>
+              <div class="upload-text">點擊上傳母蛇照片</div>
+            </div>
+            <div id="bg-female-upload-status" style="display:none;font-size:11px;color:var(--muted);margin-top:8px;"></div>
+          </div>
+          <input type="file" id="bg-female-input" accept="image/*" style="display:none" onchange="bgUploadImage(this,'female')">
+          <input type="hidden" id="bg-female-imgUrl">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">個體編號</label>
+            <input class="form-input" id="bg-female-code" placeholder="例：GPR260707#1-01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">色型標籤</label>
+            <input class="form-input" id="bg-female-morph" placeholder="例：Cypress Enchi OG">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">物種</label>
+          <select class="form-select" id="bg-female-species">
+<option value="ball_python">球蟒 Ball Python</option>
+<option value="boa">紅尾蚺 Boa Constrictor</option>
+<option value="leopard_gecko">豹紋守宮 Leopard Gecko</option>
+<option value="corn_snake">玉米蛇 Corn Snake</option>
+<option value="king_snake">王蛇 King Snake</option>
+<option value="other">其他 Other</option></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">中文名稱</label>
+          <input class="form-input" id="bg-female-nameZh" placeholder="例：賽普勒斯恩奇橘幽靈（母）">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">英文名稱</label>
+          <input class="form-input" id="bg-female-nameEn" placeholder="例：Cypress Enchi Orange Ghost Female">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">基因標籤 <span style="font-size:11px;color:var(--muted);">（輸入後按 Enter）</span></label>
+          <div class="tags-input-wrap" id="bg-female-tags-wrap" onclick="document.getElementById('bg-female-tags-input').focus()">
+            <input class="tags-input" id="bg-female-tags-input" placeholder="輸入基因名稱..." onkeydown="bgHandleTagInput(event,'female')">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">狀態</label>
+            <select class="form-select" id="bg-female-status">
+<option value="sale">待售中</option>
+<option value="auction">競標中</option>
+<option value="sold">已售出</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">售價</label>
+            <input class="form-input" id="bg-female-price" placeholder="例：NT$8,500 / 洽詢">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">競標連結</label>
+          <input class="form-input" id="bg-female-auctionUrl" placeholder="https://www.auc-tion.com/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">結標時間</label>
+          <input class="form-input" id="bg-female-auctionEnd" type="datetime-local">
+        </div>
+
+        <div style="border-top:1px solid rgba(181,115,58,.15);margin:8px 0 16px;"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">性別</label>
+            <input class="form-input" value="♀ 母" disabled>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">出生日期</label>
+            <input class="form-input" id="bg-female-birth" placeholder="例：2026/07/07">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">體重 (g)</label>
+            <input class="form-input" id="bg-female-weight" type="number" min="0" placeholder="例：850">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">是否接受冷凍</label>
+            <select class="form-select" id="bg-female-frozen">
+<option value="">未填寫</option>
+<option value="是">✅ 接受冷凍</option>
+<option value="否">❌ 不接受冷凍</option>
+<option value="看心情">😏 看心情</option></select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:16px;">
+          <label class="form-label">親代A（公）</label>
+          <input class="form-input" id="bg-female-sire" placeholder="例：Super Pastel Butter YB">
+        </div>
+        <div class="form-group">
+          <label class="form-label">親代B（母）</label>
+          <input class="form-input" id="bg-female-dam" placeholder="例：Enchi het OG">
+        </div>
+        <div class="form-group">
+          <label class="form-label">個性 🎮</label>
+          <select class="form-select" id="bg-female-nature">
+<option value="">未填寫</option>
+<optgroup label="── 不影響能力值 ──">
+  <option>勤奮</option><option>坦率</option><option>認真</option><option>溫順</option><option>慎重</option>
+</optgroup>
+<optgroup label="── 活潑系 ──">
+  <option>活潑</option><option>爽朗</option><option>天真</option><option>浮躁</option><option>頑皮</option>
+</optgroup>
+<optgroup label="── 固執系 ──">
+  <option>固執</option><option>勇敢</option><option>大膽</option><option>樂天</option><option>淘氣</option>
+</optgroup>
+<optgroup label="── 內斂系 ──">
+  <option>內斂</option><option>冷靜</option><option>溫和</option><option>悠閒</option><option>馬虎</option>
+</optgroup>
+<optgroup label="── 害羞系 ──">
+  <option>害羞</option><option>慢吞吞</option><option>自大</option><option>急躁</option><option>膽小</option>
+</optgroup></select>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;position:sticky;bottom:-1px;background:rgba(255,255,255,.96);padding:12px 0 2px;">
+      <button class="action-btn" onclick="closeBreedingGroupModal()">取消</button>
+      <button class="submit-btn" id="bg-save-btn" style="width:auto;padding:9px 22px;" onclick="saveBreedingGroup()">儲存繁殖組</button>
+    </div>
+  </div>
+</div>
+
 <!-- STATUS MODAL -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
@@ -1122,8 +1529,10 @@ input.im-num:focus { border-color:var(--copper); }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+console.log('[HM ADMIN] BG build 2026-08-14 18:34 | no breedingGroups collection | fallback enabled');
+console.log('[HM ADMIN] BG-PARTNER3 loaded | partner fields are primary; group doc optional');
 const ADMIN_EMAILS = ['jim540888894@gmail.com', 'neilchen03@gmail.com', 'lin19880209@gmail.com', 'huangxianen614@gmail.com']; // 在這裡新增管理員 email
 const CLOUDINARY_CLOUD = 'dzfnc1h7k';
 const CLOUDINARY_PRESET = 'hm_pythons';
@@ -1173,32 +1582,291 @@ window.doLogout = async () => {
 };
 
 // Load snakes
-async function loadSnakes() {
-  const q = query(collection(db, 'snakes'), orderBy('createdAt', 'desc'));
-  const snap = await getDocs(q);
-  allSnakes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  window.allSnakes = allSnakes;  // 暴露給其他 module（如 ScaleSwap 匯出）
-  renderSnakes();
+const BG_LOCAL_KEY = 'hm_breeding_groups_v2';
+
+function bgLoadLocalPairs() {
+  try {
+    const rows = JSON.parse(localStorage.getItem(BG_LOCAL_KEY) || '[]');
+    return Array.isArray(rows) ? rows : [];
+  } catch (_) {
+    return [];
+  }
 }
 
+function bgSaveLocalPairs(rows) {
+  localStorage.setItem(BG_LOCAL_KEY, JSON.stringify(rows));
+}
+
+function bgCloudDocId(maleId, femaleId) {
+  const key = [String(maleId), String(femaleId)].sort().join('_').replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `breeding_${key}`;
+}
+
+function bgPriceNumber(s) {
+  const raw = String(s?.price ?? '').trim();
+  if (!raw) return null;
+  const digits = raw.replace(/[^0-9]/g, '');
+  return digits ? Number(digits) : null;
+}
+
+function bgGroupPriceNumber(group) {
+  const male = bgResolveSide(group, 'male');
+  const female = bgResolveSide(group, 'female');
+  const mp = bgPriceNumber(male);
+  const fp = bgPriceNumber(female);
+  return mp === null || fp === null ? null : mp + fp;
+}
+
+function bgGroupPriceText(group) {
+  const total = bgGroupPriceNumber(group);
+  return total === null ? '價格未填' : `NT$${total.toLocaleString('en-US')}`;
+}
+
+async function bgUpsertCloudPair(maleId, femaleId) {
+  const male = allSnakes.find(s => String(s.id) === String(maleId));
+  const female = allSnakes.find(s => String(s.id) === String(femaleId));
+  if (!male || !female) throw new Error('找不到繁殖組個體');
+
+  const docId = bgCloudDocId(maleId, femaleId);
+
+  // 最重要：先把配對寫回「原本就存在」的公、母個體。
+  // 官網 INDEX 只要讀到這兩個欄位，就能直接組成繁殖組，不依賴新增文件。
+  await Promise.all([
+    updateDoc(doc(db, 'snakes', male.id), {
+      breedingGroupId: docId,
+      breedingPartnerId: female.id,
+      breedingRole: 'male',
+      breedingPairedAt: serverTimestamp()
+    }),
+    updateDoc(doc(db, 'snakes', female.id), {
+      breedingGroupId: docId,
+      breedingPartnerId: male.id,
+      breedingRole: 'female',
+      breedingPairedAt: serverTimestamp()
+    })
+  ]);
+
+  // 額外的繁殖組文件只是備援。若 Firebase 規則不允許新增文件，
+  // 不能因此讓整個繁殖組儲存失敗；INDEX 仍可由上面的 partner 欄位還原。
+  try {
+    await setDoc(doc(db, 'snakes', docId), {
+      itemType: 'breeding_group',
+      maleId: male.id,
+      femaleId: female.id,
+      status: 'sale',
+      species: male.species === female.species ? (male.species || 'ball_python') : (male.species || female.species || 'other'),
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp()
+    }, { merge: true });
+  } catch (e) {
+    console.warn('[breedingGroups] group document skipped; partner fields already synced', e);
+  }
+
+  return docId;
+}
+
+async function bgClearCloudPairFields(group) {
+  const jobs = [];
+  const maleId = group?.maleId ? String(group.maleId) : '';
+  const femaleId = group?.femaleId ? String(group.femaleId) : '';
+  if (maleId && allSnakes.some(s => String(s.id) === maleId)) {
+    jobs.push(updateDoc(doc(db, 'snakes', maleId), {
+      breedingGroupId: '', breedingPartnerId: '', breedingRole: '', breedingPairedAt: null
+    }));
+  }
+  if (femaleId && allSnakes.some(s => String(s.id) === femaleId)) {
+    jobs.push(updateDoc(doc(db, 'snakes', femaleId), {
+      breedingGroupId: '', breedingPartnerId: '', breedingRole: '', breedingPairedAt: null
+    }));
+  }
+  if (jobs.length) await Promise.all(jobs);
+}
+
+async function bgSyncLocalPairsToCloud(localRows, cloudGroups) {
+  const existing = new Set(cloudGroups.map(g => `${String(g.maleId)}|${String(g.femaleId)}`));
+  for (const row of localRows) {
+    if (!row?.maleId || !row?.femaleId) continue;
+    const direct = `${String(row.maleId)}|${String(row.femaleId)}`;
+    const reverse = `${String(row.femaleId)}|${String(row.maleId)}`;
+    if (existing.has(direct) || existing.has(reverse)) continue;
+    try {
+      const cloudId = await bgUpsertCloudPair(row.maleId, row.femaleId);
+      cloudGroups.push({ ...row, _docId: cloudId, _storage: 'cloud' });
+      existing.add(direct);
+    } catch (e) {
+      console.warn('[breedingGroups] local → cloud sync failed', e);
+    }
+  }
+}
+
+async function loadSnakes() {
+  const snakeSnap = await getDocs(query(collection(db, 'snakes'), orderBy('createdAt', 'desc')));
+  const rawItems = snakeSnap.docs.map(d => ({ id: d.id, _docId: d.id, ...d.data() }));
+
+  const cloudGroups = rawItems
+    .filter(x => x.itemType === 'breeding_group' && x.maleId && x.femaleId)
+    .map(x => ({
+      id: [String(x.maleId), String(x.femaleId)].sort().join('|'),
+      maleId: x.maleId,
+      femaleId: x.femaleId,
+      _docId: x._docId,
+      _storage: 'cloud'
+    }));
+
+  allSnakes = rawItems.filter(x => x.itemType !== 'breeding_group');
+  window.allSnakes = allSnakes;
+
+  // fallback：若舊版只留下公母個體上的 partner 欄位，也把它還原成繁殖組。
+  const cloudKeys = new Set(cloudGroups.map(g => [String(g.maleId), String(g.femaleId)].sort().join('|')));
+  allSnakes.forEach(s => {
+    if (!s.breedingPartnerId) return;
+    const partner = allSnakes.find(x => String(x.id) === String(s.breedingPartnerId));
+    if (!partner) return;
+    const role = s.breedingRole || (s.sex === 'M' ? 'male' : s.sex === 'F' ? 'female' : '');
+    const maleId = role === 'female' ? partner.id : s.id;
+    const femaleId = role === 'female' ? s.id : partner.id;
+    const key = [String(maleId), String(femaleId)].sort().join('|');
+    if (cloudKeys.has(key)) return;
+    cloudGroups.push({
+      id: key,
+      maleId,
+      femaleId,
+      _docId: s.breedingGroupId || partner.breedingGroupId || bgCloudDocId(maleId, femaleId),
+      _storage: 'cloud-field-fallback'
+    });
+    cloudKeys.add(key);
+  });
+
+  // 舊版 localStorage 配對會自動同步到 Firestore，讓 INDEX 也能讀到。
+  const localRows = bgLoadLocalPairs()
+    .filter(g => g?.maleId && g?.femaleId)
+    .filter(g => allSnakes.some(s => String(s.id) === String(g.maleId)))
+    .filter(g => allSnakes.some(s => String(s.id) === String(g.femaleId)));
+
+  await bgSyncLocalPairsToCloud(localRows, cloudGroups);
+
+  const dedup = new Map();
+  [...cloudGroups, ...localRows.map(g => ({ ...g, _storage: 'local' }))].forEach(g => {
+    const id = [String(g.maleId), String(g.femaleId)].sort().join('|');
+    const prev = dedup.get(id);
+    if (!prev || g._storage === 'cloud') dedup.set(id, { ...g, id });
+  });
+  breedingGroups = [...dedup.values()];
+
+  renderSnakes();
+}
 function renderSnakes() {
   const grid = document.getElementById('snake-grid');
   const statusOrder = { auction: 0, sale: 1, sold: 2 };
   const filtered = (currentFilter === 'all' ? [...allSnakes] : allSnakes.filter(s => s.status === currentFilter))
     .sort((a, b) => (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99));
-  document.getElementById('list-sub').textContent = `共 ${filtered.length} 隻個體`;
 
-  if (filtered.length === 0) {
+  const groups = (currentFilter === 'all' && !bgSelectionMode) ? breedingGroups : [];
+
+  const groupedIds = bgReferencedIds(bgSelectionEditingId);
+  const visibleSnakes = (currentFilter === 'all' && !bgSelectionMode)
+    ? filtered.filter(s => !groupedIds.has(String(s.id)))
+    : filtered.filter(s => {
+        // 選取模式：已屬於其他繁殖組的個體不可再重複加入
+        if (!bgSelectionMode) return true;
+        return !groupedIds.has(String(s.id));
+      });
+
+  if (bgSelectionMode) {
+    document.getElementById('list-sub').textContent = `選取模式｜共 ${visibleSnakes.length} 隻可選個體`;
+  } else if (currentFilter === 'all') {
+    document.getElementById('list-sub').textContent =
+      `共 ${visibleSnakes.length + groups.length} 個品項｜${allSnakes.length} 隻個體｜${groups.length} 組繁殖組`;
+  } else {
+    document.getElementById('list-sub').textContent = `共 ${filtered.length} 隻個體`;
+  }
+
+  if (visibleSnakes.length === 0 && groups.length === 0) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-size:14px;">沒有個體</div>';
     return;
   }
 
-  grid.innerHTML = filtered.map(s => {
+  const groupCards = groups.map(g => {
+    const male = bgResolveSide(g, 'male');
+    const female = bgResolveSide(g, 'female');
+
+    const makeView = (s, fallbackName) => {
+      const year = String(s.birth || '').match(/(?:19|20)\d{2}/)?.[0] || '';
+      return {
+        imgUrl: s.imgUrl || '',
+        name: `${year ? year + ' ' : ''}${s.nameZh || s.morph || fallbackName}`,
+        code: s.code || '',
+        tags: Array.isArray(s.tags) ? s.tags : []
+      };
+    };
+
+    const maleView = makeView(male, '公蛇');
+    const femaleView = makeView(female, '母蛇');
+    const dataId = 'bg_' + String(g.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    // encodeURIComponent 後放在 data-*，避免額外 script 標籤影響主程式。
+    const maleData = encodeURIComponent(JSON.stringify(maleView)).replace(/'/g, '%27');
+    const femaleData = encodeURIComponent(JSON.stringify(femaleView)).replace(/'/g, '%27');
+    const maleTags = maleView.tags.map(t => `<span class="tag">${bgEsc(t)}</span>`).join('');
+
+    return `
+    <div
+      class="snake-card breeding-group-card-switch"
+      id="${dataId}"
+      data-male="${maleData}"
+      data-female="${femaleData}"
+      style="position:relative;"
+    >
+      <div class="breeding-switch-wrap">
+        <img
+          class="snake-card-img"
+          id="${dataId}_img"
+          src="${bgEsc(maleView.imgUrl)}"
+          onerror="this.style.background='#111';"
+        >
+        <div class="breeding-group-badge">🧬 繁殖組</div>
+        <div class="breeding-switcher">
+          <button
+            type="button"
+            class="breeding-switch-btn active"
+            id="${dataId}_male_btn"
+            onclick="switchBreedingGroupCard('${dataId}','male')"
+          >♂ 公</button>
+          <button
+            type="button"
+            class="breeding-switch-btn"
+            id="${dataId}_female_btn"
+            onclick="switchBreedingGroupCard('${dataId}','female')"
+          >♀ 母</button>
+        </div>
+      </div>
+
+      <div class="snake-card-body">
+        <div class="snake-card-name" id="${dataId}_name">${bgEsc(maleView.name)}</div>
+        <div class="snake-card-code" id="${dataId}_code">${bgEsc(maleView.code)}</div>
+        <div class="snake-card-tags" id="${dataId}_tags">${maleTags}</div>
+        <div style="font-size:12px;color:var(--copper);font-weight:700;margin-top:10px;">繁殖組合價：${bgGroupPriceText(g)}</div>
+
+        <div class="card-actions">
+          <button class="action-btn" onclick="editBreedingGroupSelection('${g.id}')">編輯</button>
+          <button class="action-btn danger" onclick="deleteBreedingGroup('${g.id}')">解除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const snakeCards = visibleSnakes.map(s => {
     const badgeClass = s.status === 'sale' ? 'status-sale' : s.status === 'auction' ? 'status-auction' : 'status-sold';
     const badgeText = s.status === 'sale' ? '待售中' : s.status === 'auction' ? '競標中' : '已售出';
     const tags = (s.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+    const selectedForGroup = bgSelectionIds.has(String(s.id));
     return `
-    <div class="snake-card">
+    <div class="snake-card" style="position:relative;">
+      ${bgSelectionMode ? `
+        <label onclick="event.stopPropagation()" style="position:absolute;left:10px;top:10px;z-index:8;background:rgba(255,255,255,.94);border:1px solid rgba(59,26,16,.18);border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--brown);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+          <input type="checkbox" ${selectedForGroup ? 'checked' : ''} onchange="toggleBreedingGroupSnake('${s.id}', this.checked)" style="width:17px;height:17px;accent-color:var(--copper);">
+          ${bgSnakeSex(s)==='M'?'♂ 公':bgSnakeSex(s)==='F'?'♀ 母':'性別未填'}
+        </label>` : ''}
       <img class="snake-card-img ${s.status === 'sold' ? 'sold' : ''}" src="${s.imgUrl}" onerror="this.style.background='#eee';this.style.height='200px'">
       <div class="status-badge ${badgeClass}">${badgeText}</div>
       <div class="snake-card-body">
@@ -1214,36 +1882,78 @@ function renderSnakes() {
       </div>
     </div>`;
   }).join('');
+
+  grid.innerHTML = groupCards + snakeCards;
+  bgUpdateSelectionBar();
 }
 
-window.filterSnakes = filter => { currentFilter = filter; renderSnakes(); };
+
+window.switchBreedingGroupCard = (cardId, side) => {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+
+  const raw = side === 'female' ? card.dataset.female : card.dataset.male;
+  if (!raw) return;
+
+  let view;
+  try {
+    view = JSON.parse(decodeURIComponent(raw));
+  } catch (e) {
+    console.error('[breedingGroups] display switch parse error', e);
+    return;
+  }
+
+  const img = document.getElementById(cardId + '_img');
+  const name = document.getElementById(cardId + '_name');
+  const code = document.getElementById(cardId + '_code');
+  const tags = document.getElementById(cardId + '_tags');
+  const maleBtn = document.getElementById(cardId + '_male_btn');
+  const femaleBtn = document.getElementById(cardId + '_female_btn');
+
+  if (img) img.src = view.imgUrl || '';
+  if (name) name.textContent = view.name || '';
+  if (code) code.textContent = view.code || '';
+
+  if (tags) {
+    tags.innerHTML = '';
+    (view.tags || []).forEach(tagText => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.textContent = tagText;
+      tags.appendChild(span);
+    });
+  }
+
+  maleBtn?.classList.toggle('active', side === 'male');
+  femaleBtn?.classList.toggle('active', side === 'female');
+};
+
+window.filterSnakes = filter => {
+  currentFilter = filter;
+  if (filter !== 'all' && bgSelectionMode) cancelBreedingGroupSelection();
+  else renderSnakes();
+};
 
 // 一鍵複製所有「待售中」個體：年份｜物種｜基因｜性別
-window.exportSaleText = async () => {
-  // 嚴格只匯出待售中；競標中、已售出不納入
-  const saleSnakes = allSnakes.filter(s => s.status === 'sale');
-  if (!saleSnakes.length) { showToast('目前沒有待售中的個體'); return; }
-
+function buildSaleExportEntries() {
   const speciesMap = {
     ball_python:'球蟒', boa:'紅尾蚺', leopard_gecko:'豹紋守宮',
     corn_snake:'玉米蛇', king_snake:'王蛇', other:'其他'
   };
-  const speciesOrder = ['球蟒','紅尾蚺','豹紋守宮','玉米蛇','王蛇','其他','物種未填'];
   const sexMap = { M:'公', F:'母', U:'性別未填' };
   const getYear = s => {
-    const raw = String(s.birth || '').trim();
-    const m = raw.match(/(?:19|20)\d{2}/);
+    const m = String(s?.birth || '').match(/(?:19|20)\d{2}/);
     return m ? Number(m[0]) : null;
   };
-  const getSpecies = s => speciesMap[s.species] || s.speciesRaw || s.species || '物種未填';
+  const getSpecies = s => speciesMap[s?.species] || s?.speciesRaw || s?.species || '物種未填';
   const getGene = s => {
-    if (s.morph && String(s.morph).trim()) return String(s.morph).trim();
-    let n = String(s.nameZh || '').trim();
+    if (s?.morph && String(s.morph).trim()) return String(s.morph).trim();
+    let n = String(s?.nameZh || '').trim();
     n = n.replace(/[（(]\s*(?:公|母|男生|女生|Male|Female|M|F)\s*[）)]\s*$/i, '').trim();
-    return n || (Array.isArray(s.tags) ? s.tags.join(' ') : '') || '基因未填';
+    return n || (Array.isArray(s?.tags) ? s.tags.join(' ') : '') || '基因未填';
   };
   const getSex = s => {
-    const raw = String(s.sex || s.gender || '').trim();
+    const raw = String(s?.sex || s?.gender || '').trim();
     if (!raw) return '性別未填';
     if (/^(M|Male|男生|公)$/i.test(raw)) return '公';
     if (/^(F|Female|女生|母)$/i.test(raw)) return '母';
@@ -1251,26 +1961,36 @@ window.exportSaleText = async () => {
     return sexMap[raw] || raw;
   };
 
-  const groups = {};
-  saleSnakes.forEach(s => {
-    const species = getSpecies(s);
-    (groups[species] ||= []).push(s);
+  const activeGroups = breedingGroups.map(g => {
+    const male = bgResolveSide(g, 'male');
+    const female = bgResolveSide(g, 'female');
+    if (!male?.id || !female?.id || male.status !== 'sale' || female.status !== 'sale') return null;
+    const maleYear = getYear(male);
+    const femaleYear = getYear(female);
+    const total = bgGroupPriceNumber(g);
+    return {
+      kind: 'group',
+      group: g,
+      male,
+      female,
+      species: getSpecies(male),
+      year: Math.max(maleYear || 0, femaleYear || 0) || null,
+      sortName: `${getGene(male)} ${getGene(female)}`,
+      priceNumber: total,
+      pricedLine: `繁殖組｜${maleYear ? maleYear + ' ' : ''}${getGene(male)}（公） × ${femaleYear ? femaleYear + ' ' : ''}${getGene(female)}（母）｜${total === null ? '價格未填' : `NT$${total.toLocaleString('en-US')}`}`,
+      noPriceLine: `繁殖組｜${maleYear ? maleYear + ' ' : ''}${getGene(male)}（公） × ${femaleYear ? femaleYear + ' ' : ''}${getGene(female)}（母）`
+    };
+  }).filter(Boolean);
+
+  const groupedIds = new Set();
+  activeGroups.forEach(x => {
+    groupedIds.add(String(x.male.id));
+    groupedIds.add(String(x.female.id));
   });
 
-  const orderedSpecies = Object.keys(groups).sort((a,b) => {
-    const ai = speciesOrder.indexOf(a), bi = speciesOrder.indexOf(b);
-    const av = ai === -1 ? 999 : ai, bv = bi === -1 ? 999 : bi;
-    return av - bv || a.localeCompare(b, 'zh-TW');
-  });
-
-  const sections = orderedSpecies.map(species => {
-    const rows = groups[species].sort((a,b) => {
-      const ay = getYear(a), by = getYear(b);
-      if (ay === null && by !== null) return 1;
-      if (ay !== null && by === null) return -1;
-      if (ay !== by) return (by || 0) - (ay || 0); // 最新年份 → 最舊
-      return getGene(a).localeCompare(getGene(b), 'en', {sensitivity:'base'});
-    }).map(s => {
+  const individualEntries = allSnakes
+    .filter(s => s.status === 'sale' && !groupedIds.has(String(s.id)))
+    .map(s => {
       const year = getYear(s);
       const rawPrice = String(s.price ?? '').trim();
       let priceText = '價格未填';
@@ -1278,68 +1998,23 @@ window.exportSaleText = async () => {
         const digits = rawPrice.replace(/[^0-9]/g, '');
         priceText = digits ? `NT$${Number(digits).toLocaleString('en-US')}` : rawPrice;
       }
-      return `${year ? year + ' ' : ''}${getGene(s)}｜${getSex(s)}｜${priceText}`;
+      return {
+        kind: 'snake',
+        species: getSpecies(s),
+        year,
+        sortName: getGene(s),
+        pricedLine: `${year ? year + ' ' : ''}${getGene(s)}｜${getSex(s)}｜${priceText}`,
+        noPriceLine: `${year ? year + ' ' : ''}${getGene(s)}｜${getSex(s)}`
+      };
     });
-    return `${species}:\n${rows.join('\n')}`;
-  });
 
-  const now = new Date();
-  const updatedAt = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const text = `待售清單   照片參照官網   社群內9折優惠（限26年小蛇）\n更新時間：${updatedAt}\n\n${sections.join('\n\n')}`;
+  return { entries: [...individualEntries, ...activeGroups], groupCount: activeGroups.length };
+}
 
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast(`✅ 已依物種、年份排序複製 ${saleSnakes.length} 隻待售個體`);
-  } catch (e) {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-    showToast(`✅ 已依物種、年份排序複製 ${saleSnakes.length} 隻待售個體`);
-  }
-};
-
-// 一鍵複製所有「待售中」個體（無售價版）：年份｜基因｜性別
-// 適合不能明碼標價的社群使用。
-window.exportSaleTextNoPrice = async () => {
-  const saleSnakes = allSnakes.filter(s => s.status === 'sale');
-  if (!saleSnakes.length) { showToast('目前沒有待售中的個體'); return; }
-
-  const speciesMap = {
-    ball_python:'球蟒', boa:'紅尾蚺', leopard_gecko:'豹紋守宮',
-    corn_snake:'玉米蛇', king_snake:'王蛇', other:'其他'
-  };
+function makeSaleExportSections(entries, noPrice=false) {
   const speciesOrder = ['球蟒','紅尾蚺','豹紋守宮','玉米蛇','王蛇','其他','物種未填'];
-  const sexMap = { M:'公', F:'母', U:'性別未填' };
-
-  const getYear = s => {
-    const raw = String(s.birth || '').trim();
-    const m = raw.match(/(?:19|20)\d{2}/);
-    return m ? Number(m[0]) : null;
-  };
-
-  const getSpecies = s => speciesMap[s.species] || s.speciesRaw || s.species || '物種未填';
-
-  const getGene = s => {
-    if (s.morph && String(s.morph).trim()) return String(s.morph).trim();
-    let n = String(s.nameZh || '').trim();
-    n = n.replace(/[（(]\s*(?:公|母|男生|女生|Male|Female|M|F)\s*[）)]\s*$/i, '').trim();
-    return n || (Array.isArray(s.tags) ? s.tags.join(' ') : '') || '基因未填';
-  };
-
-  const getSex = s => {
-    const raw = String(s.sex || s.gender || '').trim();
-    if (!raw) return '性別未填';
-    if (/^(M|Male|男生|公)$/i.test(raw)) return '公';
-    if (/^(F|Female|女生|母)$/i.test(raw)) return '母';
-    if (/^(U|Unknown|未知)$/i.test(raw)) return '性別未填';
-    return sexMap[raw] || raw;
-  };
-
   const groups = {};
-  saleSnakes.forEach(s => {
-    const species = getSpecies(s);
-    (groups[species] ||= []).push(s);
-  });
+  entries.forEach(item => (groups[item.species] ||= []).push(item));
 
   const orderedSpecies = Object.keys(groups).sort((a,b) => {
     const ai = speciesOrder.indexOf(a), bi = speciesOrder.indexOf(b);
@@ -1347,33 +2022,51 @@ window.exportSaleTextNoPrice = async () => {
     return av - bv || a.localeCompare(b, 'zh-TW');
   });
 
-  const sections = orderedSpecies.map(species => {
+  return orderedSpecies.map(species => {
     const rows = groups[species].sort((a,b) => {
-      const ay = getYear(a), by = getYear(b);
-      if (ay === null && by !== null) return 1;
-      if (ay !== null && by === null) return -1;
-      if (ay !== by) return (by || 0) - (ay || 0);
-      return getGene(a).localeCompare(getGene(b), 'en', {sensitivity:'base'});
-    }).map(s => {
-      const year = getYear(s);
-      return `${year ? year + ' ' : ''}${getGene(s)}｜${getSex(s)}`;
-    });
+      if (a.year === null && b.year !== null) return 1;
+      if (a.year !== null && b.year === null) return -1;
+      if (a.year !== b.year) return (b.year || 0) - (a.year || 0);
+      return String(a.sortName || '').localeCompare(String(b.sortName || ''), 'en', {sensitivity:'base'});
+    }).map(x => noPrice ? x.noPriceLine : x.pricedLine);
     return `${species}:\n${rows.join('\n')}`;
   });
+}
 
+window.exportSaleText = async () => {
+  const { entries, groupCount } = buildSaleExportEntries();
+  if (!entries.length) { showToast('目前沒有待售中的個體或繁殖組'); return; }
+  const sections = makeSaleExportSections(entries, false);
+  const now = new Date();
+  const updatedAt = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const text = `待售清單   照片參照官網   社群內9折優惠（限26年小蛇）\n更新時間：${updatedAt}\n\n${sections.join('\n\n')}`;
+
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  showToast(`✅ 已複製 ${entries.length} 個待售品項${groupCount ? `（含 ${groupCount} 組繁殖組）` : ''}`);
+};
+
+window.exportSaleTextNoPrice = async () => {
+  const { entries, groupCount } = buildSaleExportEntries();
+  if (!entries.length) { showToast('目前沒有待售中的個體或繁殖組'); return; }
+  const sections = makeSaleExportSections(entries, true);
   const now = new Date();
   const updatedAt = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   const text = `待售清單   照片參照官網\n更新時間：${updatedAt}\n\n${sections.join('\n\n')}`;
 
   try {
     await navigator.clipboard.writeText(text);
-    showToast(`✅ 已複製 ${saleSnakes.length} 隻待售個體（無售價）`);
   } catch (e) {
     const ta = document.createElement('textarea');
     ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-    showToast(`✅ 已複製 ${saleSnakes.length} 隻待售個體（無售價）`);
   }
+  showToast(`✅ 已複製 ${entries.length} 個待售品項（無售價）${groupCount ? `，含 ${groupCount} 組繁殖組` : ''}`);
 };
 
   const SHEET_ID = '1_--bMZA1rkg5Is7oOP9sJh3RSjYtNU2P0oF5kqFZX50';
@@ -1922,6 +2615,426 @@ window.copyPostDraft = () => {
 window.closePostModal = () => {
   document.getElementById('post-modal-overlay').classList.remove('show');
   _postSnake = null;
+};
+
+
+// ===========================================
+// 繁殖組：兩份「一般個體資料」放在同一張卡
+// ===========================================
+let breedingGroups = [];
+let editingBreedingGroupId = null;
+let bgTags = { male: [], female: [] };
+
+function bgEsc(v) {
+  return String(v ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+
+let bgSelectionMode = false;
+let bgSelectionIds = new Set();
+let bgSelectionEditingId = null;
+
+function bgSnakeSex(s) {
+  const raw = String(s?.sex || s?.gender || '').trim().toUpperCase();
+  if (['M','MALE','公','男生'].includes(raw)) return 'M';
+  if (['F','FEMALE','母','女生'].includes(raw)) return 'F';
+
+  const name = String(s?.nameZh || '');
+  if (/[（(]\s*(公|男生)\s*[）)]\s*$/.test(name)) return 'M';
+  if (/[（(]\s*(母|女生)\s*[）)]\s*$/.test(name)) return 'F';
+  return '';
+}
+
+function bgResolveSide(group, side) {
+  const refId = group?.[`${side}Id`];
+  if (refId) {
+    const snake = allSnakes.find(s => s.id === refId);
+    if (snake) return {...snake, sex: side === 'male' ? 'M' : 'F'};
+  }
+  return bgNormalizeSide(group, side);
+}
+
+function bgReferencedIds(exceptGroupId=null) {
+  const ids = new Set();
+  breedingGroups.forEach(g => {
+    if (exceptGroupId && g.id === exceptGroupId) return;
+    if (g.maleId) ids.add(String(g.maleId));
+    if (g.femaleId) ids.add(String(g.femaleId));
+  });
+  return ids;
+}
+
+function bgUpdateSelectionBar() {
+  const bar = document.getElementById('bg-selection-bar');
+  const count = document.getElementById('bg-selection-count');
+  const btn = document.getElementById('bg-merge-btn');
+  if (!bar) return;
+
+  bar.style.display = bgSelectionMode ? 'flex' : 'none';
+  if (count) count.textContent = `已選 ${bgSelectionIds.size} / 2`;
+  if (btn) {
+    btn.disabled = bgSelectionIds.size !== 2;
+    btn.style.opacity = bgSelectionIds.size === 2 ? '1' : '.45';
+    btn.textContent = bgSelectionEditingId ? '更新繁殖組' : '合併成繁殖組';
+  }
+}
+
+window.startBreedingGroupSelection = () => {
+  currentFilter = 'all';
+  bgSelectionMode = true;
+  bgSelectionEditingId = null;
+  bgSelectionIds = new Set();
+  bgUpdateSelectionBar();
+  renderSnakes();
+};
+
+window.editBreedingGroupSelection = (groupId) => {
+  const g = breedingGroups.find(x => x.id === groupId);
+  if (!g) return;
+
+  // 舊版不是用個體 ID 建立的繁殖組，仍可使用原本完整編輯畫面。
+  if (!g.maleId || !g.femaleId) {
+    openBreedingGroupModal(groupId);
+    return;
+  }
+
+  currentFilter = 'all';
+  bgSelectionMode = true;
+  bgSelectionEditingId = groupId;
+  bgSelectionIds = new Set([String(g.maleId), String(g.femaleId)]);
+  bgUpdateSelectionBar();
+  renderSnakes();
+};
+
+window.cancelBreedingGroupSelection = () => {
+  bgSelectionMode = false;
+  bgSelectionEditingId = null;
+  bgSelectionIds.clear();
+  bgUpdateSelectionBar();
+  renderSnakes();
+};
+
+window.toggleBreedingGroupSnake = (id, checked) => {
+  id = String(id);
+
+  if (checked) {
+    if (bgSelectionIds.size >= 2 && !bgSelectionIds.has(id)) {
+      showToast('❌ 一個繁殖組只能選 2 隻');
+      renderSnakes();
+      return;
+    }
+    bgSelectionIds.add(id);
+  } else {
+    bgSelectionIds.delete(id);
+  }
+
+  bgUpdateSelectionBar();
+};
+
+window.saveBreedingGroupSelection = async () => {
+  if (bgSelectionIds.size !== 2) {
+    showToast('❌ 請選 2 隻個體');
+    return;
+  }
+
+  const selected = [...bgSelectionIds]
+    .map(id => allSnakes.find(s => String(s.id) === String(id)))
+    .filter(Boolean);
+
+  if (selected.length !== 2) {
+    showToast('❌ 找不到選取的個體，請重新選擇');
+    return;
+  }
+
+  const male = selected.find(s => bgSnakeSex(s) === 'M');
+  const female = selected.find(s => bgSnakeSex(s) === 'F');
+
+  if (!male || !female) {
+    showToast('❌ 請選 1 隻公蛇＋1 隻母蛇；個體性別需先在編輯資料中設定');
+    return;
+  }
+
+  const alreadyGrouped = bgReferencedIds(bgSelectionEditingId);
+  if (alreadyGrouped.has(String(male.id)) || alreadyGrouped.has(String(female.id))) {
+    showToast('❌ 其中一隻已經在其他繁殖組裡');
+    return;
+  }
+
+  const pairKey = [String(male.id), String(female.id)].sort().join('|');
+  const oldGroup = bgSelectionEditingId ? breedingGroups.find(g => g.id === bgSelectionEditingId) : null;
+  let rows = bgLoadLocalPairs();
+
+  if (bgSelectionEditingId) {
+    rows = rows.filter(g => {
+      const id = g.id || [String(g.maleId), String(g.femaleId)].sort().join('|');
+      return id !== bgSelectionEditingId;
+    });
+  }
+
+  rows = rows.filter(g => {
+    const id = g.id || [String(g.maleId), String(g.femaleId)].sort().join('|');
+    return id !== pairKey;
+  });
+
+  try {
+    const cloudId = await bgUpsertCloudPair(male.id, female.id);
+
+    // 編輯後若換了配對，刪掉舊的雲端繁殖組文件。
+    if (oldGroup && oldGroup._docId && oldGroup._docId !== cloudId) {
+      await bgClearCloudPairFields(oldGroup);
+      try {
+        if (String(oldGroup._docId).startsWith('breeding_')) {
+          await deleteDoc(doc(db, 'snakes', oldGroup._docId));
+        }
+      } catch (e) {
+        console.warn('[breedingGroups] old optional group doc cleanup skipped', e);
+      }
+    }
+
+    rows.push({
+      id: pairKey,
+      maleId: male.id,
+      femaleId: female.id,
+      savedAt: new Date().toISOString(),
+      _docId: cloudId
+    });
+    bgSaveLocalPairs(rows);
+  } catch (e) {
+    console.error('[breedingGroups] cloud save error', e);
+    showToast('❌ 繁殖組無法同步到官網：' + e.message);
+    return;
+  }
+
+  const wasEditing = !!bgSelectionEditingId;
+  bgSelectionMode = false;
+  bgSelectionEditingId = null;
+  bgSelectionIds.clear();
+  bgUpdateSelectionBar();
+
+  showToast(wasEditing ? '✅ 繁殖組已更新並同步官網' : '✅ 已合併成繁殖組並同步官網');
+  await loadSnakes();
+};
+
+function bgNormalizeSide(group, side) {
+  const fixedSex = side === 'male' ? 'M' : 'F';
+  if (group?.[side] && typeof group[side] === 'object') {
+    return { sex: fixedSex, tags: [], ...group[side] };
+  }
+  // 相容前一版已經建立的簡易繁殖組資料
+  if (side === 'male') {
+    return {
+      imgUrl: group?.maleImgUrl || '', code:'', morph:'', species:'ball_python',
+      nameZh: group?.maleName || '', nameEn:'', tags:[], status:'sale', price:'',
+      auctionUrl:'', auctionEnd:'', sex:'M', birth:'', weight:'', frozen:'', sire:'', dam:'', nature:''
+    };
+  }
+  return {
+    imgUrl: group?.femaleImgUrl || '', code:'', morph:'', species:'ball_python',
+    nameZh: group?.femaleName || '', nameEn:'', tags:[], status:'sale', price:'',
+    auctionUrl:'', auctionEnd:'', sex:'F', birth:'', weight:'', frozen:'', sire:'', dam:'', nature:''
+  };
+}
+
+window.loadBreedingGroups = async () => {
+  await loadSnakes();
+};
+
+function bgRenderTags(side) {
+  const wrap = document.getElementById(`bg-${side}-tags-wrap`);
+  const input = document.getElementById(`bg-${side}-tags-input`);
+  if (!wrap || !input) return;
+  wrap.querySelectorAll('.tag-chip').forEach(el => el.remove());
+  bgTags[side].forEach((tag, idx) => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${bgEsc(tag)} <span onclick="event.stopPropagation();bgRemoveTag('${side}',${idx})">×</span>`;
+    wrap.insertBefore(chip, input);
+  });
+}
+
+window.bgHandleTagInput = (e, side) => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const value = e.target.value.trim();
+  if (!value) return;
+  if (!bgTags[side].includes(value)) bgTags[side].push(value);
+  e.target.value = '';
+  bgRenderTags(side);
+};
+
+window.bgRemoveTag = (side, idx) => {
+  bgTags[side].splice(idx, 1);
+  bgRenderTags(side);
+};
+
+function bgSetPreview(side, url) {
+  const preview = document.getElementById(`bg-${side}-preview`);
+  const placeholder = document.getElementById(`bg-${side}-placeholder`);
+  const hidden = document.getElementById(`bg-${side}-imgUrl`);
+  if (hidden) hidden.value = url || '';
+  if (preview) {
+    if (url) {
+      preview.src = url;
+      preview.style.display = 'block';
+      if (placeholder) placeholder.style.display = 'none';
+    } else {
+      preview.removeAttribute('src');
+      preview.style.display = 'none';
+      if (placeholder) placeholder.style.display = 'block';
+    }
+  }
+}
+
+function bgFillSide(side, data) {
+  const fields = ['code','morph','species','nameZh','nameEn','status','price','auctionUrl','auctionEnd','birth','weight','frozen','sire','dam','nature'];
+  fields.forEach(field => {
+    const el = document.getElementById(`bg-${side}-${field}`);
+    if (el) el.value = data?.[field] ?? (field === 'species' ? 'ball_python' : field === 'status' ? 'sale' : '');
+  });
+  bgTags[side] = Array.isArray(data?.tags) ? [...data.tags] : [];
+  bgRenderTags(side);
+  bgSetPreview(side, data?.imgUrl || '');
+}
+
+function bgReadSide(side) {
+  const get = field => document.getElementById(`bg-${side}-${field}`)?.value ?? '';
+  return {
+    imgUrl: get('imgUrl').trim(),
+    code: get('code').trim(),
+    morph: get('morph').trim(),
+    species: get('species') || 'ball_python',
+    nameZh: get('nameZh').trim(),
+    nameEn: get('nameEn').trim(),
+    tags: [...bgTags[side]],
+    status: get('status') || 'sale',
+    price: get('price').trim(),
+    auctionUrl: get('auctionUrl').trim(),
+    auctionEnd: get('auctionEnd') || '',
+    sex: side === 'male' ? 'M' : 'F',
+    birth: get('birth').trim(),
+    weight: get('weight').trim(),
+    frozen: get('frozen'),
+    sire: get('sire').trim(),
+    dam: get('dam').trim(),
+    nature: get('nature')
+  };
+}
+
+window.openBreedingGroupModal = (id=null) => {
+  editingBreedingGroupId = id;
+  const group = id ? breedingGroups.find(x => x.id === id) : null;
+  const male = bgNormalizeSide(group, 'male');
+  const female = bgNormalizeSide(group, 'female');
+
+  document.getElementById('breeding-group-modal-title').textContent = id ? '編輯繁殖組' : '新增繁殖組';
+  bgFillSide('male', male);
+  bgFillSide('female', female);
+
+  ['male','female'].forEach(side => {
+    const status = document.getElementById(`bg-${side}-upload-status`);
+    if (status) { status.style.display='none'; status.textContent=''; }
+    const input = document.getElementById(`bg-${side}-input`);
+    if (input) input.value='';
+  });
+
+  document.getElementById('breeding-group-modal-overlay').classList.add('show');
+};
+
+window.closeBreedingGroupModal = () => {
+  document.getElementById('breeding-group-modal-overlay').classList.remove('show');
+  editingBreedingGroupId = null;
+};
+
+window.bgUploadImage = async (input, side) => {
+  const file = input.files?.[0];
+  if (!file) return;
+  const status = document.getElementById(`bg-${side}-upload-status`);
+  if (status) { status.style.display='block'; status.textContent='上傳中...'; }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {method:'POST', body:formData});
+    const data = await res.json();
+    if (!res.ok || !data.secure_url) throw new Error(data?.error?.message || 'Cloudinary 上傳失敗');
+    bgSetPreview(side, data.secure_url);
+    if (status) status.textContent='✅ 上傳成功';
+  } catch (e) {
+    console.error('[breedingGroups] upload error', e);
+    if (status) status.textContent='❌ 上傳失敗：' + e.message;
+  }
+};
+
+window.saveBreedingGroup = async () => {
+  const male = bgReadSide('male');
+  const female = bgReadSide('female');
+
+  const missing = [];
+  if (!male.imgUrl) missing.push('公蛇照片');
+  if (!male.nameZh) missing.push('公蛇中文名稱');
+  if (!female.imgUrl) missing.push('母蛇照片');
+  if (!female.nameZh) missing.push('母蛇中文名稱');
+  if (missing.length) {
+    showToast('❌ 請補上：' + missing.join('、'));
+    return;
+  }
+
+  const btn = document.getElementById('bg-save-btn');
+  btn.disabled = true;
+  btn.textContent = '儲存中...';
+  const data = { male, female, updatedAt: serverTimestamp() };
+
+  try {
+    if (editingBreedingGroupId) {
+      throw new Error('請使用「從現有個體勾選合併」功能');
+      showToast('✅ 繁殖組已更新');
+    } else {
+      throw new Error('請使用「從現有個體勾選合併」功能');
+      showToast('✅ 繁殖組已新增');
+    }
+    closeBreedingGroupModal();
+    await loadSnakes();
+  } catch (e) {
+    console.error('[breedingGroups] save error', e);
+    showToast('❌ 儲存失敗：' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '儲存繁殖組';
+  }
+};
+
+window.deleteBreedingGroup = async (id) => {
+  const g = breedingGroups.find(x => x.id === id);
+  if (!g) return;
+
+  const male = allSnakes.find(s => String(s.id) === String(g.maleId));
+  const female = allSnakes.find(s => String(s.id) === String(g.femaleId));
+  const name = `${male?.nameZh || male?.morph || '公蛇'} × ${female?.nameZh || female?.morph || '母蛇'}`;
+
+  if (!confirm(`確定解除繁殖組「${name}」嗎？\n只解除組合，不會刪除任何個體。`)) return;
+
+  const rows = bgLoadLocalPairs().filter(x => {
+    const rowId = x.id || [String(x.maleId), String(x.femaleId)].sort().join('|');
+    return rowId !== id;
+  });
+
+  try {
+    const cloudId = g._docId || bgCloudDocId(g.maleId, g.femaleId);
+    await bgClearCloudPairFields(g);
+    await deleteDoc(doc(db, 'snakes', cloudId));
+    bgSaveLocalPairs(rows);
+    showToast('✅ 已解除繁殖組，官網同步完成');
+    await loadSnakes();
+  } catch (e) {
+    console.error('[breedingGroups] remove error', e);
+    showToast('❌ 解除失敗：' + e.message);
+  }
 };
 
 // UI helpers

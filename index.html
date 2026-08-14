@@ -1053,6 +1053,7 @@ footer {
     padding: 32px 24px;
   }
   .footer-nav { flex-wrap: wrap; justify-content: center; gap: 16px; }
+}
 
 @media (max-width: 480px) {
   .hero-h1 { font-size: 34px; }
@@ -1062,6 +1063,28 @@ footer {
   .hero-illustration svg { width: 180px; height: 200px; }
 }
 
+
+/* 繁殖組：維持和一般待售卡完全相同比例，公母用按鍵切換 */
+.breeding-public-card .breeding-public-art { position:relative; }
+.breeding-public-badge {
+  position:absolute;right:12px;top:12px;z-index:12;
+  padding:6px 10px;border-radius:3px;background:rgba(73,43,20,.92);color:#ffe8b4;
+  font-family:'Noto Sans TC',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;
+  box-shadow:0 2px 10px rgba(0,0,0,.22);pointer-events:none;
+}
+.breeding-public-switcher {
+  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:12;pointer-events:auto;
+  display:flex;gap:5px;padding:5px;border-radius:8px;background:rgba(20,16,13,.84);
+  backdrop-filter:blur(6px);box-shadow:0 3px 14px rgba(0,0,0,.30);
+}
+.breeding-public-switch-btn {
+  position:relative;z-index:13;border:0;border-radius:5px;padding:6px 14px;
+  font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:700;
+  color:#fff;background:transparent;cursor:pointer;white-space:nowrap;
+}
+.breeding-public-switch-btn.active { background:#fff;color:var(--brown-deep); }
+.breeding-public-card .species-name,
+.breeding-public-card .species-name-en { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 </style>
 
   <!-- Firebase -->
@@ -1308,7 +1331,32 @@ footer {
   </div>
   <style>
     @keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
-  </style>
+  
+/* 繁殖組：固定顯示完整公母配對資訊 */
+.breeding-pair-summary {
+  margin: 2px 0 10px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--copper);
+  background: rgba(181,115,58,.055);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  line-height: 1.65;
+  color: var(--brown-deep);
+}
+.breeding-pair-summary .pair-row {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.breeding-pair-summary .pair-sex {
+  display: inline-block;
+  min-width: 28px;
+  margin-right: 4px;
+  color: var(--copper);
+  font-weight: 700;
+}
+</style>
 </section>
 
 <!-- ABOUT SECTION -->
@@ -1539,7 +1587,106 @@ function startCountdown(el, endTimeStr) {
   tick();
 }
 
+
+function publicPriceNumber(s) {
+  const raw = String(s?.price ?? '').trim();
+  if (!raw) return null;
+  const digits = raw.replace(/[^0-9]/g, '');
+  return digits ? Number(digits) : null;
+}
+
+function publicBreedingGroupPrice(male, female) {
+  const mp = publicPriceNumber(male);
+  const fp = publicPriceNumber(female);
+  return mp === null || fp === null ? null : mp + fp;
+}
+
+function publicBreedingView(s, sexLabel) {
+  const year = String(s?.birth || '').match(/(?:19|20)\d{2}/)?.[0] || '';
+  return {
+    imgUrl: s?.imgUrl || '',
+    name: `${year ? year + ' ' : ''}${s?.nameZh || s?.morph || sexLabel}`,
+    nameEn: s?.nameEn || '',
+    code: s?.code || '',
+    tags: Array.isArray(s?.tags) ? s.tags : []
+  };
+}
+
+window.switchPublicBreedingGroup = function(cardId, side) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const raw = side === 'female' ? card.dataset.female : card.dataset.male;
+  if (!raw) return;
+
+  let view;
+  try { view = JSON.parse(decodeURIComponent(raw)); }
+  catch (e) { console.error('[breedingGroups] INDEX switch parse error', e); return; }
+
+  const img = document.getElementById(cardId + '_img');
+  const name = document.getElementById(cardId + '_name');
+  const en = document.getElementById(cardId + '_en');
+  const code = document.getElementById(cardId + '_code');
+  const tags = document.getElementById(cardId + '_tags');
+  const maleBtn = document.getElementById(cardId + '_male_btn');
+  const femaleBtn = document.getElementById(cardId + '_female_btn');
+
+  if (img) img.src = view.imgUrl || '';
+  if (name) name.textContent = view.name || '';
+  if (en) {
+    en.textContent = view.nameEn || '';
+    en.style.display = view.nameEn ? 'block' : 'none';
+  }
+  if (code) code.textContent = view.code || '';
+  if (tags) {
+    tags.innerHTML = '';
+    (view.tags || []).forEach(t => {
+      const span = document.createElement('span');
+      span.className = 'stag';
+      span.textContent = t;
+      tags.appendChild(span);
+    });
+  }
+  maleBtn?.classList.toggle('active', side === 'male');
+  femaleBtn?.classList.toggle('active', side === 'female');
+};
+
+function makeBreedingGroupCard(s, num) {
+  const maleView = publicBreedingView(s.male, '公蛇');
+  const femaleView = publicBreedingView(s.female, '母蛇');
+  const maleData = encodeURIComponent(JSON.stringify(maleView)).replace(/'/g, '%27');
+  const femaleData = encodeURIComponent(JSON.stringify(femaleView)).replace(/'/g, '%27');
+  const dataId = 'sale_bg_' + String(s.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const speciesLabel = SPECIES_LABELS[s.species] || '';
+  const speciesTag = speciesLabel ? `<div style="font-size:10px;letter-spacing:2.5px;color:var(--copper);text-transform:uppercase;margin-bottom:6px;font-weight:500;">${speciesLabel}</div>` : '';
+  const tags = maleView.tags.map(t => `<span class="stag">${t}</span>`).join('');
+  const total = publicBreedingGroupPrice(s.male, s.female);
+  const priceText = total === null ? '洽詢價格' : `NT$${total.toLocaleString('en-US')}`;
+
+  return `<div class="species-card breeding-public-card" id="${dataId}" data-male="${maleData}" data-female="${femaleData}">
+    <div class="species-card-top"><span class="species-num">${String(num).padStart(2,'0')}</span></div>
+    <div class="species-art breeding-public-art" style="position:relative;width:calc(100% + 64px);margin-left:-32px;margin-top:-44px;margin-bottom:28px;aspect-ratio:1/1;overflow:hidden;">
+      <img id="${dataId}_img" src="${maleView.imgUrl}" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;"
+        onclick="event.stopPropagation();openLightbox(this.src, document.getElementById('${dataId}_name').textContent + ' — ' + document.getElementById('${dataId}_code').textContent)">
+      <div class="breeding-public-badge">🧬 繁殖組</div>
+      <div class="breeding-public-switcher" onclick="event.stopPropagation()">
+        <button type="button" id="${dataId}_male_btn" class="breeding-public-switch-btn active" onclick="event.stopPropagation();switchPublicBreedingGroup('${dataId}','male')">♂ 公</button>
+        <button type="button" id="${dataId}_female_btn" class="breeding-public-switch-btn" onclick="event.stopPropagation();switchPublicBreedingGroup('${dataId}','female')">♀ 母</button>
+      </div>
+    </div>
+    ${speciesTag}<div class="species-name" id="${dataId}_name">${maleView.name}</div>
+    <div class="species-name-en" id="${dataId}_en" style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:10px;letter-spacing:.3px;${maleView.nameEn ? '' : 'display:none;'}">${maleView.nameEn}</div>
+    <div class="breeding-pair-summary">
+      <span class="pair-row"><span class="pair-sex">♂ 公</span>${maleView.name}</span>
+      <span class="pair-row"><span class="pair-sex">♀ 母</span>${femaleView.name}</span>
+    </div>
+    <div class="auction-code" id="${dataId}_code" style="margin-bottom:8px;">${maleView.code}</div>
+    <div class="species-tags" id="${dataId}_tags">${tags}</div>
+    <div class="species-footer"><div class="species-price">${priceText}</div><span class="species-arrow">↗</span></div>
+  </div>`;
+}
+
 function makeCard(s, num) {
+  if (s.itemType === 'breeding_group') return makeBreedingGroupCard(s, num);
   const tags = (s.tags||[]).map(t => `<span class="stag">${t}</span>`).join('');
   const speciesLabel = SPECIES_LABELS[s.species] || '';
   const speciesTag = speciesLabel ? `<div style="font-size:10px;letter-spacing:2.5px;color:var(--copper);text-transform:uppercase;margin-bottom:6px;font-weight:500;">${speciesLabel}</div>` : '';
@@ -1603,6 +1750,9 @@ function padToMultipleOf3(count) {
   return remainder === 0 ? 0 : 3 - remainder;
 }
 
+console.log('[HM INDEX] breeding card v4 CSS-FIX: badge/switch desktop enabled');
+console.log('[HM INDEX] breeding groups pinned first + pair names always visible');
+
 const SALE_PAGE_SIZE = 12;
 
 function renderSalePagination(totalPages) {
@@ -1639,13 +1789,8 @@ function renderSalePagination(totalPages) {
 window.changeSalePage = function(page) {
   if (!window._allSnakes) return;
 
-  let visible = window._allSnakes.filter(s => s.status === 'sale');
-  if (window._currentSpecies && window._currentSpecies !== 'all') {
-    visible = visible.filter(s => (s.species || 'ball_python') === window._currentSpecies);
-  }
-
-  const totalPages = Math.max(1, Math.ceil(visible.length / SALE_PAGE_SIZE));
-  window._salePage = Math.min(Math.max(1, page), totalPages);
+  // 繁殖組也算待售品項，因此頁數交給 renderSaleGrid 依完整清單重新計算。
+  window._salePage = Math.max(1, page);
   renderSaleGrid(window._allSnakes, window._currentSpecies);
 
   const section = document.getElementById('species');
@@ -1654,17 +1799,51 @@ window.changeSalePage = function(page) {
 
 function renderSaleGrid(snakes, speciesFilter) {
   const grid = document.getElementById('sale-grid');
-  let visible = snakes.filter(s => s.status === 'sale');
+  const byId = new Map(snakes.map(s => [String(s.id), s]));
+  const groupDocs = window._breedingGroupDocs || [];
+
+  const activeGroups = groupDocs.map(g => {
+    const male = byId.get(String(g.maleId));
+    const female = byId.get(String(g.femaleId));
+    if (!male || !female || male.status !== 'sale' || female.status !== 'sale') return null;
+    const maleYear = Number(String(male.birth || '').match(/(?:19|20)\d{2}/)?.[0] || 0);
+    const femaleYear = Number(String(female.birth || '').match(/(?:19|20)\d{2}/)?.[0] || 0);
+    return {
+      id: g.id,
+      itemType: 'breeding_group',
+      status: 'sale',
+      species: male.species === female.species ? (male.species || 'ball_python') : (male.species || female.species || 'other'),
+      male,
+      female,
+      birth: String(Math.max(maleYear, femaleYear) || '')
+    };
+  }).filter(Boolean);
+
+  const groupedIds = new Set();
+  activeGroups.forEach(g => {
+    groupedIds.add(String(g.male.id));
+    groupedIds.add(String(g.female.id));
+  });
+
+  // 一組繁殖組算一個待售品項；組內公母不再各自重複出現在待售區。
+  let visible = [
+    ...snakes.filter(s => s.status === 'sale' && !groupedIds.has(String(s.id))),
+    ...activeGroups
+  ];
 
   if (speciesFilter && speciesFilter !== 'all') {
     visible = visible.filter(s => (s.species || 'ball_python') === speciesFilter);
   }
 
-  // 待售個體依出生年份由新到舊排序；沒填年份的放最後
   visible.sort((a, b) => {
+    // 繁殖組固定排在所有一般待售個體之前。
+    const typeA = a.itemType === 'breeding_group' ? 0 : 1;
+    const typeB = b.itemType === 'breeding_group' ? 0 : 1;
+    if (typeA !== typeB) return typeA - typeB;
+
+    // 同類型內仍維持原本出生年份：新年份 → 舊年份，未填年份最後。
     const yearA = String(a.birth || '').match(/\d{4}/)?.[0];
     const yearB = String(b.birth || '').match(/\d{4}/)?.[0];
-
     if (yearA && yearB) return Number(yearB) - Number(yearA);
     if (yearA) return -1;
     if (yearB) return 1;
@@ -1690,7 +1869,6 @@ function renderSaleGrid(snakes, speciesFilter) {
 
   renderSalePagination(totalPages);
 }
-
 function renderAuctionGrid(snakes) {
   const grid = document.getElementById('auction-grid');
   const auctionSnakes = snakes.filter(s => s.status === 'auction');
@@ -1711,9 +1889,52 @@ async function loadSnakes() {
   try {
     const q = query(collection(db, 'snakes'), orderBy('createdAt', 'asc'));
     const snap = await getDocs(q);
-    const snakes = snap.docs.map(d => ({id:d.id,...d.data()}));
+    const rawItems = snap.docs.map(d => ({id:d.id,...d.data()}));
+    const snakes = rawItems.filter(x => x.itemType !== 'breeding_group');
 
-    // Sort by species priority then status
+    // INDEX 以原本個體上的 breedingPartnerId 為主要來源。
+    // 這些欄位寫在既有 snake 文件上，不需要另外新增 Firestore 文件。
+    const groupMap = new Map();
+
+    snakes.forEach(s => {
+      if (!s.breedingPartnerId) return;
+      const partner = snakes.find(x => String(x.id) === String(s.breedingPartnerId));
+      if (!partner) return;
+
+      const sRole = s.breedingRole || (s.sex === 'M' ? 'male' : s.sex === 'F' ? 'female' : '');
+      const pRole = partner.breedingRole || (partner.sex === 'M' ? 'male' : partner.sex === 'F' ? 'female' : '');
+
+      let maleId = '';
+      let femaleId = '';
+      if (sRole === 'male' || pRole === 'female') {
+        maleId = s.id; femaleId = partner.id;
+      } else if (sRole === 'female' || pRole === 'male') {
+        maleId = partner.id; femaleId = s.id;
+      } else if (s.sex === 'M' && partner.sex === 'F') {
+        maleId = s.id; femaleId = partner.id;
+      } else if (s.sex === 'F' && partner.sex === 'M') {
+        maleId = partner.id; femaleId = s.id;
+      } else {
+        return;
+      }
+
+      const key = [String(maleId), String(femaleId)].sort().join('|');
+      groupMap.set(key, {
+        id: s.breedingGroupId || partner.breedingGroupId || key,
+        itemType: 'breeding_group', maleId, femaleId, status: 'sale'
+      });
+    });
+
+    // 舊資料若有獨立 breeding_group 文件，仍保留相容。
+    rawItems
+      .filter(x => x.itemType === 'breeding_group' && x.maleId && x.femaleId)
+      .forEach(g => {
+        const key = [String(g.maleId), String(g.femaleId)].sort().join('|');
+        if (!groupMap.has(key)) groupMap.set(key, { ...g, id: g.id || key });
+      });
+
+    const groupDocs = [...groupMap.values()];
+
     snakes.sort((a,b) => {
       const sDiff = (SPECIES_ORDER[a.species]??5) - (SPECIES_ORDER[b.species]??5);
       if (sDiff !== 0) return sDiff;
@@ -1721,6 +1942,7 @@ async function loadSnakes() {
     });
 
     window._allSnakes = snakes;
+    window._breedingGroupDocs = groupDocs;
     window._currentSpecies = window._currentSpecies || 'all';
     window._salePage = window._salePage || 1;
 
@@ -1732,7 +1954,6 @@ async function loadSnakes() {
     document.getElementById('sale-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);">載入失敗，請重新整理</div>';
   }
 }
-
 window.filterBySpecies = function(species, btn) {
   window._currentSpecies = species;
   window._salePage = 1;
