@@ -1595,6 +1595,11 @@ function publicPriceNumber(s) {
   return digits ? Number(digits) : null;
 }
 
+function publicPriceText(s) {
+  const n = publicPriceNumber(s);
+  return n === null ? '洽詢價格' : `NT$${n.toLocaleString('en-US')}`;
+}
+
 function publicBreedingGroupPrice(male, female) {
   const mp = publicPriceNumber(male);
   const fp = publicPriceNumber(female);
@@ -1741,7 +1746,7 @@ function makeCard(s, num) {
       ${speciesTag}<div class="species-name">${s.birth ? String(s.birth).match(/\d{4}/)?.[0] + ' ' : ''}${s.nameZh||''}</div>
       ${s.nameEn ? `<div class="species-name-en" style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:10px;letter-spacing:.3px;">${s.nameEn}</div>` : ''}
       <div class="species-tags">${tags}</div>
-      <div class="species-footer"><div class="species-price">${s.price||'洽詢價格'}</div><span class="species-arrow">↗</span></div>
+      <div class="species-footer"><div class="species-price">${publicPriceText(s)}</div><span class="species-arrow">↗</span></div>
     </div>`;
   }
 }
@@ -1752,6 +1757,7 @@ function padToMultipleOf3(count) {
 
 console.log('[HM INDEX] breeding card v4 CSS-FIX: badge/switch desktop enabled');
 console.log('[HM INDEX] breeding groups pinned first + pair names always visible');
+console.log('[HM INDEX] price display normalized: NT$#,###');
 
 const SALE_PAGE_SIZE = 12;
 
