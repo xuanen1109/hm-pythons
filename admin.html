@@ -470,6 +470,12 @@ input.im-num:focus { border-color:var(--copper); }
   text-overflow:ellipsis;
   white-space:nowrap;
 }
+
+/* 小蛇基因欄位：使用單行 textarea 避免瀏覽器顯示歷史輸入建議 */
+textarea.hatch-gene-input {
+  font-family: inherit;
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -736,6 +742,16 @@ input.im-num:focus { border-color:var(--copper); }
           <div class="form-group">
             <label class="form-label">售價</label>
             <input class="form-input" id="f-price" placeholder="例：NT$8,500 / 洽詢 / 競標">
+          </div>
+
+          <div class="form-group" style="border:1px solid rgba(181,115,58,.22);background:rgba(181,115,58,.045);padding:14px 16px;border-radius:6px;">
+            <label class="form-label" style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:7px;">
+              <input type="checkbox" id="f-show-sota" style="width:17px;height:17px;accent-color:var(--copper);">
+              <span>顯示於 SOTA</span>
+            </label>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:9px;">僅球蟒有效。開啟後只會把公開展示資料提供給 SOTA，不包含售價、成本或聯絡資訊。</div>
+            <label class="form-label" style="font-size:10px;">SOTA 展示說明（選填）</label>
+            <textarea class="form-input" id="f-sota-description" rows="2" placeholder="例：2026 自繁個體，穩定進食。" style="resize:vertical;min-height:64px;"></textarea>
           </div>
 
           <div class="form-group">
@@ -1547,6 +1563,8 @@ import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, dele
 console.log('[HM ADMIN] BG build 2026-08-14 18:34 | no breedingGroups collection | fallback enabled');
 console.log('[HM ADMIN] BG-PARTNER3 loaded | partner fields are primary; group doc optional');
 console.log('[HM ADMIN] HATCH-DEADFETUS build loaded');
+console.log('[HM ADMIN] SOTA FEED controls v1 loaded');
+console.log('[hatch] gene input suggestions disabled via textarea v2');
 const ADMIN_EMAILS = ['jim540888894@gmail.com', 'neilchen03@gmail.com', 'lin19880209@gmail.com', 'huangxianen614@gmail.com']; // 在這裡新增管理員 email
 const CLOUDINARY_CLOUD = 'dzfnc1h7k';
 const CLOUDINARY_PRESET = 'hm_pythons';
@@ -1886,6 +1904,7 @@ function renderSnakes() {
       <div class="snake-card-body">
         <div class="snake-card-name">${(() => { const m = String(s.birth || '').match(/(?:19|20)\d{2}/); return m ? m[0] + ' ' : ''; })()}${s.nameZh || ''}</div>
         <div class="snake-card-code">${s.code || ''}</div>
+        ${s.showOnSota === true && s.species === 'ball_python' ? '<div style="display:inline-block;margin:6px 0 2px;padding:3px 7px;border-radius:3px;background:#243d31;color:#dff3e8;font-size:9px;font-weight:700;letter-spacing:1px;">SOTA</div>' : ''}
         <div class="snake-card-tags">${tags}</div>
         <div class="card-actions">
           <button class="action-btn" onclick="openEditModal('${s.id}')">編輯</button>
@@ -2345,6 +2364,8 @@ window.submitSnake = async () => {
   const dam = document.getElementById('f-dam').value.trim();
   const nature = document.getElementById('f-nature').value;
   const sex = document.getElementById('f-sex').value;
+  const showOnSota = species === 'ball_python' && document.getElementById('f-show-sota').checked;
+  const sotaDescription = document.getElementById('f-sota-description').value.trim();
 
   if (!imgUrl) { showToast('❌ 請先上傳照片'); return; }
   if (!code || !nameZh) { showToast('❌ 請填寫編號和名稱'); return; }
@@ -2357,7 +2378,9 @@ window.submitSnake = async () => {
       imgUrl, code, morph, nameZh, nameEn,
       tags: currentTags, status, auctionUrl, auctionEnd, price, species,
       birth, frozen, sire, dam, nature, sex, weight,
-      createdAt: serverTimestamp()
+      showOnSota, sotaDescription,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
     showToast('✅ 新增成功！');
     // Reset form
@@ -2368,6 +2391,8 @@ window.submitSnake = async () => {
     document.getElementById('f-frozen').value = '';
     document.getElementById('f-nature').value = '';
     document.getElementById('f-sex').value = '';
+    document.getElementById('f-show-sota').checked = false;
+    document.getElementById('f-sota-description').value = '';
     currentTags = [];
     renderTags();
     await loadSnakes();
@@ -2402,7 +2427,7 @@ window.selectStatus = (s, btn) => {
 
 window.saveStatus = async () => {
   if (!editingId || !newStatus) return;
-  await updateDoc(doc(db, 'snakes', editingId), { status: newStatus });
+  await updateDoc(doc(db, 'snakes', editingId), { status: newStatus, updatedAt: serverTimestamp() });
   closeModal();
   showToast('✅ 狀態已更新');
   await loadSnakes();
@@ -2436,6 +2461,8 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-dam').value = snake.dam || '';
     document.getElementById('edit-nature').value = snake.nature || '';
     document.getElementById('edit-img-url').value = snake.imgUrl || '';
+    document.getElementById('edit-show-sota').checked = snake.showOnSota === true;
+    document.getElementById('edit-sota-description').value = snake.sotaDescription || '';
 
     const preview = document.getElementById('edit-upload-preview');
     const placeholder = document.getElementById('edit-upload-placeholder');
@@ -2506,6 +2533,9 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         dam: document.getElementById('edit-dam').value.trim(),
         nature: document.getElementById('edit-nature').value,
         imgUrl: document.getElementById('edit-img-url').value,
+        showOnSota: document.getElementById('edit-species').value === 'ball_python' && document.getElementById('edit-show-sota').checked,
+        sotaDescription: document.getElementById('edit-sota-description').value.trim(),
+        updatedAt: serverTimestamp(),
       });
       showToast('✅ 儲存成功！');
       closeEditModal();
@@ -3169,6 +3199,14 @@ window.showToast = function showToast(msg) {
           <option value="sold">已售出</option>
         </select>
       </div>
+    </div>
+    <div style="margin-bottom:14px;border:1px solid rgba(181,115,58,.22);background:rgba(181,115,58,.045);padding:12px 14px;border-radius:6px;">
+      <label class="form-label" style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:7px;">
+        <input type="checkbox" id="edit-show-sota" style="width:17px;height:17px;accent-color:var(--copper);">
+        <span>顯示於 SOTA</span>
+      </label>
+      <div style="font-size:10px;color:var(--muted);line-height:1.55;margin-bottom:8px;">僅球蟒有效；Feed 只輸出公開展示欄位，不會輸出售價、成本、聯絡方式或後台資料。</div>
+      <textarea class="form-input" id="edit-sota-description" rows="2" placeholder="SOTA 展示說明（選填）" style="resize:vertical;min-height:58px;"></textarea>
     </div>
     <div style="margin-bottom:16px;">
       <label class="form-label">競標連結</label>
@@ -6452,7 +6490,7 @@ window.hatchGenRows = () => {
     const id = String(i).padStart(2,'0');
     html += `<div style="display:grid;grid-template-columns:120px 1fr 100px 80px;gap:8px;margin-bottom:8px;align-items:center">
       <div style="font-family:monospace;font-size:12px;color:var(--copper);background:var(--cream);padding:8px;border-radius:4px">${code}-${id}</div>
-      <input class="form-input" id="hatch-gene-${i}" placeholder="e.g. Pastel het Clown" style="font-size:12px">
+      <textarea class="form-input hatch-gene-input" id="hatch-gene-${i}" rows="1" placeholder="輸入這隻小蛇的基因" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" style="font-size:12px;resize:none;overflow:hidden;min-height:38px;line-height:20px;padding-top:8px;padding-bottom:8px"></textarea>
       <select class="form-select" id="hatch-sex-${i}" style="font-size:12px">
         <option value="">未知</option>
         <option value="M">♂ 公</option>
