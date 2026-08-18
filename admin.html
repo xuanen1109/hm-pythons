@@ -1703,12 +1703,14 @@ async function bgClearCloudPairFields(group) {
   const femaleId = group?.femaleId ? String(group.femaleId) : '';
   if (maleId && allSnakes.some(s => String(s.id) === maleId)) {
     jobs.push(updateDoc(doc(db, 'snakes', maleId), {
-      breedingGroupId: '', breedingPartnerId: '', breedingRole: '', breedingPairedAt: null
+      breedingGroupId: '', breedingPartnerId: '', breedingRole: '', breedingPairedAt: null,
+      showOnSota: false, sotaAsBreedingGroup: false, updatedAt: serverTimestamp()
     }));
   }
   if (femaleId && allSnakes.some(s => String(s.id) === femaleId)) {
     jobs.push(updateDoc(doc(db, 'snakes', femaleId), {
-      breedingGroupId: '', breedingPartnerId: '', breedingRole: '', breedingPairedAt: null
+      breedingGroupId: '', breedingPartnerId: '', breedingRole: '', breedingPairedAt: null,
+      showOnSota: false, sotaAsBreedingGroup: false, updatedAt: serverTimestamp()
     }));
   }
   if (jobs.length) await Promise.all(jobs);
@@ -1878,6 +1880,11 @@ function renderSnakes() {
         <div class="snake-card-code" id="${dataId}_code">${bgEsc(maleView.code)}</div>
         <div class="snake-card-tags" id="${dataId}_tags">${maleTags}</div>
         <div style="font-size:12px;color:var(--copper);font-weight:700;margin-top:10px;">繁殖組合價：${bgGroupPriceText(g)}</div>
+        ${male.species === 'ball_python' && female.species === 'ball_python' ? `
+        <label onclick="event.stopPropagation()" style="margin:10px 0 8px;padding:7px 9px;border:1px solid rgba(36,61,49,.22);border-radius:5px;background:${male.showOnSota === true && female.showOnSota === true && male.sotaAsBreedingGroup === true && female.sotaAsBreedingGroup === true ? '#edf7f0' : '#f5f5f5'};display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:${male.showOnSota === true && female.showOnSota === true && male.sotaAsBreedingGroup === true && female.sotaAsBreedingGroup === true ? '#243d31' : 'var(--muted)'};cursor:pointer;">
+          <input type="checkbox" ${male.showOnSota === true && female.showOnSota === true && male.sotaAsBreedingGroup === true && female.sotaAsBreedingGroup === true ? 'checked' : ''} onchange="toggleSotaBreedingGroup('${g.id}', this.checked)" style="width:16px;height:16px;accent-color:#243d31;">
+          SOTA｜繁殖組一起販售
+        </label>` : ''}
 
         <div class="card-actions">
           <button class="action-btn" onclick="editBreedingGroupSelection('${g.id}')">編輯</button>
@@ -1906,6 +1913,11 @@ function renderSnakes() {
         <div class="snake-card-code">${s.code || ''}</div>
         ${s.showOnSota === true && s.species === 'ball_python' ? '<div style="display:inline-block;margin:6px 0 2px;padding:3px 7px;border-radius:3px;background:#243d31;color:#dff3e8;font-size:9px;font-weight:700;letter-spacing:1px;">SOTA</div>' : ''}
         <div class="snake-card-tags">${tags}</div>
+        ${s.species === 'ball_python' ? `
+        <label onclick="event.stopPropagation()" style="margin:8px 0;padding:7px 9px;border:1px solid rgba(36,61,49,.22);border-radius:5px;background:${s.showOnSota === true ? '#edf7f0' : '#f5f5f5'};display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:${s.showOnSota === true ? '#243d31' : 'var(--muted)'};cursor:pointer;">
+          <input type="checkbox" ${s.showOnSota === true ? 'checked' : ''} onchange="toggleSotaSnake('${s.id}', this.checked)" style="width:16px;height:16px;accent-color:#243d31;">
+          顯示於 SOTA
+        </label>` : ''}
         <div class="card-actions">
           <button class="action-btn" onclick="openEditModal('${s.id}')">編輯</button>
           <button class="action-btn" onclick="openStatusModal('${s.id}', '${(s.nameZh||'').replace(/'/g,'&apos;')}', '${s.status}')">狀態</button>
@@ -2431,6 +2443,56 @@ window.saveStatus = async () => {
   closeModal();
   showToast('✅ 狀態已更新');
   await loadSnakes();
+};
+
+// SOTA quick toggles
+window.toggleSotaSnake = async (id, checked) => {
+  const snake = allSnakes.find(s => String(s.id) === String(id));
+  if (!snake || snake.species !== 'ball_python') return;
+  try {
+    await updateDoc(doc(db, 'snakes', id), {
+      showOnSota: !!checked,
+      sotaAsBreedingGroup: false,
+      updatedAt: serverTimestamp()
+    });
+    showToast(checked ? '✅ 已顯示於 SOTA' : '✅ 已從 SOTA 移除');
+    await loadSnakes();
+  } catch (e) {
+    console.error('[SOTA] quick toggle failed', e);
+    showToast('❌ SOTA 設定失敗：' + e.message);
+    await loadSnakes();
+  }
+};
+
+window.toggleSotaBreedingGroup = async (groupId, checked) => {
+  const group = breedingGroups.find(g => String(g.id) === String(groupId));
+  if (!group) return;
+  const male = bgResolveSide(group, 'male');
+  const female = bgResolveSide(group, 'female');
+  if (!male?.id || !female?.id || male.species !== 'ball_python' || female.species !== 'ball_python') {
+    showToast('❌ 只有球蟒繁殖組可同步 SOTA');
+    return;
+  }
+  try {
+    await Promise.all([
+      updateDoc(doc(db, 'snakes', male.id), {
+        showOnSota: !!checked,
+        sotaAsBreedingGroup: !!checked,
+        updatedAt: serverTimestamp()
+      }),
+      updateDoc(doc(db, 'snakes', female.id), {
+        showOnSota: !!checked,
+        sotaAsBreedingGroup: !!checked,
+        updatedAt: serverTimestamp()
+      })
+    ]);
+    showToast(checked ? '✅ 繁殖組已同步至 SOTA（單一品項）' : '✅ 繁殖組已從 SOTA 移除');
+    await loadSnakes();
+  } catch (e) {
+    console.error('[SOTA] breeding group toggle failed', e);
+    showToast('❌ SOTA 繁殖組設定失敗：' + e.message);
+    await loadSnakes();
+  }
 };
 
 window.closeModal = () => { document.getElementById('modal-overlay').classList.remove('show'); };

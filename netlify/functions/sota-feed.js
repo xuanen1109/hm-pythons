@@ -63,6 +63,11 @@ function normalizeTimestamp(value) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+function latestTimestamp(...values) {
+  const valid = values.map(normalizeTimestamp).filter(Boolean).sort();
+  return valid.length ? valid[valid.length - 1] : null;
+}
+
 function normalizeImages(data) {
   const candidates = [];
   if (typeof data.imgUrl === 'string') candidates.push(data.imgUrl);
@@ -79,9 +84,16 @@ function normalizeImages(data) {
     });
 }
 
-function publicSnake(doc) {
+function decodeSnakeDocument(doc) {
   const data = decodeFields(doc.fields || {});
-  const sourceId = String(doc.name || '').split('/').pop();
+  return {
+    sourceId: String(doc.name || '').split('/').pop(),
+    data
+  };
+}
+
+function publicSnake(item) {
+  const { sourceId, data } = item;
   const updatedAt = normalizeTimestamp(data.updatedAt) || normalizeTimestamp(data.createdAt);
 
   return {
@@ -93,6 +105,35 @@ function publicSnake(doc) {
     images: normalizeImages(data),
     available: data.status !== 'sold',
     updated_at: updatedAt
+  };
+}
+
+function publicBreedingGroup(groupId, members) {
+  const male = members.find(x => String(x.data.breedingRole || '').toLowerCase() === 'male' || normalizeSex(x.data.sex) === 'M') || members[0];
+  const female = members.find(x => String(x.data.breedingRole || '').toLowerCase() === 'female' || normalizeSex(x.data.sex) === 'F') || members[1];
+  if (!male || !female) return null;
+
+  const maleMorph = String(male.data.morph || male.data.nameEn || male.data.nameZh || '').trim();
+  const femaleMorph = String(female.data.morph || female.data.nameEn || female.data.nameZh || '').trim();
+  const maleName = String(male.data.nameZh || male.data.nameEn || male.data.morph || '').trim();
+  const femaleName = String(female.data.nameZh || female.data.nameEn || female.data.morph || '').trim();
+  const descriptions = [...new Set([
+    String(male.data.sotaDescription || '').trim(),
+    String(female.data.sotaDescription || '').trim()
+  ].filter(Boolean))];
+
+  return {
+    source_id: groupId,
+    morph: `${maleMorph} × ${femaleMorph}`,
+    name: `繁殖組｜${maleName} × ${femaleName}`,
+    sex: 'PAIR',
+    description: ['繁殖組一起販售', ...descriptions].join('｜'),
+    images: [...new Set([...normalizeImages(male.data), ...normalizeImages(female.data)])],
+    available: male.data.status !== 'sold' && female.data.status !== 'sold',
+    updated_at: latestTimestamp(
+      male.data.updatedAt || male.data.createdAt,
+      female.data.updatedAt || female.data.createdAt
+    )
   };
 }
 
@@ -137,14 +178,41 @@ exports.handler = async (event) => {
 
   try {
     const docs = await fetchSnakeDocuments();
-    const items = docs
-      .filter(doc => {
-        const data = decodeFields(doc.fields || {});
-        return data.itemType !== 'breeding_group' &&
-          data.species === 'ball_python' &&
-          data.showOnSota === true;
+    const decoded = docs
+      .map(decodeSnakeDocument)
+      .filter(x => x.data.itemType !== 'breeding_group');
+
+    const groupMembers = new Map();
+    for (const item of decoded) {
+      const d = item.data;
+      if (
+        d.species === 'ball_python' &&
+        d.showOnSota === true &&
+        d.sotaAsBreedingGroup === true &&
+        typeof d.breedingGroupId === 'string' &&
+        d.breedingGroupId.trim()
+      ) {
+        const key = d.breedingGroupId.trim();
+        if (!groupMembers.has(key)) groupMembers.set(key, []);
+        groupMembers.get(key).push(item);
+      }
+    }
+
+    const groups = [...groupMembers.entries()]
+      .filter(([, members]) => members.length >= 2)
+      .map(([groupId, members]) => publicBreedingGroup(groupId, members))
+      .filter(Boolean);
+
+    const individuals = decoded
+      .filter(item => {
+        const d = item.data;
+        return d.species === 'ball_python' &&
+          d.showOnSota === true &&
+          d.sotaAsBreedingGroup !== true;
       })
-      .map(publicSnake)
+      .map(publicSnake);
+
+    const items = [...groups, ...individuals]
       .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
 
     return jsonResponse(200, items, origin);
