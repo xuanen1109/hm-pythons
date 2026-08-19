@@ -6400,17 +6400,19 @@ function imKpiSummary(records) {
   return {totalEggs,badEggs,goodEggs,quality,clutches:records.length};
 }
 
-function imBallPythonKpi(summary) {
+function imBallPythonKpi(summary, baselineEggs = BALL_PYTHON_AVG_EGGS) {
   if (!summary.totalEggs) return {score:null, grade:'—', quantityScore:0};
-  // 100 代表達到球蟒平均產蛋基準，不是滿分。
+  // 100 代表達到所選期間的球蟒平均產蛋基準，不是滿分。
+  // 單一年份基準為 6 顆；「全部年份」則用 6 × 實際有產蛋紀錄的年份數。
   // 低於平均：按比例計分；高於平均：仍可持續加分，但超額部分採 50% 斜率，避免分數失真暴衝。
-  const ratio = summary.totalEggs / BALL_PYTHON_AVG_EGGS;
+  const safeBaseline = Math.max(BALL_PYTHON_AVG_EGGS, Number(baselineEggs) || BALL_PYTHON_AVG_EGGS);
+  const ratio = summary.totalEggs / safeBaseline;
   const quantityScore = ratio <= 1
     ? ratio * 100
     : 100 + (ratio - 1) * 50;
   const score = Math.round(quantityScore * 0.60 + summary.quality * 0.40);
   const grade = score >= 120 ? 'S+' : score >= 100 ? 'S' : score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D';
-  return {score,grade,quantityScore};
+  return {score,grade,quantityScore,baselineEggs:safeBaseline};
 }
 
 window.imRenderKPI = async () => {
@@ -6462,7 +6464,10 @@ window.imRenderKPI = async () => {
     const allRecords = imKpiRecords(f);
     const records = yearF ? allRecords.filter(r=>imKpiYearOf(r.date)===yearF) : allRecords;
     const sum = imKpiSummary(records);
-    const ball = type === 'ball_python' ? imBallPythonKpi(sum) : null;
+    const recordYears = [...new Set(records.map(r=>imKpiYearOf(r.date)).filter(Boolean))];
+    const baselineYears = yearF ? 1 : Math.max(1, recordYears.length);
+    const baselineEggs = BALL_PYTHON_AVG_EGGS * baselineYears;
+    const ball = type === 'ball_python' ? imBallPythonKpi(sum, baselineEggs) : null;
     const legacyTotal = Math.max(0, Number(f.totalEggs||0)||0);
     const legacyBad = Math.max(0, Number(f.deadFetus ?? f.slugs ?? 0)||0);
     const hasLegacy = !allRecords.length && (legacyTotal>0 || legacyBad>0);
@@ -6473,7 +6478,7 @@ window.imRenderKPI = async () => {
       kpiBlock = `<div style="min-width:95px;text-align:right">
         <div style="font-size:10px;color:var(--muted)">KPI（100 = 標準）</div>
         <div style="font-size:25px;font-weight:800;color:${ball?.score>=120?'#126b38':ball?.score>=100?'#2a6b3a':ball?.score>=85?'var(--copper)':'var(--brown)'}">${ball?.score ?? '—'} <span style="font-size:13px">${ball?.grade||'—'}</span></div>
-        <div style="font-size:10px;color:var(--muted)">球蟒平均基準 ${BALL_PYTHON_AVG_EGGS} 顆</div>
+        <div style="font-size:10px;color:var(--muted)">球蟒平均基準 ${baselineEggs} 顆${!yearF && baselineYears > 1 ? `（${baselineYears} 年）` : ''}</div>
       </div>`;
     } else if (type === 'leopard_gecko') {
       kpiBlock = `<div style="min-width:95px;text-align:right"><div style="font-size:10px;color:var(--muted)">本期產蛋次數</div><div style="font-size:25px;font-weight:800">${sum.clutches}</div></div>`;
