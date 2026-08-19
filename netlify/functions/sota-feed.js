@@ -22,7 +22,9 @@ function jsonResponse(statusCode, body, origin, extraHeaders = {}) {
     statusCode,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=30, s-maxage=30, stale-while-revalidate=120',
+      // Browser only keeps a very short cache; Netlify CDN keeps the successful Feed for 30 minutes.
+      'Cache-Control': 'public, max-age=60',
+      'Netlify-CDN-Cache-Control': 'public, durable, s-maxage=1800, stale-while-revalidate=86400',
       'X-Content-Type-Options': 'nosniff',
       ...corsHeaders(origin),
       ...extraHeaders
