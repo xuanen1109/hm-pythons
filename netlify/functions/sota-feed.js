@@ -98,8 +98,8 @@ function publicSnake(item) {
 
   return {
     source_id: sourceId,
-    morph: String(data.nameEn || data.nameZh || '').trim(),
-    name: String(data.nameZh || data.nameEn || '').trim(),
+    morph: String(data.nameEn || '').trim(),
+    name: String(data.nameZh || '').trim(),
     sex: normalizeSex(data.sex),
     description: String(data.sotaDescription || '').trim(),
     images: normalizeImages(data),
@@ -113,10 +113,10 @@ function publicBreedingGroup(groupId, members) {
   const female = members.find(x => String(x.data.breedingRole || '').toLowerCase() === 'female' || normalizeSex(x.data.sex) === 'F') || members[1];
   if (!male || !female) return null;
 
-  const maleMorph = String(male.data.nameEn || male.data.nameZh || '').trim();
-  const femaleMorph = String(female.data.nameEn || female.data.nameZh || '').trim();
-  const maleName = String(male.data.nameZh || male.data.nameEn || '').trim();
-  const femaleName = String(female.data.nameZh || female.data.nameEn || '').trim();
+  const maleMorph = String(male.data.nameEn || '').trim();
+  const femaleMorph = String(female.data.nameEn || '').trim();
+  const maleName = String(male.data.nameZh || '').trim();
+  const femaleName = String(female.data.nameZh || '').trim();
   const descriptions = [...new Set([
     String(male.data.sotaDescription || '').trim(),
     String(female.data.sotaDescription || '').trim()

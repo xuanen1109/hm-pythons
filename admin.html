@@ -957,7 +957,7 @@ textarea.hatch-gene-input {
           <div class="form-row" style="margin-bottom:16px">
             <div class="form-group">
               <label class="form-label">所有人 *</label>
-              <select class="form-select" id="hatch-owner" onchange="hatchUpdateCode()">
+              <select class="form-select" id="hatch-owner" onchange="hatchOwnerChanged()">
                 <option value="G">G — 有剛</option>
                 <option value="C">C — 宣恩</option>
                 <option value="N">N — 尼爾</option>
@@ -1010,7 +1010,7 @@ textarea.hatch-gene-input {
                   <option value="">— 從「公」清單選擇 —</option>
                 </select>
               </div>
-              <div style="font-size:10px;color:var(--muted);margin-top:4px">直接讀取「內部管理 → 公」資料；不受上方編碼所有人／物種影響</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:4px">一般模式自動跟隨上方所有人；只有「內部合作」可分別指定公／母蛇所有人</div>
             </div>
             <div class="form-group">
               <label class="form-label">親代母蛇 <span style="font-size:9px;color:var(--copper)">下拉選擇</span></label>
@@ -1025,7 +1025,7 @@ textarea.hatch-gene-input {
                   <option value="">— 從「母」清單選擇 —</option>
                 </select>
               </div>
-              <div style="font-size:10px;color:var(--muted);margin-top:4px">直接讀取「內部管理 → 母」資料；不受上方編碼所有人／物種影響</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:4px">一般模式自動跟隨上方所有人；只有「內部合作」可分別指定公／母蛇所有人</div>
             </div>
           </div>
           <div class="form-row" style="margin-bottom:20px">
@@ -2001,11 +2001,17 @@ function buildSaleExportEntries() {
     return m ? Number(m[0]) : null;
   };
   const getSpecies = s => speciesMap[s?.species] || s?.speciesRaw || s?.species || '物種未填';
+  // 待售文字匯出：名稱以後台「中文名稱 nameZh」為準，不再優先讀色型標籤 morph。
+  // 因匯出格式後方會另外附上性別，這裡只去除中文名稱末尾重複的（公）／（母）。
   const getGene = s => {
-    if (s?.morph && String(s.morph).trim()) return String(s.morph).trim();
     let n = String(s?.nameZh || '').trim();
-    n = n.replace(/[（(]\s*(?:公|母|男生|女生|Male|Female|M|F)\s*[）)]\s*$/i, '').trim();
-    return n || (Array.isArray(s?.tags) ? s.tags.join(' ') : '') || '基因未填';
+    if (n) {
+      n = n.replace(/[（(]\s*(?:公|母|男生|女生|Male|Female|M|F)\s*[）)]\s*$/i, '').trim();
+      if (n) return n;
+    }
+    // 舊資料若尚未填中文名稱，才保留舊欄位作相容 fallback。
+    if (s?.morph && String(s.morph).trim()) return String(s.morph).trim();
+    return (Array.isArray(s?.tags) ? s.tags.join(' ') : '') || '中文名稱未填';
   };
   const getSex = s => {
     const raw = String(s?.sex || s?.gender || '').trim();
@@ -6649,17 +6655,59 @@ function hatchForceParentSelectUI() {
           <option value="">— 從「${sexLabel}」清單選擇 —</option>
         </select>
       </div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">直接讀取內部管理 → ${sexLabel}；與上方編碼所有人／物種無關</div>`;
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">一般模式自動跟隨上方所有人；只有「內部合作」可分別指定公／母蛇所有人</div>`;
   };
   makeSide('sire', '親代公蛇', '公');
   makeSide('dam', '親代母蛇', '母');
-  try { hatchRefreshParentOptions('sire'); hatchRefreshParentOptions('dam'); } catch(e) { console.warn('[hatch parent] refresh', e); }
+  try {
+    if (typeof hatchSyncParentOwnersFromMain === 'function') hatchSyncParentOwnersFromMain();
+    else { hatchRefreshParentOptions('sire'); hatchRefreshParentOptions('dam'); }
+  } catch(e) { console.warn('[hatch parent] refresh', e); }
 }
 
 window.hatchForceParentSelectUI = hatchForceParentSelectUI;
+
+function hatchSyncParentOwnersFromMain() {
+  const mainOwnerCode = document.getElementById('hatch-owner')?.value || 'G';
+  const sireOwnerEl = document.getElementById('hatch-sire-owner');
+  const damOwnerEl = document.getElementById('hatch-dam-owner');
+  if (!sireOwnerEl || !damOwnerEl) return;
+
+  const ownerName = OWNER_MAP[mainOwnerCode] || '';
+  const isInternalCollab = mainOwnerCode === 'X';
+  const isDirectInternalOwner = ['G','C','N'].includes(mainOwnerCode);
+
+  if (isDirectInternalOwner) {
+    sireOwnerEl.disabled = true;
+    damOwnerEl.disabled = true;
+    sireOwnerEl.value = ownerName;
+    damOwnerEl.value = ownerName;
+  } else {
+    sireOwnerEl.disabled = false;
+    damOwnerEl.disabled = false;
+    if (isInternalCollab) {
+      // 內部合作需自行指定雙方，避免誤沿用上一位所有人。
+      sireOwnerEl.value = '';
+      damOwnerEl.value = '';
+    } else if (mainOwnerCode === 'O') {
+      // 外部寄售沒有固定內部所有人，保留人工選擇。
+      sireOwnerEl.value = '';
+      damOwnerEl.value = '';
+    }
+  }
+
+  hatchRefreshParentOptions();
+}
+
+window.hatchSyncParentOwnersFromMain = hatchSyncParentOwnersFromMain;
+window.hatchOwnerChanged = () => {
+  hatchSyncParentOwnersFromMain();
+  hatchUpdateCode();
+};
+
 window.addEventListener('load', () => {
-  setTimeout(hatchForceParentSelectUI, 100);
-  setTimeout(hatchForceParentSelectUI, 800);
+  setTimeout(() => { hatchForceParentSelectUI(); hatchSyncParentOwnersFromMain(); }, 100);
+  setTimeout(() => { hatchForceParentSelectUI(); hatchSyncParentOwnersFromMain(); }, 800);
 });
 
 window.hatchRefreshParentOptions = (only = '') => {
