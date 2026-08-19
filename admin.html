@@ -921,10 +921,10 @@ textarea.hatch-gene-input {
         <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
           <input class="form-input" style="width:200px;padding:7px 10px" placeholder="搜尋公蛇、母蛇…" id="im-q-breeding" oninput="imRenderTable('breeding')">
           <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-breeding-owner" onchange="imRenderTable('breeding')">
-            <option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option>
+            <option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option><option>內部合作</option>
           </select>
-          <select class="form-select" style="width:100px;padding:7px 10px" id="im-f-breeding-year" onchange="imRenderTable('breeding')">
-            <option value="">全部年份</option>
+          <select class="form-select" style="width:150px;padding:7px 10px" id="im-f-breeding-year" onchange="imRenderTable('breeding')">
+            <option value="">全部繁殖季</option>
           </select>
         </div>
         <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
@@ -978,12 +978,22 @@ textarea.hatch-gene-input {
           </div>
           <div class="form-row" style="margin-bottom:16px">
             <div class="form-group">
-              <label class="form-label">出生日期 * (YYYY/MM/DD)</label>
-              <input class="form-input" id="hatch-date" type="date" onchange="hatchUpdateCode()">
+              <label class="form-label">出生日期 *</label>
+              <input class="form-input" id="hatch-date" type="date" onchange="hatchSyncArrivalDate(); hatchUpdateCode()">
             </div>
+            <div class="form-group">
+              <label class="form-label">進貨日期 * <span style="font-size:10px;color:var(--muted)">（序號以此日期為準）</span></label>
+              <input class="form-input" id="hatch-arrival-date" type="date" onchange="hatchUpdateCode()">
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:16px">
             <div class="form-group">
               <label class="form-label">胎次 (第幾胎) *</label>
               <input class="form-input" id="hatch-litter" type="number" min="1" value="1" onchange="hatchUpdateCode()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">編碼日期來源</label>
+              <div style="background:var(--cream);border:1px solid rgba(181,115,58,.18);border-radius:4px;padding:10px 12px;font-size:11px;color:var(--muted);line-height:1.6">出生日期用於年齡／孵化紀錄；產品序號固定優先使用進貨日期。</div>
             </div>
           </div>
           <div class="form-row" style="margin-bottom:16px">
@@ -1107,8 +1117,8 @@ textarea.hatch-gene-input {
 
       <!-- IM: KPI -->
       <div class="page" id="page-im-kpi">
-        <div class="page-title">📈 母蛇 KPI 分析</div>
-        <div class="page-sub">成蛋良率 · 坪效 ROI · 交配效率</div>
+        <div class="page-title">📈 母蛇 KPI</div>
+        <div class="page-sub">生蛋數量 · 廢蛋數量</div>
         <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
           <select class="form-select" style="width:120px;padding:7px 10px" id="kpi-f-owner" onchange="imRenderKPI()"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
           <select class="form-select" style="width:100px;padding:7px 10px" id="kpi-f-year" onchange="imRenderKPI()"><option value="">全部年份</option></select>
@@ -3438,13 +3448,13 @@ window.imRenderTable = (section) => {
         const od = (OWNER_ORDER[a.owner]??9) - (OWNER_ORDER[b.owner]??9);
         if (od !== 0) return od;
       }
-      const ay = parseInt((a.birth||a.year||'0').toString().slice(0,4))||0;
-      const by = parseInt((b.birth||b.year||'0').toString().slice(0,4))||0;
+      const ay = parseInt((a.year||a.birth||'0').toString().slice(0,4))||0;
+      const by = parseInt((b.year||b.birth||'0').toString().slice(0,4))||0;
       return ay - by;
     });
     document.getElementById('im-males-sub').textContent = `共 ${rows.length} 筆`;
     document.getElementById('im-table-males').innerHTML = `<thead><tr>
-      <th>基因/品系</th><th>物種</th><th>出生年</th><th>成本</th><th>來源</th><th>狀態</th><th>操作</th>
+      <th>基因/品系</th><th>物種</th><th>出生年</th><th>進貨日期</th><th>成本</th><th>來源</th><th>狀態</th><th>操作</th>
     </tr></thead><tbody>${rows.map(r=>`<tr>
       <td style="max-width:280px">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -3453,7 +3463,8 @@ window.imRenderTable = (section) => {
         </div>
       </td>
       <td style="color:var(--muted)">${r.species||''}</td>
-      <td>${(r.birth||r.year||'').toString().slice(0,4)||''}</td>
+      <td>${(r.year||String(r.birth||'').match(/(?:19|20)\d{2}/)?.[0]||'')}</td>
+      <td>${r.arrivalDate ? esc(String(r.arrivalDate).replace(/-/g,'/')) : '—'}</td>
       <td>${fmtMoney(r.cost)}</td>
       <td style="color:var(--muted);font-size:11px">${r.source||''}</td>
       <td>${statusSpan(r.status)}</td>
@@ -3462,7 +3473,7 @@ window.imRenderTable = (section) => {
         <button class="action-btn" style="background:rgba(181,115,58,0.12);color:var(--copper)" onclick="imClearOut('males','${r._id}')">出清</button>
         <button class="action-btn danger" onclick="imConfirmDelete('males','${r._id}','${esc(r.gene)}')">刪除</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
   }
   else if (section === 'females') {
     const q = (document.getElementById('im-q-females')||{}).value?.toLowerCase()||'';
@@ -3477,13 +3488,13 @@ window.imRenderTable = (section) => {
         const od = (OWNER_ORDER_F[a.owner]??9) - (OWNER_ORDER_F[b.owner]??9);
         if (od !== 0) return od;
       }
-      const ay = parseInt((a.birth||a.year||'0').toString().slice(0,4))||0;
-      const by = parseInt((b.birth||b.year||'0').toString().slice(0,4))||0;
+      const ay = parseInt((a.year||a.birth||'0').toString().slice(0,4))||0;
+      const by = parseInt((b.year||b.birth||'0').toString().slice(0,4))||0;
       return ay - by;
     });
     document.getElementById('im-females-sub').textContent = `共 ${rows.length} 筆`;
     document.getElementById('im-table-females').innerHTML = `<thead><tr>
-      <th>基因/品系</th><th>物種</th><th>出生年</th><th>成本</th><th>來源</th><th>優先配對公蛇</th><th>狀態</th><th>操作</th>
+      <th>基因/品系</th><th>物種</th><th>出生年</th><th>進貨日期</th><th>成本</th><th>來源</th><th>優先配對公蛇</th><th>狀態</th><th>操作</th>
     </tr></thead><tbody>${rows.map(r=>`<tr>
       <td style="max-width:260px">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -3492,7 +3503,8 @@ window.imRenderTable = (section) => {
         </div>
       </td>
       <td style="color:var(--muted)">${r.species||''}</td>
-      <td>${(r.birth||r.year||'').toString().slice(0,4)||''}</td>
+      <td>${(r.year||String(r.birth||'').match(/(?:19|20)\d{2}/)?.[0]||'')}</td>
+      <td>${r.arrivalDate ? esc(String(r.arrivalDate).replace(/-/g,'/')) : '—'}</td>
       <td>${fmtMoney(r.cost)}</td>
       <td style="color:var(--muted);font-size:11px">${r.source||''}</td>
       <td style="color:var(--copper);font-size:11px;max-width:180px">${r.pairPri||'—'}</td>
@@ -3502,7 +3514,7 @@ window.imRenderTable = (section) => {
         <button class="action-btn" style="background:rgba(181,115,58,0.12);color:var(--copper)" onclick="imClearOut('females','${r._id}')">出清</button>
         <button class="action-btn danger" onclick="imConfirmDelete('females','${r._id}','${esc(r.gene)}')">刪除</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+    </tr>`).join('')||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
   }
   else if (section === 'sales') {
     const q = (document.getElementById('im-q-sales')||{}).value?.toLowerCase()||'';
@@ -3573,26 +3585,23 @@ window.imRenderTable = (section) => {
     const ow = (document.getElementById('im-f-breeding-owner')||{}).value||'';
     const yr = (document.getElementById('im-f-breeding-year')||{}).value||'';
 
-    // populate year dropdown
-    const years = [...new Set(IM.breeding.map(r => (r.date||'').split('/')[0]).filter(Boolean))].sort().reverse();
+    // 交配統計依繁殖季：每年 10 月 1 日至隔年 9 月 30 日，例如 2025/10～2026/9 = 2025–2026 繁殖季
+    const seasons = [...new Set(IM.breeding.map(r => imBreedSeasonKey(r.date)).filter(Boolean))]
+      .sort((a,b)=>Number(b.slice(0,4))-Number(a.slice(0,4)));
     const yrSel = document.getElementById('im-f-breeding-year');
     if (yrSel) {
       const curYr = yrSel.value;
-      yrSel.innerHTML = '<option value="">全部年份</option>' + years.map(y=>`<option ${y===curYr?'selected':''}>${y}</option>`).join('');
+      yrSel.innerHTML = '<option value="">全部繁殖季</option>' + seasons.map(season=>`<option value="${season}" ${season===curYr?'selected':''}>${season} 繁殖季</option>`).join('');
     }
 
     const rows = IM.breeding.filter(r => {
       const txt = (r.male+r.female+'').toLowerCase();
-      const rowYear = (r.date||'').split('/')[0];
-      return (!q||txt.includes(q)) && (!ow||r.owner===ow) && (!yr||rowYear===yr);
+      const rowSeason = imBreedSeasonKey(r.date);
+      return (!q||txt.includes(q)) && (!ow||r.owner===ow) && (!yr||rowSeason===yr);
     }).sort((a,b) => {
-      // 把 2026/3/18 轉成可比較的數字 20260318
-      const toNum = d => {
-        const p = (d||'').split('/');
-        if (p.length < 3) return 0;
-        return parseInt(p[0])*10000 + parseInt(p[1])*100 + parseInt(p[2]);
-      };
-      return toNum(b.date) - toNum(a.date);
+      const ad = imBreedDateParts(a.date)?.date?.getTime() || 0;
+      const bd = imBreedDateParts(b.date)?.date?.getTime() || 0;
+      return bd-ad;
     });
     document.getElementById('im-breeding-sub').textContent = `共 ${rows.length} 筆`;
     document.getElementById('im-table-breeding').innerHTML = `<thead><tr>
@@ -4235,7 +4244,9 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner" onchange="imGenCode()">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">物種 *</label><select class="form-select" id="im-f-species" onchange="imGenCode()">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
-      <div class="form-group"><label class="form-label">出生/進貨日期 (YYYYMMDD)</label><input class="form-input" id="im-f-birth" placeholder="例：20251109" value="${esc((r.birth||'').toString().replace(/[#\-].*/,''))}" oninput="imGenCode()"></div>
+      <div class="form-group"><label class="form-label">出生年份</label><input class="form-input" id="im-f-year" type="number" min="1900" max="2099" placeholder="例：2022" value="${esc(String(r.year || String(r.birth||'').match(/(?:19|20)\d{2}/)?.[0] || ''))}"></div>
+      <div class="form-group"><label class="form-label">進貨日期</label><input class="form-input" id="im-f-arrivalDate" type="date" value="${esc((r.arrivalDate||'').toString().replace(/\//g,'-'))}" oninput="imGenCode()"></div>
+      <input type="hidden" id="im-f-birth" value="${esc(r.birth||'')}">
       <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}"></div>
       <div class="form-group"><label class="form-label">當天第幾胎 #</label><input class="form-input" id="im-f-litter" type="number" min="0" placeholder="例：1" value="${r.litter??1}" oninput="imGenCode()"></div>
       <div class="form-group"><label class="form-label">胎內序號</label><input class="form-input" id="im-f-seq" type="number" min="1" placeholder="例：1（空白=自動）" value="${r.seq||''}" oninput="imGenCode()"></div>
@@ -4321,7 +4332,9 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner" onchange="imGenCode()">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">物種 *</label><select class="form-select" id="im-f-species" onchange="imGenCode()">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
-      <div class="form-group"><label class="form-label">出生/進貨日期 (YYYYMMDD)</label><input class="form-input" id="im-f-birth" placeholder="例：20251109" value="${esc((r.birth||'').toString().replace(/[#\-].*/,''))}" oninput="imGenCode()"></div>
+      <div class="form-group"><label class="form-label">出生年份</label><input class="form-input" id="im-f-year" type="number" min="1900" max="2099" placeholder="例：2022" value="${esc(String(r.year || String(r.birth||'').match(/(?:19|20)\d{2}/)?.[0] || ''))}"></div>
+      <div class="form-group"><label class="form-label">進貨日期</label><input class="form-input" id="im-f-arrivalDate" type="date" value="${esc((r.arrivalDate||'').toString().replace(/\//g,'-'))}" oninput="imGenCode()"></div>
+      <input type="hidden" id="im-f-birth" value="${esc(r.birth||'')}">
       <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}"></div>
       <div class="form-group"><label class="form-label">當天第幾胎 #</label><input class="form-input" id="im-f-litter" type="number" min="0" placeholder="例：1" value="${r.litter??1}" oninput="imGenCode()"></div>
       <div class="form-group"><label class="form-label">胎內序號</label><input class="form-input" id="im-f-seq" type="number" min="1" placeholder="例：1（空白=自動）" value="${r.seq||''}" oninput="imGenCode()"></div>
@@ -4508,57 +4521,39 @@ window.imOpenForm = async (section, id) => {
     </div>`;
   }
   else if (section === 'breeding') {
-    const owners = ['有剛','宣恩','Neil'];
+    const animalOwners = ['有剛','宣恩','Neil'];
+    const recordOwners = ['有剛','宣恩','Neil','內部合作'];
     // 依所有人分組
     const malesByOwner  = {};
     const femalesByOwner = {};
-    owners.forEach(o => {
+    animalOwners.forEach(o => {
       malesByOwner[o]   = IM.males.filter(m=>m.owner===o).map(m=>m.gene).sort();
       femalesByOwner[o] = IM.females.filter(f=>f.owner===o).map(f=>f.gene).sort();
     });
-    const maleOwner = r.male   ? (IM.males.find(m=>m.gene===r.male)?.owner   || owners[0]) : owners[0];
-    const femOwner  = r.female ? (IM.females.find(f=>f.gene===r.female)?.owner || owners[0]) : owners[0];
+    const maleOwner = r.maleOwner || (r.male ? (IM.males.find(m=>m.gene===r.male)?.owner || animalOwners[0]) : animalOwners[0]);
+    const femOwner  = r.femaleOwner || (r.female ? (IM.females.find(f=>f.gene===r.female)?.owner || animalOwners[0]) : animalOwners[0]);
     html = `<div class="im-modal-title">${isNew?'新增交配紀錄':'編輯交配紀錄'}</div>
+    <div id="im-breed-stats" style="margin:-4px 0 18px;padding:13px 14px;border:1px solid rgba(181,115,58,.20);border-radius:7px;background:rgba(181,115,58,.055);font-size:12px;line-height:1.65;color:var(--brown)"></div>
     <div class="im-form-grid">
       <div class="form-group"><label class="form-label">所有人 *</label>
-        <select class="form-select" id="im-f-owner">${owners.map(x=>`<option ${(r.owner||'宣恩')===x?'selected':''}>${x}</option>`).join('')}</select>
+        <select class="form-select" id="im-f-owner" onchange="imBreedOwnerMode()">${recordOwners.map(x=>`<option ${(r.owner||'宣恩')===x?'selected':''}>${x}</option>`).join('')}</select>
       </div>
-      <div class="form-group"><label class="form-label">日期 * (e.g. 2026/3/18)</label><input class="form-input" id="im-f-date" value="${esc(r.date||'')}"></div>
+      <div class="form-group"><label class="form-label">日期 *</label><input class="form-input" id="im-f-date" type="date" value="${esc(imBreedDateInputValue(r.date||''))}" onchange="imUpdateBreedStats()" oninput="imUpdateBreedStats()"></div>
       <div class="form-group"><label class="form-label">公蛇所有人</label>
-        <select class="form-select" id="im-f-male-owner" onchange="imBreedFilterMales()">${owners.map(x=>`<option ${maleOwner===x?'selected':''}>${x}</option>`).join('')}</select>
+        <select class="form-select" id="im-f-male-owner" onchange="imBreedFilterMales()">${animalOwners.map(x=>`<option ${maleOwner===x?'selected':''}>${x}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label class="form-label">公蛇基因 *</label>
-        <select class="form-select" id="im-f-male">${malesByOwner[maleOwner].map(g=>`<option ${r.male===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
+        <select class="form-select" id="im-f-male" onchange="imUpdateBreedStats()">${(malesByOwner[maleOwner]||[]).map(g=>`<option ${r.male===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label class="form-label">母蛇所有人</label>
-        <select class="form-select" id="im-f-female-owner" onchange="imBreedFilterFemales()">${owners.map(x=>`<option ${femOwner===x?'selected':''}>${x}</option>`).join('')}</select>
+        <select class="form-select" id="im-f-female-owner" onchange="imBreedFilterFemales()">${animalOwners.map(x=>`<option ${femOwner===x?'selected':''}>${x}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label class="form-label">母蛇基因 *</label>
-        <select class="form-select" id="im-f-female">${femalesByOwner[femOwner].map(g=>`<option ${r.female===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
+        <select class="form-select" id="im-f-female" onchange="imUpdateBreedStats()">${(femalesByOwner[femOwner]||[]).map(g=>`<option ${r.female===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
       </div>
       <div class="form-group im-form-full"><label class="form-label">備注</label><input class="form-input" id="im-f-note" value="${esc(r.note||'')}"></div>
-      <div class="form-group"><label class="form-label">是否成功 Lock</label>
-        <select class="form-select" id="im-f-locked">
-          <option value="">未記錄</option>
-          <option value="true" ${r.locked===true?'selected':''}>✅ 是</option>
-          <option value="false" ${r.locked===false?'selected':''}>❌ 否</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">是否成功排卵</label>
-        <select class="form-select" id="im-f-ovulated">
-          <option value="">未記錄</option>
-          <option value="true" ${r.ovulated===true?'selected':''}>✅ 是</option>
-          <option value="false" ${r.ovulated===false?'selected':''}>❌ 否</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">母蛇是否拒絕</label>
-        <select class="form-select" id="im-f-rejected">
-          <option value="">未記錄</option>
-          <option value="true" ${r.rejected===true?'selected':''}>⚠️ 是</option>
-          <option value="false" ${r.rejected===false?'selected':''}>否</option>
-        </select>
-      </div>
     </div>
+    <div style="font-size:10px;color:var(--muted);line-height:1.6;margin-top:2px">交配守則：以每年 10 月～隔年 9 月為一個繁殖季，10 月起重新計算。母蛇每季建議 3 次即可；距上次交配未滿 30 天暫不需追加。公蛇每季最多 30 次。全年皆可新增交配紀錄。每一筆交配紀錄視為一次實際交配。</div>
     <div class="im-form-actions">
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
       <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSave('breeding','${id||''}')">儲存</button>
@@ -4567,6 +4562,7 @@ window.imOpenForm = async (section, id) => {
 
   document.getElementById('im-modal-body').innerHTML = html;
   document.getElementById('im-modal-overlay').classList.add('show');
+  if (section === 'breeding') setTimeout(()=>{ imBreedOwnerMode(true); imUpdateBreedStats(); }, 0);
 
   // 渲染個體照片縮圖（公/母蛇）
   if (section === 'males' || section === 'females') {
@@ -4659,7 +4655,7 @@ window.imSave = async (section, id) => {
     const gene = g('im-f-gene').value.trim();
     if (!gene) { window.showToast('❌ 請填寫基因/品系'); return; }
     data = { owner:g('im-f-owner').value, species:g('im-f-species').value, gene, sex:'M',
-      birth:g('im-f-birth').value, litter:parseInt(g('im-f-litter')?.value)||1, seq:parseInt(g('im-f-seq')?.value)||1,
+      birth:g('im-f-birth').value, year:parseInt(g('im-f-year')?.value)||'', arrivalDate:g('im-f-arrivalDate')?.value||'', litter:parseInt(g('im-f-litter')?.value)||1, seq:parseInt(g('im-f-seq')?.value)||1,
       cost:parseInt(g('im-f-cost').value)||0,
       saleId:g('im-f-saleId').value,
       source:g('im-f-source').value, status:g('im-f-status').value,
@@ -4674,7 +4670,7 @@ window.imSave = async (section, id) => {
     const gene = g('im-f-gene').value.trim();
     if (!gene) { window.showToast('❌ 請填寫基因/品系'); return; }
     data = { owner:g('im-f-owner').value, species:g('im-f-species').value, gene, sex:'F',
-      birth:g('im-f-birth').value, litter:parseInt(g('im-f-litter')?.value)||1, seq:parseInt(g('im-f-seq')?.value)||1,
+      birth:g('im-f-birth').value, year:parseInt(g('im-f-year')?.value)||'', arrivalDate:g('im-f-arrivalDate')?.value||'', litter:parseInt(g('im-f-litter')?.value)||1, seq:parseInt(g('im-f-seq')?.value)||1,
       cost:parseInt(g('im-f-cost').value)||0,
       saleId:g('im-f-saleId').value,
       source:g('im-f-source').value, status:g('im-f-status').value,
@@ -4707,15 +4703,16 @@ window.imSave = async (section, id) => {
   }
   else if (section==='breeding') {
     const male=g('im-f-male').value.trim(), female=g('im-f-female').value.trim(), date=g('im-f-date').value.trim();
+    const maleOwner=g('im-f-male-owner')?.value||'', femaleOwner=g('im-f-female-owner')?.value||'';
     if (!male||!female||!date) { window.showToast('❌ 請填寫日期、公蛇和母蛇'); return; }
-    const lockedVal = g('im-f-locked')?.value;
-    const ovulatedVal = g('im-f-ovulated')?.value;
-    const rejectedVal = g('im-f-rejected')?.value;
+    const season = imBreedSeasonKey(date);
+    const maleCount = imBreedCountFor('male', male, maleOwner, season, id||'');
+    if (!id && maleCount >= 30) {
+      window.showToast('❌ 此公蛇本繁殖季已達 30 次交配上限');
+      return;
+    }
     data = {
-      owner:g('im-f-owner').value, male, female, date, note:g('im-f-note').value,
-      locked: lockedVal===''?null:lockedVal==='true',
-      ovulated: ovulatedVal===''?null:ovulatedVal==='true',
-      rejected: rejectedVal===''?null:rejectedVal==='true',
+      owner:g('im-f-owner').value, maleOwner, femaleOwner, male, female, date, note:g('im-f-note').value,
     };
   }
 
@@ -5819,12 +5816,147 @@ window.imStep = (id, delta, min=0, step=1) => {
   el.value = Number.isInteger(step) ? next : next.toFixed(1);
 };
 
+function imBreedDateParts(raw) {
+  const m = String(raw||'').trim().match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+  if (Number.isNaN(d.getTime())) return null;
+  return {year:Number(m[1]), date:d};
+}
+
+function imBreedDateInputValue(raw) {
+  const p = imBreedDateParts(raw);
+  if (!p) return '';
+  const y = p.date.getFullYear();
+  const m = String(p.date.getMonth()+1).padStart(2,'0');
+  const d = String(p.date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function imBreedLegacyOwner(rec, sex) {
+  const key = sex === 'male' ? 'male' : 'female';
+  const explicit = rec?.[sex+'Owner'];
+  if (explicit) return explicit;
+  const pool = sex === 'male' ? IM.males : IM.females;
+  const matches = pool.filter(x=>x.gene===rec?.[key]);
+  if (matches.length === 1) return matches[0].owner || '';
+  if (rec?.owner && rec.owner !== '內部合作' && matches.some(x=>x.owner===rec.owner)) return rec.owner;
+  return '';
+}
+
+function imBreedSeasonKey(raw) {
+  const p = imBreedDateParts(raw);
+  if (!p) return '';
+  const y = p.date.getFullYear();
+  const m = p.date.getMonth()+1;
+  // 繁殖季固定為每年 10/1 ～隔年 9/30；全年紀錄都會歸入某一繁殖季。
+  return m >= 10 ? `${y}-${y+1}` : `${y-1}-${y}`;
+}
+
+function imBreedCountFor(sex, gene, owner, season, excludeId='') {
+  if (!gene || !season) return 0;
+  const key = sex === 'male' ? 'male' : 'female';
+  return IM.breeding.filter(r=>{
+    if (excludeId && r._id===excludeId) return false;
+    if (imBreedSeasonKey(r.date)!==season || r[key]!==gene) return false;
+    const ro = imBreedLegacyOwner(r, sex);
+    return !owner || !ro || ro===owner;
+  }).length;
+}
+
+function imBreedLastDateForFemale(gene, owner, season, excludeId='') {
+  const dates = IM.breeding.filter(r=>{
+    if (excludeId && r._id===excludeId) return false;
+    if (imBreedSeasonKey(r.date)!==season || r.female!==gene) return false;
+    const ro = imBreedLegacyOwner(r, 'female');
+    return !owner || !ro || ro===owner;
+  }).map(r=>imBreedDateParts(r.date)?.date).filter(Boolean).sort((a,b)=>b-a);
+  return dates[0] || null;
+}
+
+window.imUpdateBreedStats = () => {
+  const box = document.getElementById('im-breed-stats');
+  if (!box) return;
+  const dateRaw = document.getElementById('im-f-date')?.value||'';
+  const p = imBreedDateParts(dateRaw);
+  const male = document.getElementById('im-f-male')?.value||'';
+  const female = document.getElementById('im-f-female')?.value||'';
+  const maleOwner = document.getElementById('im-f-male-owner')?.value||'';
+  const femaleOwner = document.getElementById('im-f-female-owner')?.value||'';
+  if (!p) {
+    box.innerHTML = '<b>交配次數監控</b><div style="color:var(--muted);margin-top:3px">選擇日期後會依每年 10 月～隔年 9 月的繁殖季自動計算；每年 10 月重新開始。</div>';
+    return;
+  }
+  const season = imBreedSeasonKey(dateRaw);
+  const maleCount = imBreedCountFor('male', male, maleOwner, season);
+  const femaleCount = imBreedCountFor('female', female, femaleOwner, season);
+  const last = imBreedLastDateForFemale(female, femaleOwner, season);
+  let days = null;
+  if (last) days = Math.floor((p.date-last)/(1000*60*60*24));
+  const malePct = Math.min(100, Math.round(maleCount/30*100));
+  const femalePct = Math.min(100, Math.round(femaleCount/3*100));
+  let femaleMsg = femaleCount >= 3 ? '<b style="color:#8b0000">已達 3 次，建議本季停止追加</b>' : `<span style="color:#2a6b3a">尚可安排 ${3-femaleCount} 次</span>`;
+  if (days !== null && days >= 0 && days < 30) femaleMsg += ` · <b style="color:#8b5e10">距上次 ${days} 天，未滿 30 天</b>`;
+  else if (days !== null && days >= 30) femaleMsg += ` · 距上次 ${days} 天`;
+  else if (days !== null && days < 0) femaleMsg += ' · <span style="color:#8b5e10">日期早於既有紀錄，請確認日期</span>';
+  const maleMsg = maleCount >= 30 ? '<b style="color:#8b0000">已達 30 次上限，不可再新增</b>' : maleCount >= 25 ? `<b style="color:#8b5e10">接近上限，剩 ${30-maleCount} 次</b>` : `<span style="color:#2a6b3a">剩 ${30-maleCount} 次</span>`;
+  box.innerHTML = `<b>交配次數監控｜${season} 繁殖季</b>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+      <div style="background:white;border:1px solid rgba(74,127,181,.18);border-radius:6px;padding:10px">
+        <div style="font-size:10px;color:var(--muted)">公蛇｜${esc(male||'尚未選擇')}</div>
+        <div style="font-size:20px;font-weight:700;color:#4a7fb5;margin:2px 0">${maleCount} / 30</div>
+        <div style="height:5px;background:#eee;border-radius:3px;overflow:hidden;margin:5px 0 6px"><div style="height:100%;width:${malePct}%;background:#4a7fb5"></div></div>
+        <div style="font-size:11px">${maleMsg}</div>
+      </div>
+      <div style="background:white;border:1px solid rgba(181,74,127,.18);border-radius:6px;padding:10px">
+        <div style="font-size:10px;color:var(--muted)">母蛇｜${esc(female||'尚未選擇')}</div>
+        <div style="font-size:20px;font-weight:700;color:#b54a7f;margin:2px 0">${femaleCount} / 3</div>
+        <div style="height:5px;background:#eee;border-radius:3px;overflow:hidden;margin:5px 0 6px"><div style="height:100%;width:${femalePct}%;background:#b54a7f"></div></div>
+        <div style="font-size:11px">${femaleMsg}</div>
+      </div>
+    </div>`;
+};
+
+window.imBreedOwnerMode = (initial=false) => {
+  const recordOwner = document.getElementById('im-f-owner')?.value || '';
+  const maleOwnerSel = document.getElementById('im-f-male-owner');
+  const femaleOwnerSel = document.getElementById('im-f-female-owner');
+  if (!maleOwnerSel || !femaleOwnerSel) return;
+
+  const internal = recordOwner === '內部合作';
+  maleOwnerSel.disabled = !internal;
+  femaleOwnerSel.disabled = !internal;
+  maleOwnerSel.style.background = internal ? 'white' : 'var(--silver)';
+  femaleOwnerSel.style.background = internal ? 'white' : 'var(--silver)';
+  maleOwnerSel.title = internal ? '內部合作：可選擇公蛇所有人' : '一般交配會自動跟隨「所有人」';
+  femaleOwnerSel.title = internal ? '內部合作：可選擇母蛇所有人' : '一般交配會自動跟隨「所有人」';
+
+  if (!internal) {
+    const changedMale = maleOwnerSel.value !== recordOwner;
+    const changedFemale = femaleOwnerSel.value !== recordOwner;
+    maleOwnerSel.value = recordOwner;
+    femaleOwnerSel.value = recordOwner;
+    if (changedMale || !initial) imBreedFilterMales();
+    if (changedFemale || !initial) imBreedFilterFemales();
+  } else {
+    // 編輯舊紀錄時保留原本雙方所有人；新紀錄則沿用目前選項。
+    if (!maleOwnerSel.value) maleOwnerSel.value = '宣恩';
+    if (!femaleOwnerSel.value) femaleOwnerSel.value = '宣恩';
+    if (!initial) {
+      imBreedFilterMales();
+      imBreedFilterFemales();
+    }
+  }
+  imUpdateBreedStats();
+};
+
 window.imBreedFilterMales = () => {
   const owner = document.getElementById('im-f-male-owner')?.value;
   const sel = document.getElementById('im-f-male');
   if (!sel || !owner) return;
   const genes = IM.males.filter(m=>m.owner===owner).map(m=>m.gene).sort();
   sel.innerHTML = genes.map(g=>`<option>${g}</option>`).join('');
+  imUpdateBreedStats();
 };
 window.imBreedFilterFemales = () => {
   const owner = document.getElementById('im-f-female-owner')?.value;
@@ -5832,6 +5964,7 @@ window.imBreedFilterFemales = () => {
   if (!sel || !owner) return;
   const genes = IM.females.filter(f=>f.owner===owner).map(f=>f.gene).sort();
   sel.innerHTML = genes.map(g=>`<option>${g}</option>`).join('');
+  imUpdateBreedStats();
 };
 
 // 產品編號輔助產生器
@@ -5840,7 +5973,10 @@ window.imGenCode = (apply=false) => {
   const SPECIES_CODE = {'球蟒':'PR','紅尾蚺':'BC','玉米蛇':'PG','王蛇':'KS','豹紋守宮':'EM'};
   const owner = (document.getElementById('im-f-owner')||{}).value||'';
   const species = (document.getElementById('im-f-species')||{}).value||'';
-  const birth = (document.getElementById('im-f-birth')||{}).value.trim()||'';
+  const arrivalDate = (document.getElementById('im-f-arrivalDate')||{}).value?.trim()||'';
+  const legacyBirth = (document.getElementById('im-f-birth')||{}).value?.trim()||'';
+  const birthYear = (document.getElementById('im-f-year')||{}).value?.trim()||'';
+  const birth = arrivalDate || legacyBirth || birthYear;
   const litterRaw = (document.getElementById('im-f-litter')||{}).value||'';
   const seqInput = (document.getElementById('im-f-seq')||{}).value.trim();
   const ownerCode = OWNER_CODE[owner]||'?';
@@ -6217,155 +6353,243 @@ window.imSaveCostParams = async () => {
 };
 
 // ── FEMALE KPI PAGE ───────────────────────────────
+const BALL_PYTHON_AVG_EGGS = 6;
+
+function imKpiSpeciesType(f) {
+  const s = String(f?.species || '').toLowerCase().trim();
+  if (s === '球蟒' || s === 'ball_python' || s.includes('ball python')) return 'ball_python';
+  if (s === '豹紋守宮' || s === 'leopard_gecko' || s.includes('leopard')) return 'leopard_gecko';
+  return 'other';
+}
+
+function imKpiNormalizeDate(v) {
+  const raw = String(v || '').trim();
+  if (!raw) return '';
+  const m = raw.match(/((?:19|20)\d{2})[\/-](\d{1,2})[\/-](\d{1,2})/);
+  if (!m) return '';
+  return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+}
+
+function imKpiYearOf(date) {
+  return imKpiNormalizeDate(date).slice(0,4);
+}
+
+function imKpiRecords(f) {
+  if (Array.isArray(f?.eggRecords)) {
+    return f.eggRecords.map((r,i)=>({
+      id: String(r.id || `egg_${i}`),
+      date: imKpiNormalizeDate(r.date),
+      totalEggs: Math.max(0, Number(r.totalEggs || 0) || 0),
+      badEggs: Math.max(0, Number(r.badEggs ?? r.deadFetus ?? r.slugs ?? 0) || 0)
+    })).filter(r=>r.date || r.totalEggs || r.badEggs);
+  }
+  return [];
+}
+
+function imKpiSummary(records) {
+  const totalEggs = records.reduce((a,r)=>a+r.totalEggs,0);
+  const badEggs = records.reduce((a,r)=>a+Math.min(r.badEggs,r.totalEggs),0);
+  const goodEggs = Math.max(0,totalEggs-badEggs);
+  const quality = totalEggs > 0 ? (goodEggs/totalEggs)*100 : 0;
+  return {totalEggs,badEggs,goodEggs,quality,clutches:records.length};
+}
+
+function imBallPythonKpi(summary) {
+  if (!summary.totalEggs) return {score:null, grade:'—', quantityScore:0};
+  // 100 代表達到球蟒平均產蛋基準，不是滿分。
+  // 低於平均：按比例計分；高於平均：仍可持續加分，但超額部分採 50% 斜率，避免分數失真暴衝。
+  const ratio = summary.totalEggs / BALL_PYTHON_AVG_EGGS;
+  const quantityScore = ratio <= 1
+    ? ratio * 100
+    : 100 + (ratio - 1) * 50;
+  const score = Math.round(quantityScore * 0.60 + summary.quality * 0.40);
+  const grade = score >= 120 ? 'S+' : score >= 100 ? 'S' : score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D';
+  return {score,grade,quantityScore};
+}
+
 window.imRenderKPI = async () => {
   await imLoadAll();
   const ownerF = document.getElementById('kpi-f-owner')?.value||'';
   const yearF = document.getElementById('kpi-f-year')?.value||'';
 
-  // populate year dropdown from hatch records (via sales saleId year or breeding date)
-  const years = [...new Set([
-    ...IM.sales.map(r=>(r.birth||'').split('/')[0]),
-    ...IM.breeding.map(r=>(r.date||'').split('/')[0])
-  ].filter(y=>y&&y.length===4))].sort().reverse();
+  const years = [...new Set(IM.females.flatMap(f=>imKpiRecords(f).map(r=>imKpiYearOf(r.date))).filter(Boolean))].sort().reverse();
   const yrSel = document.getElementById('kpi-f-year');
   if (yrSel) {
     const cur = yrSel.value;
-    yrSel.innerHTML = '<option value="">全部年份</option>'+years.map(y=>`<option ${y===cur?'selected':''}>${y}</option>`).join('');
+    yrSel.innerHTML = '<option value="">全部年份</option>'+years.map(y=>`<option value="${y}" ${y===cur?'selected':''}>${y}</option>`).join('');
+    if (cur && !years.includes(cur)) yrSel.value = '';
   }
 
-  const females = IM.females.filter(r => (!ownerF||r.owner===ownerF));
+  const females = IM.females.filter(r => (!ownerF||r.owner===ownerF)).sort((a,b) => {
+    const aAll = imKpiRecords(a);
+    const bAll = imKpiRecords(b);
+    const aRecords = yearF ? aAll.filter(r=>imKpiYearOf(r.date)===yearF) : aAll;
+    const bRecords = yearF ? bAll.filter(r=>imKpiYearOf(r.date)===yearF) : bAll;
+    const aLegacy = !aAll.length && ((Math.max(0, Number(a.totalEggs||0)||0) > 0) || (Math.max(0, Number(a.deadFetus ?? a.slugs ?? 0)||0) > 0));
+    const bLegacy = !bAll.length && ((Math.max(0, Number(b.totalEggs||0)||0) > 0) || (Math.max(0, Number(b.deadFetus ?? b.slugs ?? 0)||0) > 0));
+    const aHasData = aRecords.length > 0 || (!yearF && aLegacy);
+    const bHasData = bRecords.length > 0 || (!yearF && bLegacy);
+    if (aHasData !== bHasData) return aHasData ? -1 : 1;
+
+    // 同一資料狀態下依年齡由大到小：優先從 birth 萃取年份，沒有才讀 year。
+    const ageYear = (row) => {
+      const raw = String(row?.year || row?.birth || '').trim();
+      const m = raw.match(/(?:19|20)\d{2}/);
+      return m ? Number(m[0]) : null;
+    };
+    const ay = ageYear(a);
+    const by = ageYear(b);
+    const aHasYear = ay !== null;
+    const bHasYear = by !== null;
+    if (aHasYear !== bHasYear) return aHasYear ? -1 : 1;
+    if (aHasYear && bHasYear && ay !== by) return ay - by; // 出生年份越早＝年紀越大＝排前面
+    return String(a.gene||'').localeCompare(String(b.gene||''), 'en', {sensitivity:'base'});
+  });
   if (!females.length) {
     document.getElementById('im-kpi-panels').innerHTML = '<div style="padding:24px;color:var(--muted)">沒有母蛇資料</div>';
     return;
   }
 
-  await imLoadCostParams();
-  const kpiYear = yearF || new Date().getFullYear();
-
-  let html = '';
+  let html = '<div style="display:flex;flex-direction:column;gap:10px;align-items:stretch">';
   females.forEach(f => {
-    // KPI 1: 成蛋良率 — from hatch records stored in sales (match by damB)
-    const offspring = IM.sales.filter(r => {
-      const yr = (r.birth||'').split('/')[0];
-      return r.damB === f.gene && (!yearF || yr === yearF);
-    });
-    const deadFetus = Number(f.deadFetus ?? f.slugs ?? 0) || 0;
-    const totalEggs = offspring.length + deadFetus;
-    const goodEggs = Math.max(0, totalEggs - deadFetus);
-    const eggRatio = totalEggs > 0 ? Math.round(goodEggs/totalEggs*100) : null;
+    const type = imKpiSpeciesType(f);
+    const allRecords = imKpiRecords(f);
+    const records = yearF ? allRecords.filter(r=>imKpiYearOf(r.date)===yearF) : allRecords;
+    const sum = imKpiSummary(records);
+    const ball = type === 'ball_python' ? imBallPythonKpi(sum) : null;
+    const legacyTotal = Math.max(0, Number(f.totalEggs||0)||0);
+    const legacyBad = Math.max(0, Number(f.deadFetus ?? f.slugs ?? 0)||0);
+    const hasLegacy = !allRecords.length && (legacyTotal>0 || legacyBad>0);
+    const dateText = records.length ? records.map(r=>r.date.replace(/-/g,'/')).join('、') : (hasLegacy ? '舊資料待補產蛋日期' : '尚無產蛋紀錄');
 
-    // KPI 2: ROI — 子代總市值 / 年度飼養成本（從成本參數自動算）
-    const offspringValue = offspring.reduce((s,r)=>s+(r.price||0), 0);
-    const costData = calcOwnerAnnualCost(f.owner, kpiYear);
-    const annualCost = costData.annualCost || f.annualCost || 0;
-    const roi = annualCost > 0 ? Math.round(offspringValue/annualCost*100) : null;
+    let kpiBlock = '';
+    if (type === 'ball_python') {
+      kpiBlock = `<div style="min-width:95px;text-align:right">
+        <div style="font-size:10px;color:var(--muted)">KPI（100 = 標準）</div>
+        <div style="font-size:25px;font-weight:800;color:${ball?.score>=120?'#126b38':ball?.score>=100?'#2a6b3a':ball?.score>=85?'var(--copper)':'var(--brown)'}">${ball?.score ?? '—'} <span style="font-size:13px">${ball?.grade||'—'}</span></div>
+        <div style="font-size:10px;color:var(--muted)">球蟒平均基準 ${BALL_PYTHON_AVG_EGGS} 顆</div>
+      </div>`;
+    } else if (type === 'leopard_gecko') {
+      kpiBlock = `<div style="min-width:95px;text-align:right"><div style="font-size:10px;color:var(--muted)">本期產蛋次數</div><div style="font-size:25px;font-weight:800">${sum.clutches}</div></div>`;
+    }
 
-    // KPI 3: 交配效率 — from breeding records matching this female
-    const breedRecs = IM.breeding.filter(r => {
-      const yr = (r.date||'').split('/')[0];
-      return r.female === f.gene && (!yearF || yr === yearF);
-    });
-    const totalLocks = breedRecs.length;
-    const successLocks = breedRecs.filter(r=>r.locked===true).length;
-    const rejects = breedRecs.filter(r=>r.rejected===true).length;
-    const lockEff = totalLocks > 0 ? Math.round(successLocks/totalLocks*100) : null;
-
-    // Grade helpers
-    const eggGrade = eggRatio===null ? '—' : eggRatio>80 ? '🟢 優秀' : eggRatio>=50 ? '🟡 觀察區' : '🔴 汰除紅線';
-    const eggColor = eggRatio===null ? 'var(--muted)' : eggRatio<50 ? '#8b0000' : eggRatio>=80 ? '#2a6b3a' : '#8b5e10';
-    const roiGrade = roi===null ? '—' : roi>=300 ? '🟢 超優' : roi>=100 ? '🟢 正報酬' : roi>0 ? '🟡 微利' : '🔴 虧損';
-    const roiColor = roi===null ? 'var(--muted)' : roi>=100 ? '#2a6b3a' : roi>0 ? '#8b5e10' : '#8b0000';
-    const lockGrade = lockEff===null ? '—' : lockEff>=70 ? '🟢 高效' : lockEff>=40 ? '🟡 普通' : '🔴 低效';
-    const lockColor = lockEff===null ? 'var(--muted)' : lockEff>=70 ? '#2a6b3a' : lockEff>=40 ? '#8b5e10' : '#8b0000';
-
-    html += `<div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;padding:18px;margin-bottom:14px">
-      <!-- 頂部：母蛇資訊 + 按鈕 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <div>
-          <div style="font-size:14px;font-weight:700;color:var(--brown)">${f.gene}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px">${ownerSpan(f.owner)} · ${f.species} · ${f.year||''}年</div>
+    html += `<div style="background:white;border:1px solid rgba(181,115,58,.14);border-radius:8px;padding:14px 16px;box-shadow:0 1px 5px rgba(59,26,16,.03)">
+      <div style="display:grid;grid-template-columns:minmax(220px,1.5fr) repeat(4,minmax(90px,.55fr)) minmax(115px,.65fr);gap:16px;align-items:center">
+        <div style="min-width:0">
+          <div style="font-size:14px;font-weight:700;color:var(--brown);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.gene||'')}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">${ownerSpan(f.owner)} · ${f.species||''}${f.year?' · '+f.year+'年':''}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:5px">產蛋日期：${dateText}</div>
         </div>
-        <button class="action-btn" style="font-size:11px" onclick="imOpenKPIEdit('${f._id}')">填寫成本/蛋況</button>
+        <div><div style="font-size:10px;color:var(--muted)">總蛋數</div><div style="font-size:23px;font-weight:700">${sum.totalEggs}</div></div>
+        <div><div style="font-size:10px;color:var(--muted)">有效蛋</div><div style="font-size:23px;font-weight:700;color:#2a6b3a">${sum.goodEggs}</div></div>
+        <div><div style="font-size:10px;color:var(--muted)">廢蛋</div><div style="font-size:23px;font-weight:700;color:${sum.badEggs?'#8b0000':'var(--brown)'}">${sum.badEggs}</div></div>
+        <div><div style="font-size:10px;color:var(--muted)">有效率</div><div style="font-size:19px;font-weight:700">${sum.totalEggs?sum.quality.toFixed(1)+'%':'—'}</div></div>
+        ${kpiBlock || '<div></div>'}
       </div>
-      <!-- 三個 KPI 橫排 grid -->
-      <div class="kpi-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        <!-- KPI 1 -->
-        <div style="display:flex;flex-direction:column;background:var(--cream);border-radius:6px;padding:12px 16px;gap:8px">
-          <div>
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">KPI 1 孵化成功率</div>
-            <div style="font-size:26px;font-weight:700;color:${eggColor};line-height:1.2;margin-top:2px">${eggRatio!==null?eggRatio+'%':'—'}</div>
-          </div>
-          <div style="border-top:1px solid rgba(181,115,58,0.15);padding-top:8px">
-            <div style="font-size:12px;margin-bottom:4px">${eggGrade}</div>
-            <div style="font-size:11px;color:var(--muted)">存活 ${goodEggs||0} / 總蛋 ${totalEggs||0}，死胎 ${deadFetus}</div>
-          </div>
-        </div>
-        <!-- KPI 2 -->
-        <div style="display:flex;flex-direction:column;background:var(--cream);border-radius:6px;padding:12px 16px;gap:8px">
-          <div>
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">KPI 2 坪效 ROI</div>
-            <div style="font-size:26px;font-weight:700;color:${roiColor};line-height:1.2;margin-top:2px">${roi!==null?roi+'%':'—'}</div>
-          </div>
-          <div style="border-top:1px solid rgba(181,115,58,0.15);padding-top:8px">
-            <div style="font-size:12px;margin-bottom:4px">${roiGrade}</div>
-            <div style="font-size:11px;color:var(--muted)">子代市值 ${fmtMoney(offspringValue)} / 年成本 ${annualCost?fmtMoney(annualCost)+'（電費+食物）':'未設定'}</div>
-          </div>
-        </div>
-        <!-- KPI 3 -->
-        <div style="display:flex;flex-direction:column;background:var(--cream);border-radius:6px;padding:12px 16px;gap:8px">
-          <div>
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">KPI 3 交配效率</div>
-            <div style="font-size:26px;font-weight:700;color:${lockColor};line-height:1.2;margin-top:2px">${lockEff!==null?lockEff+'%':'—'}</div>
-          </div>
-          <div style="border-top:1px solid rgba(181,115,58,0.15);padding-top:8px">
-            <div style="font-size:12px;margin-bottom:4px">${lockGrade}</div>
-            <div style="font-size:11px;color:var(--muted)">成功 ${successLocks}/${totalLocks} 次，拒絕 ${rejects} 次</div>
-          </div>
-        </div>
-      </div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end"><button class="action-btn" style="max-width:150px;padding:7px 12px" onclick="imOpenKPIEdit(\'${f._id}\')">產蛋紀錄</button></div>
     </div>`;
   });
-  document.getElementById('im-kpi-panels').innerHTML = html || '<div style="padding:24px;color:var(--muted)">沒有資料</div>';
+  html += '</div>';
+  document.getElementById('im-kpi-panels').innerHTML = html;
 };
 
-// KPI 補充資料 modal（年度成本、蛋況）
 window.imOpenKPIEdit = (femaleId) => {
   const f = IM.females.find(x=>x._id===femaleId);
   if (!f) return;
+  const type = imKpiSpeciesType(f);
+  const records = imKpiRecords(f).sort((a,b)=>b.date.localeCompare(a.date));
+  const legacyTotal = Math.max(0, Number(f.totalEggs||0)||0);
+  const legacyBad = Math.max(0, Number(f.deadFetus ?? f.slugs ?? 0)||0);
+  const rows = records.length ? records.map(r=>`<div style="display:grid;grid-template-columns:1fr 90px 90px auto;gap:8px;align-items:end;margin-bottom:8px" data-kpi-row data-id="${r.id}">
+      <div><label class="form-label">產蛋日期</label><input class="form-input kpi-rec-date" type="date" value="${r.date}"></div>
+      <div><label class="form-label">總蛋數</label><input class="form-input kpi-rec-total" type="number" min="0" value="${r.totalEggs}"></div>
+      <div><label class="form-label">廢蛋數</label><input class="form-input kpi-rec-bad" type="number" min="0" value="${r.badEggs}"></div>
+      <button class="action-btn danger" style="height:38px" onclick="this.closest('[data-kpi-row]').remove()">刪除</button>
+    </div>`).join('') : '';
+
+  const legacyNote = (!records.length && (legacyTotal||legacyBad)) ? `<div class="im-alert" style="margin-bottom:12px">⚠️ 這隻有舊 KPI 數字：總蛋 ${legacyTotal}、廢蛋 ${legacyBad}。請補上產蛋日期後儲存，系統會轉成正式年度紀錄。</div>` : '';
+  const defaultTotal = (!records.length ? legacyTotal : 0);
+  const defaultBad = (!records.length ? legacyBad : 0);
+
   document.getElementById('im-modal-body').innerHTML = `
-    <div class="im-modal-title">補充 KPI 資料 — ${f.gene.substring(0,30)}</div>
-    <div class="im-form-grid">
-      <div class="form-group im-form-full">
-        <label class="form-label">年度飼養成本 NT$ <span style="font-size:10px;color:var(--muted)">（鼠+墊材+電費，約 NT$8,000-15,000）</span></label>
-        <input class="form-input" id="kpi-annual-cost" type="number" value="${f.annualCost||''}" placeholder="例：10000">
+    <div class="im-modal-title">產蛋紀錄 — ${esc((f.gene||'').substring(0,38))}</div>
+    <div style="font-size:11px;color:var(--muted);margin:-10px 0 14px">${type==='ball_python'?'球蟒：同一年度最多一筆產蛋紀錄。':'豹紋守宮：同一年可記錄多次產蛋。'}</div>
+    ${legacyNote}
+    <div id="kpi-record-list">${rows}</div>
+    <div style="border-top:1px solid rgba(181,115,58,.12);padding-top:14px;margin-top:10px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:9px">新增產蛋紀錄</div>
+      <div style="display:grid;grid-template-columns:1fr 100px 100px;gap:8px">
+        <div><label class="form-label">產蛋日期</label><input class="form-input" id="kpi-new-date" type="date"></div>
+        <div><label class="form-label">總蛋數</label><input class="form-input" id="kpi-new-total" type="number" min="0" value="${defaultTotal}"></div>
+        <div><label class="form-label">廢蛋數</label><input class="form-input" id="kpi-new-bad" type="number" min="0" value="${defaultBad}"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">今年死胎數</label>
-        <input class="form-input" id="kpi-dead-fetus" type="number" min="0" value="${f.deadFetus ?? f.slugs ?? 0}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">今年總蛋數（含死胎）</label>
-        <input class="form-input" id="kpi-total-eggs" type="number" min="0" value="${f.totalEggs||0}">
-      </div>
+      <button class="action-btn" style="margin-top:9px;width:100%" onclick="imKPIAddRecord('${femaleId}')">＋ 加入這次產蛋</button>
     </div>
     <div class="im-form-actions">
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
-      <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSaveKPIData('${femaleId}')">儲存</button>
+      <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSaveKPIData('${femaleId}')">儲存全部紀錄</button>
     </div>`;
   document.getElementById('im-modal-overlay').classList.add('show');
 };
 
+window.imKPIAddRecord = (femaleId) => {
+  const f = IM.females.find(x=>x._id===femaleId);
+  if (!f) return;
+  const date = imKpiNormalizeDate(document.getElementById('kpi-new-date')?.value);
+  const total = Math.max(0, parseInt(document.getElementById('kpi-new-total')?.value)||0);
+  const bad = Math.max(0, parseInt(document.getElementById('kpi-new-bad')?.value)||0);
+  if (!date) { window.showToast('❌ 請選擇產蛋日期'); return; }
+  if (bad > total) { window.showToast('❌ 廢蛋數不能大於總蛋數'); return; }
+  const existingRows = [...document.querySelectorAll('#kpi-record-list [data-kpi-row]')];
+  if (imKpiSpeciesType(f)==='ball_python') {
+    const y = date.slice(0,4);
+    if (existingRows.some(row=>String(row.querySelector('.kpi-rec-date')?.value||'').slice(0,4)===y)) {
+      window.showToast(`❌ 球蟒 ${y} 年已經有產蛋紀錄，請直接修改原紀錄`); return;
+    }
+  }
+  const id = `egg_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+  document.getElementById('kpi-record-list').insertAdjacentHTML('beforeend', `<div style="display:grid;grid-template-columns:1fr 90px 90px auto;gap:8px;align-items:end;margin-bottom:8px" data-kpi-row data-id="${id}">
+    <div><label class="form-label">產蛋日期</label><input class="form-input kpi-rec-date" type="date" value="${date}"></div>
+    <div><label class="form-label">總蛋數</label><input class="form-input kpi-rec-total" type="number" min="0" value="${total}"></div>
+    <div><label class="form-label">廢蛋數</label><input class="form-input kpi-rec-bad" type="number" min="0" value="${bad}"></div>
+    <button class="action-btn danger" style="height:38px" onclick="this.closest('[data-kpi-row]').remove()">刪除</button>
+  </div>`);
+  document.getElementById('kpi-new-date').value='';
+  document.getElementById('kpi-new-total').value='0';
+  document.getElementById('kpi-new-bad').value='0';
+};
+
 window.imSaveKPIData = async (femaleId) => {
+  const f = IM.females.find(x=>x._id===femaleId);
+  if (!f) return;
+  const rows = [...document.querySelectorAll('#kpi-record-list [data-kpi-row]')];
+  const eggRecords = [];
+  const seenYears = new Set();
+  for (const row of rows) {
+    const date = imKpiNormalizeDate(row.querySelector('.kpi-rec-date')?.value);
+    const totalEggs = Math.max(0, parseInt(row.querySelector('.kpi-rec-total')?.value)||0);
+    const badEggs = Math.max(0, parseInt(row.querySelector('.kpi-rec-bad')?.value)||0);
+    if (!date) { window.showToast('❌ 每筆產蛋紀錄都必須有日期'); return; }
+    if (badEggs > totalEggs) { window.showToast('❌ 廢蛋數不能大於總蛋數'); return; }
+    if (imKpiSpeciesType(f)==='ball_python') {
+      const y = date.slice(0,4);
+      if (seenYears.has(y)) { window.showToast(`❌ 球蟒 ${y} 年只能有一筆產蛋紀錄`); return; }
+      seenYears.add(y);
+    }
+    eggRecords.push({ id: row.dataset.id || `egg_${Date.now()}`, date, totalEggs, badEggs });
+  }
+  eggRecords.sort((a,b)=>a.date.localeCompare(b.date));
+  const latest = eggRecords[eggRecords.length-1];
   const data = {
-    annualCost: parseInt(document.getElementById('kpi-annual-cost').value)||0,
-    deadFetus: parseInt(document.getElementById('kpi-dead-fetus').value)||0,
-    totalEggs: parseInt(document.getElementById('kpi-total-eggs').value)||0,
+    eggRecords,
+    totalEggs: latest?.totalEggs || 0,
+    deadFetus: latest?.badEggs || 0,
   };
   try {
     await updateDoc(doc(db2, COL.females, femaleId), data);
     const idx = IM.females.findIndex(x=>x._id===femaleId);
     if (idx>-1) IM.females[idx] = {...IM.females[idx], ...data};
-    window.showToast('✅ 儲存成功！');
+    window.showToast('✅ 產蛋紀錄與 KPI 已更新！');
     imCloseModal();
     imRenderKPI();
   } catch(e) { window.showToast('❌ 儲存失敗：'+e.message); }
@@ -6500,10 +6724,16 @@ document.addEventListener('click', (e) => {
   });
 };
 
+window.hatchSyncArrivalDate = () => {
+  const birthEl = document.getElementById('hatch-date');
+  const arrivalEl = document.getElementById('hatch-arrival-date');
+  if (birthEl && arrivalEl && birthEl.value && !arrivalEl.value) arrivalEl.value = birthEl.value;
+};
+
 function hatchGetCode() {
   const owner = document.getElementById('hatch-owner')?.value||'G';
   const species = document.getElementById('hatch-species')?.value||'PR';
-  const dateVal = document.getElementById('hatch-date')?.value||'';
+  const dateVal = document.getElementById('hatch-arrival-date')?.value || document.getElementById('hatch-date')?.value || '';
   const litter = document.getElementById('hatch-litter')?.value||'1';
   if (!dateVal) return null;
   const d = new Date(dateVal);
@@ -6519,7 +6749,7 @@ window.hatchUpdateCode = () => {
   const liveCount = hatchGetLiveCount();
   const el = document.getElementById('hatch-code-preview');
   if (el) {
-    if (!code) el.textContent = '請填寫日期';
+    if (!code) el.textContent = '請填寫進貨日期';
     else if (liveCount <= 0) el.textContent = '無存活個體，不產生編碼';
     else if (liveCount === 1) el.textContent = `${code}-01`;
     else el.textContent = `${code}-01 ~ -${String(liveCount).padStart(2,'0')}`;
@@ -6535,7 +6765,7 @@ window.hatchGenRows = () => {
   const code = hatchGetCode();
   const container = document.getElementById('hatch-rows');
   if (!container) return;
-  if (!code) { container.innerHTML = '<div style="color:var(--muted);font-size:12px">請先填寫日期和胎次</div>'; return; }
+  if (!code) { container.innerHTML = '<div style="color:var(--muted);font-size:12px">請先填寫進貨日期和胎次</div>'; return; }
   if (count <= 0) {
     container.innerHTML = `<div style="background:rgba(139,0,0,.05);border:1px solid rgba(139,0,0,.15);border-radius:6px;padding:12px 14px;color:#8b0000;font-size:12px">總蛋 ${total} 顆，死胎 ${dead} 顆，沒有需要建立的小蛇資料。</div>`;
     return;
@@ -6578,6 +6808,7 @@ window.hatchSave = async (target) => {
   const speciesCode = document.getElementById('hatch-species').value;
   const speciesName = SPECIES_MAP_HATCH[speciesCode];
   const dateVal = document.getElementById('hatch-date').value;
+  const arrivalDate = document.getElementById('hatch-arrival-date')?.value || dateVal;
   const sireSel = document.getElementById('hatch-sire');
   const damSel = document.getElementById('hatch-dam');
   const sireOpt = sireSel?.options?.[sireSel.selectedIndex];
@@ -6608,7 +6839,7 @@ window.hatchSave = async (target) => {
         const price = 0;
         const data = {
           owner: ownerName, saleId, species: speciesName,
-          gene: gene||'(待確認)', sex, birth: dateVal,
+          gene: gene||'(待確認)', sex, birth: dateVal, arrivalDate,
           sireA: sire, damB: dam, sireId, damId, sireOwner, damOwner, sireSpecies, damSpecies, cost: 0, price, fund: 0,
           source: '品牌自繁', status: '待售',
           channel: '', buyer: '', ship: '', delivery: '',
@@ -6620,7 +6851,7 @@ window.hatchSave = async (target) => {
         const col = sex === 'F' ? COL.females : COL.males;
         const data = {
           owner: ownerName, gene: gene||'(待確認)', species: speciesName,
-          sex: sex||'M', year: new Date(dateVal).getFullYear(),
+          sex: sex||'M', year: new Date(dateVal).getFullYear(), birth: dateVal, arrivalDate,
           cost: 0, source: '品牌自繁', status: '安全穩定',
           sireA: sire, damB: dam, sireId, damId, sireOwner, damOwner, sireSpecies, damSpecies, selfBreedId: saleId, note,
           createdAt: serverTimestamp(),
@@ -6658,7 +6889,9 @@ window.showPage = (page, btn) => {
       // Set today's date as default
       const today = new Date().toISOString().split('T')[0];
       const dateEl = document.getElementById('hatch-date');
+      const arrivalEl = document.getElementById('hatch-arrival-date');
       if (dateEl && !dateEl.value) dateEl.value = today;
+      if (arrivalEl && !arrivalEl.value) arrivalEl.value = dateEl?.value || today;
       try {
         await imLoadAll();
         hatchRefreshParentOptions();
