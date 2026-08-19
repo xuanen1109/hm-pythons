@@ -144,7 +144,7 @@ async function fetchSnakeDocuments() {
   do {
     const url = new URL(`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${COLLECTION}`);
     url.searchParams.set('key', FIREBASE_API_KEY);
-    url.searchParams.set('pageSize', '300');
+    url.searchParams.set('pageSize', '100');
     if (pageToken) url.searchParams.set('pageToken', pageToken);
 
     const response = await fetch(url, {
@@ -218,7 +218,7 @@ exports.handler = async (event) => {
     return jsonResponse(200, items, origin);
   } catch (error) {
     console.error('[sota-feed]', error);
-    return jsonResponse(502, { error: 'Feed temporarily unavailable' }, origin, {
+    return jsonResponse(502, { error: 'Feed temporarily unavailable', detail: String(error && error.message ? error.message : error) }, origin, {
       'Cache-Control': 'no-store'
     });
   }
