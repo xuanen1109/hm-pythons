@@ -556,6 +556,9 @@ textarea.hatch-gene-input {
         <button class="sidebar-btn" onclick="showPage('im-sales', this); imLoadAndRender('sales')">
           <span class="sidebar-icon">💰</span> 銷售記錄
         </button>
+        <button class="sidebar-btn" onclick="showPage('im-fund', this); imLoadFundPage()">
+          <span class="sidebar-icon">🏦</span> 公基金
+        </button>
         <button class="sidebar-btn" onclick="showPage('im-breeding', this); imLoadAndRender('breeding')">
           <span class="sidebar-icon">🐍</span> 交配紀錄
         </button>
@@ -602,6 +605,7 @@ textarea.hatch-gene-input {
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="startBreedingGroupSelection()">🧬 新增繁殖組</button>
+            <button id="label-print-btn" class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="printSelectedLabels()">🏷️ 列印貼紙 <span id="label-print-count">0</span></button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleText()">📋 匯出待售文字</button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleTextNoPrice()">📋 匯出無售價</button>
           </div>
@@ -900,6 +904,7 @@ textarea.hatch-gene-input {
         </div>
         <div class="page-sub" id="im-sales-sub"></div>
         <div id="im-sales-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+        <div id="im-sales-fund-summary" style="margin-bottom:16px"></div>
         <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
           <input class="form-input" style="width:200px;padding:7px 10px" placeholder="搜尋編號、基因、買家…" id="im-q-sales" oninput="imRenderTable('sales')">
           <select class="form-select" style="width:160px;padding:7px 10px" id="im-f-sales-status" onchange="imRenderTable('sales')"><option value="">全部狀態</option><option>待售</option><option>到貨、結案</option><option>出貨中、面交 (已收款)</option></select>
@@ -908,6 +913,25 @@ textarea.hatch-gene-input {
         </div>
         <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
           <table class="im-table" id="im-table-sales"></table>
+        </div>
+      </div>
+
+      <!-- IM: FUND -->
+      <div class="page" id="page-im-fund">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="page-title">🏦 公基金</div>
+          <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenFundExpense()">＋ 新增支出</button>
+        </div>
+        <div class="page-sub">公基金繳納、實收與支出管理</div>
+        <div id="im-fund-owner-summary" style="margin-bottom:16px"></div>
+        <div id="im-fund-balance-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px"></div>
+        <div id="im-fund-load-warning" style="display:none;margin-bottom:12px;padding:10px 12px;background:#fff7e8;border:1px solid #ecd5ad;border-radius:6px;font-size:11px;color:#8b5e10"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:16px;font-weight:700;color:var(--brown)">支出明細</div>
+          <div id="im-fund-expense-count" style="font-size:11px;color:var(--muted)"></div>
+        </div>
+        <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
+          <table class="im-table" id="im-table-fund-expenses"></table>
         </div>
       </div>
 
@@ -1595,6 +1619,8 @@ const provider = new GoogleAuthProvider();
 
 let allSnakes = [];
 let currentFilter = 'all';
+// 60×40 mm 標籤列印選取（僅個體，不含繁殖組）
+const labelPrintIds = new Set();
 let editingId = null;
 let newStatus = null;
 let currentTags = [];
@@ -1911,6 +1937,11 @@ function renderSnakes() {
     const selectedForGroup = bgSelectionIds.has(String(s.id));
     return `
     <div class="snake-card" style="position:relative;">
+      ${!bgSelectionMode ? `
+        <label onclick="event.stopPropagation()" style="position:absolute;left:10px;top:10px;z-index:8;background:rgba(255,255,255,.96);border:1px solid rgba(59,26,16,.18);border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--brown);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+          <input type="checkbox" ${labelPrintIds.has(String(s.id)) ? 'checked' : ''} onchange="toggleLabelPrintSnake('${s.id}', this.checked)" style="width:17px;height:17px;accent-color:var(--copper);">
+          貼紙
+        </label>` : ''}
       ${bgSelectionMode ? `
         <label onclick="event.stopPropagation()" style="position:absolute;left:10px;top:10px;z-index:8;background:rgba(255,255,255,.94);border:1px solid rgba(59,26,16,.18);border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--brown);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);">
           <input type="checkbox" ${selectedForGroup ? 'checked' : ''} onchange="toggleBreedingGroupSnake('${s.id}', this.checked)" style="width:17px;height:17px;accent-color:var(--copper);">
@@ -1940,8 +1971,79 @@ function renderSnakes() {
 
   grid.innerHTML = groupCards + snakeCards;
   bgUpdateSelectionBar();
+  updateLabelPrintCount();
 }
 
+function updateLabelPrintCount() {
+  // 清掉已不存在的個體 id，避免刪除個體後還留在選取集合。
+  const validIds = new Set(allSnakes.map(s => String(s.id)));
+  [...labelPrintIds].forEach(id => { if (!validIds.has(String(id))) labelPrintIds.delete(id); });
+  const countEl = document.getElementById('label-print-count');
+  if (countEl) countEl.textContent = String(labelPrintIds.size);
+}
+
+window.toggleLabelPrintSnake = (id, checked) => {
+  if (checked) labelPrintIds.add(String(id));
+  else labelPrintIds.delete(String(id));
+  updateLabelPrintCount();
+};
+
+function labelEsc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+window.printSelectedLabels = () => {
+  const selected = allSnakes.filter(s => labelPrintIds.has(String(s.id)));
+  if (!selected.length) {
+    showToast('請先勾選要列印貼紙的個體');
+    return;
+  }
+
+  const sexText = s => {
+    const raw = String(s?.sex || s?.gender || '').trim().toUpperCase();
+    return raw === 'M' ? '公' : raw === 'F' ? '母' : '未填';
+  };
+  const birthYear = s => {
+    const direct = String(s?.year || '').match(/(?:19|20)\d{2}/)?.[0];
+    if (direct) return direct;
+    return String(s?.birth || '').match(/(?:19|20)\d{2}/)?.[0] || '';
+  };
+
+  const labels = selected.map(s => {
+    const zh = String(s?.nameZh || '').trim();
+    const en = String(s?.nameEn || '').trim();
+    const code = String(s?.code || '').trim();
+    const year = birthYear(s);
+    const meta = [sexText(s), year ? `${year} 年` : ''].filter(Boolean).join(' ｜ ');
+    return `<section class="label">
+      <div class="code">${labelEsc(code || '—')}</div>
+      <div class="zh">${labelEsc(zh || '中文名稱未填')}</div>
+      <div class="en">${labelEsc(en || '')}</div>
+      <div class="meta">${labelEsc(meta)}</div>
+    </section>`;
+  }).join('');
+
+  const w = window.open('', '_blank');
+  if (!w) {
+    showToast('瀏覽器阻擋了列印視窗，請允許彈出視窗');
+    return;
+  }
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="zh-TW"><head><meta charset="utf-8"><title>60×40 mm 個體貼紙</title><style>
+    @page { size: 60mm 40mm; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; padding:0; font-family: Arial, "Noto Sans TC", sans-serif; color:#111; background:#fff; }
+    .label { width:60mm; height:40mm; padding:4mm 4.5mm 3.5mm; page-break-after:always; break-after:page; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-start; }
+    .label:last-child { page-break-after:auto; break-after:auto; }
+    .code { font-size:10pt; font-weight:700; letter-spacing:.35px; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2.3mm; }
+    .zh { font-size:13.5pt; font-weight:800; line-height:1.2; max-height:13mm; overflow:hidden; margin-bottom:1.4mm; }
+    .en { font-size:8.5pt; font-style:italic; line-height:1.2; max-height:8mm; overflow:hidden; margin-bottom:auto; }
+    .meta { font-size:8.5pt; font-weight:700; border-top:.25mm solid #222; padding-top:1.5mm; margin-top:1.4mm; }
+    @media screen { body { background:#ddd; } .label { margin:8px auto; background:white; box-shadow:0 1px 6px rgba(0,0,0,.18); } }
+    @media print { body { background:white; } }
+  </style></head><body>${labels}<script>window.onload=()=>{setTimeout(()=>window.print(),150)}<\/script></body></html>`);
+  w.document.close();
+};
 
 window.switchBreedingGroupCard = (cardId, side) => {
   const card = document.getElementById(cardId);
@@ -3430,6 +3532,39 @@ function saleStatusSpan(s) {
   if (s==='出貨中、面交 (已收款)') return `<span class="im-tag im-tag-ship">出貨中</span>`;
   return `<span class="im-tag im-tag-sold">${s||''}</span>`;
 }
+function fundPaidSpan(r) {
+  if (r?.status !== '到貨、結案') return '<span style="color:var(--muted);font-size:10px">—</span>';
+  if (!(Number(r?.fund)||0)) return '<span class="im-tag" style="background:#f4f1eb;color:#7A6A5A">免繳</span>';
+  return r?.fundPaid === true
+    ? '<span class="im-tag im-tag-safe">已繳納</span>'
+    : '<span class="im-tag im-tag-iso">未繳納</span>';
+}
+function imFundSalesStats() {
+  const owners=['有剛','宣恩','Neil'];
+  const closed=(IM.sales||[]).filter(r=>r.status==='到貨、結案');
+  const byOwner={};
+  owners.forEach(owner=>{
+    const rows=closed.filter(r=>r.owner===owner);
+    const due=rows.reduce((s,r)=>s+(Number(r.fund)||0),0);
+    const paid=rows.filter(r=>r.fundPaid===true).reduce((s,r)=>s+(Number(r.fund)||0),0);
+    byOwner[owner]={due,paid,unpaid:Math.max(0,due-paid)};
+  });
+  const due=owners.reduce((s,o)=>s+byOwner[o].due,0);
+  const paid=owners.reduce((s,o)=>s+byOwner[o].paid,0);
+  const unpaid=owners.reduce((s,o)=>s+byOwner[o].unpaid,0);
+  return {byOwner,due,paid,unpaid};
+}
+function imFundOwnerSummaryHtml() {
+  const st=imFundSalesStats();
+  return `<div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;padding:14px 16px">
+    <div style="font-size:12px;font-weight:700;color:var(--brown);margin-bottom:10px">公基金繳納總表</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${['有剛','宣恩','Neil'].map(o=>{const x=st.byOwner[o];return `<div style="border:1px solid rgba(181,115,58,0.12);border-radius:6px;padding:10px 12px">
+      <div style="margin-bottom:6px">${ownerSpan(o)}</div>
+      <div style="font-size:11px;line-height:1.8">應繳 <b>${fmtMoney(x.due)}</b><br><span style="color:#2a6b3a">已繳 <b>${fmtMoney(x.paid)}</b></span><br><span style="color:#8b5e10">未繳 <b>${fmtMoney(x.unpaid)}</b></span></div>
+    </div>`}).join('')}</div>
+  </div>`;
+}
+let IM_FUND_EXPENSES=[];
 function fmtMoney(n) { return n!=null&&n!==''?'NT$'+Number(n).toLocaleString():'—'; }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;'); }
 function isLow(r, p) { return r.weeklyUse>0 && r.stock < p.保險庫存週*r.weeklyUse; }
@@ -3558,15 +3693,18 @@ window.imRenderTable = (section) => {
     const profit = rows.reduce((s,r)=>s+(r.price||0)-(r.cost||0),0);
     const funds = rows.reduce((s,r)=>s+(r.fund||0),0);
     const avail = rows.filter(r=>r.status==='待售').length;
+    const salesFundStats = imFundSalesStats();
     document.getElementById('im-sales-kpi').innerHTML = [
       {l:'篩選總售額', v:fmtMoney(total)},
       {l:'毛利合計', v:fmtMoney(profit), c:profit>=0?'#2a6b3a':'#8b0000'},
-      {l:'公基金(10%)', v:fmtMoney(funds)},
+      {l:'公基金已繳實收', v:fmtMoney(salesFundStats.paid), c:'#2a6b3a'},
       {l:'待售筆數', v:avail+' 筆'},
     ].map(k=>`<div class="im-kpi"><div class="im-kpi-label">${k.l}</div><div class="im-kpi-value" style="font-size:18px;${k.c?'color:'+k.c:''}">${k.v}</div></div>`).join('');
+    const salesFundSummary=document.getElementById('im-sales-fund-summary');
+    if(salesFundSummary) salesFundSummary.innerHTML=imFundOwnerSummaryHtml();
 
     document.getElementById('im-table-sales').innerHTML = `<thead><tr>
-      <th>所有人</th><th>產品編號</th><th>基因</th><th>性別</th><th>個性</th><th>售價</th><th>公基金</th><th>狀態</th><th>買家</th><th>出貨日</th><th>操作</th>
+      <th>所有人</th><th>產品編號</th><th>基因</th><th>性別</th><th>個性</th><th>售價</th><th>公基金</th><th>狀態</th><th>繳納</th><th>買家</th><th>出貨日</th><th>操作</th>
     </tr></thead><tbody>${rows.map(r=>`<tr>
       <td data-label="所有人">${ownerSpan(r.owner)}</td>
       <td data-label="產品編號" style="font-size:10px;color:var(--muted);white-space:nowrap">${r.saleId||''}</td>
@@ -3576,6 +3714,7 @@ window.imRenderTable = (section) => {
       <td data-label="售價" style="color:var(--copper);font-weight:600">${fmtMoney(r.price)}</td>
       <td data-label="公基金" style="color:var(--muted)">${r.fund?fmtMoney(r.fund):'—'}</td>
       <td data-label="狀態">${saleStatusSpan(r.status)}</td>
+      <td data-label="繳納" style="white-space:nowrap">${fundPaidSpan(r)}${r.status==='到貨、結案' && (Number(r.fund)||0)>0 ? `<button class="action-btn" style="display:block;margin-top:4px;padding:3px 6px;font-size:9px" onclick="imToggleFundPaid('${r._id}')">切換</button>` : ''}</td>
       <td data-label="買家" style="font-size:11px">${r.buyer||'—'}</td>
       <td data-label="出貨日" style="font-size:11px;color:var(--muted)">${r.ship||'—'}</td>
       <td data-label="操作" style="white-space:nowrap">
@@ -3584,7 +3723,7 @@ window.imRenderTable = (section) => {
         <button class="action-btn" style="color:#2a6b3a;border-color:rgba(42,107,58,0.3)" onclick="imPushToSite('${r._id}')" title="推送到官網展示">🌐 推官網</button>
         <button class="action-btn" style="color:#8b4ab5;border-color:rgba(139,74,181,0.3)" onclick="imOpenPhotoLabel('${r._id}')" title="生成標籤圖">🎨 標籤圖</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+    </tr>`).join('')||'<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
   }
   else if (section === 'breeding') {
     const q = (document.getElementById('im-q-breeding')||{}).value?.toLowerCase()||'';
@@ -3625,6 +3764,100 @@ window.imRenderTable = (section) => {
         <button class="action-btn danger" onclick="imConfirmDelete('breeding','${r._id}','${esc((r.male||'')+'×'+(r.female||''))}')">刪除</button>
       </td>
     </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+  }
+};
+
+
+// ── FUND MANAGEMENT (isolated; never blocks sales loading) ───────────────
+async function imLoadFundExpensesOnly() {
+  IM_FUND_EXPENSES=[];
+  const warn=document.getElementById('im-fund-load-warning');
+  try {
+    const snap=await getDocs(collection(db2,COL.foodParams));
+    // 沿用既有可讀寫的成員文件，避免建立新的 Firestore document ID 被規則擋下。
+    const d=snap.docs.find(x=>x.id==='宣恩');
+    const data=d?.data();
+    IM_FUND_EXPENSES=Array.isArray(data?.fundExpenses)?data.fundExpenses:[];
+    if(warn){warn.style.display='none';warn.textContent='';}
+  } catch(e) {
+    console.error('[fund] expense load failed',e);
+    if(warn){warn.style.display='block';warn.textContent='⚠️ 支出資料暫時無法讀取，但銷售紀錄與繳納狀態不受影響：'+e.message;}
+  }
+}
+function imFundFullStats(){
+  const s=imFundSalesStats();
+  const expenses=(IM_FUND_EXPENSES||[]).reduce((n,r)=>n+(Number(r.amount)||0),0);
+  return {...s,expenses,balance:s.paid-expenses};
+}
+window.imLoadFundPage=async()=>{
+  try { await imLoadAll(); } catch(e) { console.error('[fund] core load failed',e); window.showToast('❌ 公基金頁銷售資料載入失敗：'+e.message); }
+  await imLoadFundExpensesOnly();
+  imRenderFundPage();
+};
+window.imRenderFundPage=()=>{
+  const st=imFundFullStats();
+  const ownerWrap=document.getElementById('im-fund-owner-summary');
+  if(ownerWrap) ownerWrap.innerHTML=imFundOwnerSummaryHtml();
+  const bal=document.getElementById('im-fund-balance-summary');
+  if(bal) bal.innerHTML=[
+    {l:'應繳總額',v:fmtMoney(st.due)},
+    {l:'實收總額',v:fmtMoney(st.paid),c:'#2a6b3a'},
+    {l:'支出總額',v:fmtMoney(st.expenses),c:'#8b5e10'},
+    {l:'目前餘額',v:fmtMoney(st.balance),c:st.balance>=0?'#2a6b3a':'#8b0000'},
+  ].map(k=>`<div class="im-kpi"><div class="im-kpi-label">${k.l}</div><div class="im-kpi-value" style="font-size:18px;${k.c?'color:'+k.c:''}">${k.v}</div></div>`).join('');
+  const rows=[...(IM_FUND_EXPENSES||[])].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const count=document.getElementById('im-fund-expense-count'); if(count) count.textContent=`共 ${rows.length} 筆支出`;
+  const table=document.getElementById('im-table-fund-expenses');
+  if(table) table.innerHTML=`<thead><tr><th>日期</th><th>金額</th><th>用途</th><th>經手人</th><th>備註</th><th>操作</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.date||'—')}</td><td style="font-weight:700;color:#8b5e10">${fmtMoney(r.amount)}</td><td>${esc(r.purpose||'')}</td><td>${r.handler?ownerSpan(r.handler):'—'}</td><td style="font-size:11px;color:var(--muted)">${esc(r.note||'—')}</td><td><button class="action-btn" onclick="imOpenFundExpense('${r._id}')">編輯</button><button class="action-btn danger" onclick="imDeleteFundExpense('${r._id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">尚無支出紀錄</td></tr>'}</tbody>`;
+};
+window.imToggleFundPaid=async(id)=>{
+  const r=(IM.sales||[]).find(x=>x._id===id); if(!r||r.status!=='到貨、結案')return;
+  const next=r.fundPaid!==true;
+  try{
+    await updateDoc(doc(db2,COL.sales,id),{fundPaid:next,fundPaidAt:next?new Date().toISOString():''});
+    r.fundPaid=next; r.fundPaidAt=next?new Date().toISOString():'';
+    imRenderTable('sales');
+    if(document.getElementById('page-im-fund')?.classList.contains('active')) imRenderFundPage();
+  }catch(e){window.showToast('❌ 更新失敗：'+e.message);}
+};
+window.imOpenFundExpense=(id='')=>{
+  const r=(IM_FUND_EXPENSES||[]).find(x=>x._id===id)||{}; const today=new Date().toISOString().slice(0,10);
+  document.getElementById('im-modal-body').innerHTML=`<div class="im-modal-title">${id?'編輯':'新增'}公基金支出</div><div class="im-form-grid"><div class="form-group"><label class="form-label">日期 *</label><input class="form-input" type="date" id="im-f-fund-exp-date" value="${esc(r.date||today)}"></div><div class="form-group"><label class="form-label">金額 (NT$) *</label><input class="form-input" type="number" min="1" id="im-f-fund-exp-amount" value="${r.amount||''}"></div><div class="form-group im-form-full"><label class="form-label">用途 *</label><input class="form-input" id="im-f-fund-exp-purpose" value="${esc(r.purpose||'')}"></div><div class="form-group"><label class="form-label">經手人</label><select class="form-select" id="im-f-fund-exp-handler"><option value="">未指定</option>${['有剛','宣恩','Neil'].map(o=>`<option ${r.handler===o?'selected':''}>${o}</option>`).join('')}</select></div><div class="form-group im-form-full"><label class="form-label">備註</label><input class="form-input" id="im-f-fund-exp-note" value="${esc(r.note||'')}"></div></div><div class="im-form-actions"><button class="im-btn-cancel" onclick="imCloseModal()">取消</button><button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imSaveFundExpense('${id}')">儲存</button></div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+window.imSaveFundExpense=async(id='')=>{
+  const date=document.getElementById('im-f-fund-exp-date')?.value||''; const amount=parseInt(document.getElementById('im-f-fund-exp-amount')?.value)||0; const purpose=document.getElementById('im-f-fund-exp-purpose')?.value.trim()||''; const handler=document.getElementById('im-f-fund-exp-handler')?.value||''; const note=document.getElementById('im-f-fund-exp-note')?.value.trim()||'';
+  if(!date||amount<=0||!purpose){window.showToast('❌ 請填日期、金額與用途');return;}
+  const old=[...(IM_FUND_EXPENSES||[])];
+  const data={date,amount,purpose,handler,note,updatedAt:new Date().toISOString()};
+  if(id){const i=IM_FUND_EXPENSES.findIndex(x=>x._id===id);if(i>=0)IM_FUND_EXPENSES[i]={...IM_FUND_EXPENSES[i],...data};}
+  else IM_FUND_EXPENSES.push({_id:'fund_'+Date.now().toString(36),...data,createdAt:new Date().toISOString()});
+  try{
+    await setDoc(doc(db2,COL.foodParams,'宣恩'),{
+      fundExpenses:IM_FUND_EXPENSES,
+      fundExpensesUpdatedAt:new Date().toISOString()
+    },{merge:true});
+    imCloseModal(); imRenderFundPage(); window.showToast('✅ 支出已儲存');
+  }catch(e){
+    IM_FUND_EXPENSES=old;
+    console.error('[fund] expense save failed',e);
+    window.showToast('❌ 支出儲存失敗：'+e.message);
+  }
+};
+window.imDeleteFundExpense=async(id)=>{
+  if(!confirm('確定刪除此筆支出？'))return;
+  const old=[...(IM_FUND_EXPENSES||[])];
+  IM_FUND_EXPENSES=IM_FUND_EXPENSES.filter(x=>x._id!==id);
+  try{
+    await setDoc(doc(db2,COL.foodParams,'宣恩'),{
+      fundExpenses:IM_FUND_EXPENSES,
+      fundExpensesUpdatedAt:new Date().toISOString()
+    },{merge:true});
+    imRenderFundPage(); window.showToast('✅ 支出已刪除');
+  }catch(e){
+    IM_FUND_EXPENSES=old;
+    console.error('[fund] expense delete failed',e);
+    window.showToast('❌ 刪除失敗：'+e.message);
   }
 };
 
@@ -4437,6 +4670,7 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}" oninput="imAutoFund()"></div>
       <div class="form-group"><label class="form-label">售價 (NT$) *</label><input class="form-input" id="im-f-price" type="number" value="${r.price||''}" oninput="imAutoFund()"></div>
       <div class="form-group"><label class="form-label">公基金10% (NT$)</label><input class="form-input" id="im-f-fund" type="number" value="${r.fund||0}"></div>
+      <div class="form-group"><label class="form-label">公基金繳納狀態</label><select class="form-select" id="im-f-fund-paid"><option value="unpaid" ${r.fundPaid===true?'':'selected'}>未繳納</option><option value="paid" ${r.fundPaid===true?'selected':''}>已繳納</option></select></div>
       <div class="form-group"><label class="form-label">交付狀態</label><select class="form-select" id="im-f-delivery" onchange="imAutoFundDelivery()">${['','免交付','未交付','已交付'].map(x=>`<option ${(r.delivery||'')==x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">銷售狀態</label><select class="form-select" id="im-f-status">${['待售','出貨中、面交 (已收款)','到貨、結案'].map(x=>`<option ${(r.status||'待售')===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">來源</label><select class="form-select" id="im-f-source">${['品牌自繁','內部出清','外部代售'].map(x=>`<option ${(r.source||'品牌自繁')===x?'selected':''}>${x}</option>`).join('')}</select></div>
@@ -4698,6 +4932,7 @@ window.imSave = async (section, id) => {
       birth:g('im-f-birth').value, cost,
       weight:g('im-f-weight')?.value||'',
       price, fund: delivery==='免交付'?0:parseInt(g('im-f-fund').value)||0,
+      fundPaid: g('im-f-fund-paid')?.value==='paid',
       source:g('im-f-source').value, status:g('im-f-status').value,
       channel:g('im-f-channel').value, buyer:g('im-f-buyer').value,
       ship:g('im-f-ship').value, delivery, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
@@ -6400,19 +6635,17 @@ function imKpiSummary(records) {
   return {totalEggs,badEggs,goodEggs,quality,clutches:records.length};
 }
 
-function imBallPythonKpi(summary, baselineEggs = BALL_PYTHON_AVG_EGGS) {
+function imBallPythonKpi(summary) {
   if (!summary.totalEggs) return {score:null, grade:'—', quantityScore:0};
-  // 100 代表達到所選期間的球蟒平均產蛋基準，不是滿分。
-  // 單一年份基準為 6 顆；「全部年份」則用 6 × 實際有產蛋紀錄的年份數。
+  // 100 代表達到球蟒平均產蛋基準，不是滿分。
   // 低於平均：按比例計分；高於平均：仍可持續加分，但超額部分採 50% 斜率，避免分數失真暴衝。
-  const safeBaseline = Math.max(BALL_PYTHON_AVG_EGGS, Number(baselineEggs) || BALL_PYTHON_AVG_EGGS);
-  const ratio = summary.totalEggs / safeBaseline;
+  const ratio = summary.totalEggs / BALL_PYTHON_AVG_EGGS;
   const quantityScore = ratio <= 1
     ? ratio * 100
     : 100 + (ratio - 1) * 50;
   const score = Math.round(quantityScore * 0.60 + summary.quality * 0.40);
   const grade = score >= 120 ? 'S+' : score >= 100 ? 'S' : score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D';
-  return {score,grade,quantityScore,baselineEggs:safeBaseline};
+  return {score,grade,quantityScore};
 }
 
 window.imRenderKPI = async () => {
@@ -6464,10 +6697,7 @@ window.imRenderKPI = async () => {
     const allRecords = imKpiRecords(f);
     const records = yearF ? allRecords.filter(r=>imKpiYearOf(r.date)===yearF) : allRecords;
     const sum = imKpiSummary(records);
-    const recordYears = [...new Set(records.map(r=>imKpiYearOf(r.date)).filter(Boolean))];
-    const baselineYears = yearF ? 1 : Math.max(1, recordYears.length);
-    const baselineEggs = BALL_PYTHON_AVG_EGGS * baselineYears;
-    const ball = type === 'ball_python' ? imBallPythonKpi(sum, baselineEggs) : null;
+    const ball = type === 'ball_python' ? imBallPythonKpi(sum) : null;
     const legacyTotal = Math.max(0, Number(f.totalEggs||0)||0);
     const legacyBad = Math.max(0, Number(f.deadFetus ?? f.slugs ?? 0)||0);
     const hasLegacy = !allRecords.length && (legacyTotal>0 || legacyBad>0);
@@ -6478,7 +6708,7 @@ window.imRenderKPI = async () => {
       kpiBlock = `<div style="min-width:95px;text-align:right">
         <div style="font-size:10px;color:var(--muted)">KPI（100 = 標準）</div>
         <div style="font-size:25px;font-weight:800;color:${ball?.score>=120?'#126b38':ball?.score>=100?'#2a6b3a':ball?.score>=85?'var(--copper)':'var(--brown)'}">${ball?.score ?? '—'} <span style="font-size:13px">${ball?.grade||'—'}</span></div>
-        <div style="font-size:10px;color:var(--muted)">球蟒平均基準 ${baselineEggs} 顆${!yearF && baselineYears > 1 ? `（${baselineYears} 年）` : ''}</div>
+        <div style="font-size:10px;color:var(--muted)">球蟒平均基準 ${BALL_PYTHON_AVG_EGGS} 顆</div>
       </div>`;
     } else if (type === 'leopard_gecko') {
       kpiBlock = `<div style="min-width:95px;text-align:right"><div style="font-size:10px;color:var(--muted)">本期產蛋次數</div><div style="font-size:25px;font-weight:800">${sum.clutches}</div></div>`;
