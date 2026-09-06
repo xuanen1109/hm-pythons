@@ -2004,5 +2004,47 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox()
 
 
 
+
+<script>
+(function(){
+  if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') return;
+  if (navigator.webdriver) return;
+  const endpoint = '/.netlify/functions/website-analytics';
+  const PAGE_NAME = document.title.includes('歷史') ? '歷史紀錄' : '首頁';
+
+  function visitorId() {
+    const key = 'hm_traffic_vid_v1';
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)));
+      localStorage.setItem(key, id);
+    }
+    return id;
+  }
+  function send(type, action) {
+    const payload = JSON.stringify({ type, page: PAGE_NAME, action: action || '', visitor_id: visitorId() });
+    try {
+      if (navigator.sendBeacon) navigator.sendBeacon(endpoint, new Blob([payload], {type:'application/json'}));
+      else fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:payload,keepalive:true}).catch(()=>{});
+    } catch(e) {}
+  }
+  send('pageview');
+  document.addEventListener('click', function(e) {
+    const el = e.target.closest('a,button');
+    if (!el) return;
+    const text = (el.textContent || '').replace(/\s+/g,' ').trim();
+    const href = el.getAttribute('href') || '';
+    let action = '';
+    if (href.includes('#species') || text.includes('待售')) action = '待售個體';
+    else if (href.includes('#auction') || text.includes('競標')) action = '競標專區';
+    else if (href.includes('archive') || text.includes('歷史')) action = '歷史紀錄';
+    else if (text.includes('查看個體')) action = '查看個體';
+    else if (text.includes('聯絡')) action = '聯絡';
+    else if (text.includes('關於')) action = '關於';
+    if (action) send('click', action);
+  }, true);
+})();
+</script>
+
 </body>
 </html>

@@ -1,9 +1,3 @@
-[build]
-  publish = "."
-  functions = "netlify/functions"
-
-[[redirects]]
-  from = "/api/sota-feed"
-  to = "/.netlify/functions/sota-feed"
-  status = 200
-  force = true
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

@@ -476,6 +476,15 @@ textarea.hatch-gene-input {
   font-family: inherit;
   white-space: nowrap;
 }
+
+@media (max-width: 1100px) {
+  #traffic-summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+@media (max-width: 800px) {
+  #traffic-summary-cards { grid-template-columns:1fr !important; }
+  #traffic-main-grid { grid-template-columns:1fr !important; }
+}
+
 </style>
 </head>
 <body>
@@ -546,6 +555,9 @@ textarea.hatch-gene-input {
         <div class="sidebar-label">內部管理</div>
         <button class="sidebar-btn" onclick="showPage('im-dashboard', this)">
           <span class="sidebar-icon">📊</span> 總覽
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-traffic', this); loadWebsiteTraffic()">
+          <span class="sidebar-icon">🌐</span> 官網流量
         </button>
         <button class="sidebar-btn" onclick="showPage('im-males', this); imLoadAndRender('males')">
           <span class="sidebar-icon">♂</span> 公
@@ -862,6 +874,37 @@ textarea.hatch-gene-input {
       </div>
 
       <!-- IM: MALES -->
+
+      <div class="page" id="page-im-traffic">
+        <div class="page-title">🌐 官網流量</div>
+        <div class="page-sub">匿名統計官網瀏覽與主要點擊，不記錄姓名、電話或 IP</div>
+        <div id="traffic-status" style="font-size:12px;color:var(--muted);margin-bottom:16px;">尚未載入</div>
+        <div id="traffic-summary-cards" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:18px;">
+          <div class="stat-card"><div class="stat-label">今日瀏覽</div><div class="stat-value" id="traffic-today-views">—</div><div style="font-size:11px;color:var(--muted);margin-top:5px">訪客 <span id="traffic-today-visitors">—</span></div></div>
+          <div class="stat-card"><div class="stat-label">近 7 天瀏覽</div><div class="stat-value" id="traffic-7-views">—</div><div style="font-size:11px;color:var(--muted);margin-top:5px">訪客 <span id="traffic-7-visitors">—</span></div></div>
+          <div class="stat-card"><div class="stat-label">近 30 天瀏覽</div><div class="stat-value" id="traffic-30-views">—</div><div style="font-size:11px;color:var(--muted);margin-top:5px">訪客 <span id="traffic-30-visitors">—</span></div></div>
+          <div class="stat-card"><div class="stat-label">累計瀏覽</div><div class="stat-value" id="traffic-total-views">—</div><div style="font-size:11px;color:var(--muted);margin-top:5px">累計訪客 <span id="traffic-total-visitors">—</span></div></div>
+          <div class="stat-card"><div class="stat-label">近 30 天點擊率</div><div class="stat-value" id="traffic-30-ctr">—</div><div style="font-size:11px;color:var(--muted);margin-top:5px">主要點擊 <span id="traffic-30-clicks">—</span></div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr);gap:14px;margin-bottom:14px;" id="traffic-main-grid">
+          <div style="background:white;border-radius:8px;padding:18px;border:1px solid rgba(181,115,58,.10);">
+            <div style="font-size:13px;font-weight:700;color:var(--brown);margin-bottom:14px">最近 30 天每日流量</div>
+            <div id="traffic-daily-chart" style="min-height:220px;display:flex;align-items:flex-end;gap:4px;border-bottom:1px solid rgba(59,26,16,.12);padding:14px 4px 0;overflow-x:auto;"></div>
+          </div>
+          <div style="background:white;border-radius:8px;padding:18px;border:1px solid rgba(181,115,58,.10);">
+            <div style="font-size:13px;font-weight:700;color:var(--brown);margin-bottom:12px">熱門頁面</div>
+            <div id="traffic-pages-list" style="font-size:12px;color:var(--brown);">—</div>
+          </div>
+        </div>
+        <div style="background:white;border-radius:8px;padding:18px;border:1px solid rgba(181,115,58,.10);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:700;color:var(--brown)">主要按鈕 / 連結點擊</div>
+            <button class="im-btn" onclick="loadWebsiteTraffic()">重新整理</button>
+          </div>
+          <div id="traffic-clicks-list" style="font-size:12px;color:var(--brown);">—</div>
+        </div>
+      </div>
+
       <div class="page" id="page-im-males">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div class="page-title">公蛇</div>
@@ -7693,4 +7736,73 @@ function ssRenderField(label, value, fieldId, multiline) {
   `;
 }
 </script>
+
+<script>
+window.loadWebsiteTraffic = async function() {
+  const status = document.getElementById('traffic-status');
+  if (!status) return;
+  status.textContent = '載入中…';
+  try {
+    const res = await fetch('/.netlify/functions/website-analytics', {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store'
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || ('HTTP ' + res.status));
+
+    const n = v => Number(v || 0).toLocaleString('zh-TW');
+    const put = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = n(value); };
+    put('traffic-today-views', data.today?.views);
+    put('traffic-today-visitors', data.today?.visitors);
+    put('traffic-7-views', data.last7?.views);
+    put('traffic-7-visitors', data.last7?.visitors);
+    put('traffic-30-views', data.last30?.views);
+    put('traffic-30-visitors', data.last30?.visitors);
+    put('traffic-total-views', data.total?.views);
+    put('traffic-total-visitors', data.total?.visitors);
+    put('traffic-30-clicks', data.last30?.clicks);
+
+    const ctrEl = document.getElementById('traffic-30-ctr');
+    if (ctrEl) {
+      const views30 = Number(data.last30?.views || 0);
+      const clicks30 = Number(data.last30?.clicks || 0);
+      ctrEl.textContent = views30 ? ((clicks30 / views30) * 100).toFixed(1) + '%' : '—';
+    }
+
+    const daily = Array.isArray(data.daily) ? data.daily : [];
+    const chart = document.getElementById('traffic-daily-chart');
+    if (chart) {
+      const maxViews = Math.max(1, ...daily.map(d => Number(d.views || 0)));
+      chart.innerHTML = daily.length ? daily.map(d => {
+        const views = Number(d.views || 0);
+        const h = Math.max(3, Math.round((views / maxViews) * 170));
+        const label = String(d.date || '').slice(5).replace('-', '/');
+        return '<div title="' + d.date + '｜' + views + ' 次瀏覽｜' + Number(d.visitors||0) + ' 位訪客" style="min-width:18px;flex:1;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:195px;">' +
+          '<div style="font-size:9px;color:var(--muted);margin-bottom:3px">' + (views || '') + '</div>' +
+          '<div style="width:70%;height:' + h + 'px;background:var(--copper);border-radius:3px 3px 0 0;opacity:.78"></div>' +
+          '<div style="font-size:8px;color:var(--muted);margin-top:5px;white-space:nowrap">' + label + '</div></div>';
+      }).join('') : '<div style="color:var(--muted);font-size:12px;align-self:center;margin:auto">尚無流量資料</div>';
+    }
+
+    const renderRank = (obj, targetId, emptyText) => {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const rows = Object.entries(obj || {}).sort((a,b)=>Number(b[1]||0)-Number(a[1]||0));
+      target.innerHTML = rows.length ? rows.map(([name,count],i) =>
+        '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(59,26,16,.08)"><span>' +
+        (i+1) + '. ' + name + '</span><strong>' + n(count) + '</strong></div>'
+      ).join('') : '<div style="color:var(--muted)">' + emptyText + '</div>';
+    };
+    renderRank(data.pages, 'traffic-pages-list', '尚無頁面資料');
+    renderRank(data.clicks, 'traffic-clicks-list', '尚無點擊資料');
+    status.textContent = '更新時間：' + new Date(data.generated_at || Date.now()).toLocaleString('zh-TW') + '｜匿名統計';
+  } catch (e) {
+    console.error('[traffic]', e);
+    status.textContent = '流量資料載入失敗：' + e.message;
+    if (typeof showToast === 'function') showToast('❌ 官網流量載入失敗');
+  }
+};
+</script>
+
 </body>
