@@ -1,5 +1,4 @@
 const PROJECT_ID = 'hm-pythons-5ecff';
-const FIREBASE_API_KEY = 'AIzaSyAnH6a_WrFdVlSEWvW-jLq2cTQElrQ4po0';
 const COLLECTION = 'website_traffic_daily';
 
 const ALLOWED_TYPES = new Set(['pageview', 'click']);
@@ -125,7 +124,7 @@ async function recordEvent(body) {
     transforms.push({ fieldPath: `click_${ALLOWED_ACTIONS.get(action)}`, increment: { integerValue: '1' } });
   }
 
-  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:commit?key=${encodeURIComponent(FIREBASE_API_KEY)}`;
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:commit`;
   const payload = {
     writes: [{
       update: {
@@ -155,7 +154,6 @@ async function fetchAllDays() {
   let pageToken = '';
   do {
     const url = new URL(`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${COLLECTION}`);
-    url.searchParams.set('key', FIREBASE_API_KEY);
     url.searchParams.set('pageSize', '100');
     url.searchParams.set('orderBy', '__name__');
     if (pageToken) url.searchParams.set('pageToken', pageToken);
