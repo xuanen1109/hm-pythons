@@ -7737,71 +7737,38 @@ function ssRenderField(label, value, fieldId, multiline) {
 }
 </script>
 
-<script>
-window.loadWebsiteTraffic = async function() {
-  const status = document.getElementById('traffic-status');
-  if (!status) return;
-  status.textContent = '載入中…';
-  try {
-    const res = await fetch('/.netlify/functions/website-analytics', {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      cache: 'no-store'
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || ('HTTP ' + res.status));
-
-    const n = v => Number(v || 0).toLocaleString('zh-TW');
-    const put = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = n(value); };
-    put('traffic-today-views', data.today?.views);
-    put('traffic-today-visitors', data.today?.visitors);
-    put('traffic-7-views', data.last7?.views);
-    put('traffic-7-visitors', data.last7?.visitors);
-    put('traffic-30-views', data.last30?.views);
-    put('traffic-30-visitors', data.last30?.visitors);
-    put('traffic-total-views', data.total?.views);
-    put('traffic-total-visitors', data.total?.visitors);
-    put('traffic-30-clicks', data.last30?.clicks);
-
-    const ctrEl = document.getElementById('traffic-30-ctr');
-    if (ctrEl) {
-      const views30 = Number(data.last30?.views || 0);
-      const clicks30 = Number(data.last30?.clicks || 0);
-      ctrEl.textContent = views30 ? ((clicks30 / views30) * 100).toFixed(1) + '%' : '—';
-    }
-
-    const daily = Array.isArray(data.daily) ? data.daily : [];
-    const chart = document.getElementById('traffic-daily-chart');
-    if (chart) {
-      const maxViews = Math.max(1, ...daily.map(d => Number(d.views || 0)));
-      chart.innerHTML = daily.length ? daily.map(d => {
-        const views = Number(d.views || 0);
-        const h = Math.max(3, Math.round((views / maxViews) * 170));
-        const label = String(d.date || '').slice(5).replace('-', '/');
-        return '<div title="' + d.date + '｜' + views + ' 次瀏覽｜' + Number(d.visitors||0) + ' 位訪客" style="min-width:18px;flex:1;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:195px;">' +
-          '<div style="font-size:9px;color:var(--muted);margin-bottom:3px">' + (views || '') + '</div>' +
-          '<div style="width:70%;height:' + h + 'px;background:var(--copper);border-radius:3px 3px 0 0;opacity:.78"></div>' +
-          '<div style="font-size:8px;color:var(--muted);margin-top:5px;white-space:nowrap">' + label + '</div></div>';
-      }).join('') : '<div style="color:var(--muted);font-size:12px;align-self:center;margin:auto">尚無流量資料</div>';
-    }
-
-    const renderRank = (obj, targetId, emptyText) => {
-      const target = document.getElementById(targetId);
-      if (!target) return;
-      const rows = Object.entries(obj || {}).sort((a,b)=>Number(b[1]||0)-Number(a[1]||0));
-      target.innerHTML = rows.length ? rows.map(([name,count],i) =>
-        '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(59,26,16,.08)"><span>' +
-        (i+1) + '. ' + name + '</span><strong>' + n(count) + '</strong></div>'
-      ).join('') : '<div style="color:var(--muted)">' + emptyText + '</div>';
-    };
-    renderRank(data.pages, 'traffic-pages-list', '尚無頁面資料');
-    renderRank(data.clicks, 'traffic-clicks-list', '尚無點擊資料');
-    status.textContent = '更新時間：' + new Date(data.generated_at || Date.now()).toLocaleString('zh-TW') + '｜匿名統計';
-  } catch (e) {
-    console.error('[traffic]', e);
-    status.textContent = '流量資料載入失敗：' + e.message;
-    if (typeof showToast === 'function') showToast('❌ 官網流量載入失敗');
-  }
+<script type="module">
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const trafficFirebaseConfig = {
+  apiKey: "AIzaSyAnH6a_WrFdVlSEWvW-jLq2cTQElrQ4po0",
+  authDomain: "hm-pythons-5ecff.firebaseapp.com",
+  projectId: "hm-pythons-5ecff",
+  storageBucket: "hm-pythons-5ecff.firebasestorage.app",
+  messagingSenderId: "883526808218",
+  appId: "1:883526808218:web:72d5b49e4dd9296e222523"
+};
+const trafficAdminApp=getApps().find(a=>a.name==='hm-traffic-admin')||initializeApp(trafficFirebaseConfig,'hm-traffic-admin');
+const trafficAdminDb=getFirestore(trafficAdminApp);
+function tDate(offset=0){const d=new Date(Date.now()+offset*86400000);return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(d)}
+function emptyDay(date){return {date,views:0,visitors:[],pages:{'首頁':0,'歷史紀錄':0},clicks:{'待售個體':0,'競標專區':0,'歷史紀錄':0,'查看個體':0,'聯絡':0,'關於':0}}}
+function decode(snap){const f=snap.data()||{};return {date:String(f.date||snap.id),views:Number(f.views||0),visitors:Array.isArray(f.visitors)?f.visitors:[],pages:{'首頁':Number(f.page_home||0),'歷史紀錄':Number(f.page_history||0)},clicks:{'待售個體':Number(f.click_sale||0),'競標專區':Number(f.click_auction||0),'歷史紀錄':Number(f.click_history||0),'查看個體':Number(f.click_detail||0),'聯絡':Number(f.click_contact||0),'關於':Number(f.click_about||0)}}}
+function aggregate(days){const vs=new Set();let views=0,clicks=0;for(const d of days){views+=Number(d.views||0);(d.visitors||[]).forEach(v=>vs.add(v));clicks+=Object.values(d.clicks||{}).reduce((a,b)=>a+Number(b||0),0)}return {views,visitors:vs.size,clicks}}
+window.loadWebsiteTraffic=async function(){
+ const status=document.getElementById('traffic-status'); if(!status)return; status.textContent='載入中…';
+ try{
+  const snap=await getDocs(collection(trafficAdminDb,'website_traffic_daily'));
+  const all=snap.docs.map(decode).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d.date)).sort((a,b)=>a.date.localeCompare(b.date));
+  const map=new Map(all.map(d=>[d.date,d])); const dates=Array.from({length:30},(_,i)=>tDate(i-29)); const d30=dates.map(d=>map.get(d)||emptyDay(d));
+  const data={generated_at:new Date().toISOString(),today:aggregate([d30[29]]),last7:aggregate(d30.slice(-7)),last30:aggregate(d30),total:aggregate(all),daily:d30.map(d=>({date:d.date,views:d.views,visitors:new Set(d.visitors||[]).size})),pages:{},clicks:{}};
+  for(const d of all){for(const [k,v] of Object.entries(d.pages||{}))data.pages[k]=(data.pages[k]||0)+Number(v||0);for(const [k,v] of Object.entries(d.clicks||{}))data.clicks[k]=(data.clicks[k]||0)+Number(v||0)}
+  const n=v=>Number(v||0).toLocaleString('zh-TW'),put=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=n(v)};
+  put('traffic-today-views',data.today.views);put('traffic-today-visitors',data.today.visitors);put('traffic-7-views',data.last7.views);put('traffic-7-visitors',data.last7.visitors);put('traffic-30-views',data.last30.views);put('traffic-30-visitors',data.last30.visitors);put('traffic-total-views',data.total.views);put('traffic-total-visitors',data.total.visitors);put('traffic-30-clicks',data.last30.clicks);
+  const ctr=document.getElementById('traffic-30-ctr');if(ctr)ctr.textContent=data.last30.views?((data.last30.clicks/data.last30.views)*100).toFixed(1)+'%':'—';
+  const chart=document.getElementById('traffic-daily-chart');if(chart){const max=Math.max(1,...data.daily.map(d=>Number(d.views||0)));chart.innerHTML=data.daily.map(d=>{const v=Number(d.views||0),h=Math.max(3,Math.round(v/max*170)),lab=d.date.slice(5).replace('-','/');return '<div title="'+d.date+'｜'+v+' 次瀏覽｜'+Number(d.visitors||0)+' 位訪客" style="min-width:18px;flex:1;max-width:34px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:195px"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">'+(v||'')+'</div><div style="width:70%;height:'+h+'px;background:var(--copper);border-radius:3px 3px 0 0;opacity:.78"></div><div style="font-size:8px;color:var(--muted);margin-top:5px;white-space:nowrap">'+lab+'</div></div>'}).join('')}
+  const rank=(obj,id,empty)=>{const t=document.getElementById(id);if(!t)return;const rows=Object.entries(obj||{}).sort((a,b)=>Number(b[1]||0)-Number(a[1]||0));t.innerHTML=rows.length?rows.map(([name,count],i)=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(59,26,16,.08)"><span>'+(i+1)+'. '+name+'</span><strong>'+n(count)+'</strong></div>').join(''):'<div style="color:var(--muted)">'+empty+'</div>'};
+  rank(data.pages,'traffic-pages-list','尚無頁面資料');rank(data.clicks,'traffic-clicks-list','尚無點擊資料');status.textContent='更新時間：'+new Date().toLocaleString('zh-TW')+'｜Firebase 直接統計';
+ }catch(e){console.error('[traffic]',e);status.textContent='流量資料載入失敗：'+e.message;if(typeof showToast==='function')showToast('❌ 官網流量載入失敗')}
 };
 </script>
 
