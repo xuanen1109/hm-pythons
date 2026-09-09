@@ -1085,6 +1085,48 @@ footer {
 .breeding-public-switch-btn.active { background:#fff;color:var(--brown-deep); }
 .breeding-public-card .species-name,
 .breeding-public-card .species-name-en { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+
+/* === HM HERO GRID LOCK ===
+   Force the homepage hero to always use the original subtle square grid.
+   Keep this at the end of the stylesheet so older/duplicate theme rules cannot override it. */
+.hero {
+  background: linear-gradient(135deg, var(--silver-pale) 0%, var(--silver-light) 50%, #DDD8D0 100%) !important;
+}
+.hero::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-color: transparent !important;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0, transparent 60px, rgba(181,115,58,0.04) 60px, rgba(181,115,58,0.04) 61px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 60px, rgba(181,115,58,0.04) 60px, rgba(181,115,58,0.04) 61px) !important;
+  background-size: auto !important;
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+}
+
+/* HM HERO GRID HARD LOCK — no diagonal stripe may override hero */
+.hero {
+  background: linear-gradient(135deg, var(--silver-pale) 0%, var(--silver-light) 50%, #DDD8D0 100%) !important;
+  background-image: linear-gradient(135deg, var(--silver-pale) 0%, var(--silver-light) 50%, #DDD8D0 100%) !important;
+}
+.hero::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background: none !important;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0, transparent 59px, rgba(181,115,58,0.045) 59px, rgba(181,115,58,0.045) 60px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 59px, rgba(181,115,58,0.045) 59px, rgba(181,115,58,0.045) 60px) !important;
+}
+.hero::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+}
 </style>
 
   <!-- Firebase -->
@@ -1154,6 +1196,7 @@ footer {
   </a>
 
   <ul class="nav-links" id="nav-links">
+    <li><a href="#weekly-specials">每週特價</a></li>
     <li><a href="#species">待售個體</a></li>
     <li><a href="#auction">競標專區</a></li>
     <li><a href="archive.html">歷史紀錄</a></li>
@@ -1222,6 +1265,20 @@ footer {
   </div>
 </section>
 
+
+<!-- WEEKLY SPECIALS -->
+<section class="section species-section" id="weekly-specials" style="display:none;background:linear-gradient(180deg,rgba(181,115,58,.10),rgba(245,239,228,.34));border-top:1px solid rgba(181,115,58,.18);border-bottom:1px solid rgba(181,115,58,.18);">
+  <div class="section-header">
+    <div class="species-top">
+      <div>
+        <div class="eyebrow">WEEKLY SPECIAL · 每週更新</div>
+        <div class="section-h2">本週<br>特價專區</div>
+      </div>
+      <div id="weekly-special-period" style="font-size:11px;line-height:1.8;color:var(--muted);text-align:right;"></div>
+    </div>
+  </div>
+  <div class="species-grid" id="weekly-special-grid"></div>
+</section>
 
 <!-- SPECIES SECTION -->
 <section class="section species-section" id="species">
@@ -1489,6 +1546,28 @@ document.getElementById('nav-hamburger').addEventListener('click', window.toggle
 document.querySelectorAll('#nav-links a').forEach(a => {
   a.addEventListener('click', window.closeNav);
 });
+
+// 每週特價是 Firebase 載入後才顯示，改用明確定位避免點擊時區塊尚為 display:none
+const weeklySpecialNavLink = document.querySelector('#nav-links a[href="#weekly-specials"]');
+if (weeklySpecialNavLink) {
+  weeklySpecialNavLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    const tryScroll = (attempt = 0) => {
+      const section = document.getElementById('weekly-specials');
+      if (section && getComputedStyle(section).display !== 'none' && section.offsetHeight > 0) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', '#weekly-specials');
+        return;
+      }
+      if (attempt < 50) {
+        setTimeout(() => tryScroll(attempt + 1), 100);
+      } else {
+        alert('本週特價尚未啟用，或目前沒有符合條件的特價個體。');
+      }
+    };
+    tryScroll();
+  });
+}
 // Close nav when clicking outside
 document.addEventListener('click', e => {
   const nav = document.getElementById('nav-links');
@@ -1522,7 +1601,7 @@ const SPECIES_ORDER = {ball_python:0,boa:1,leopard_gecko:2,corn_snake:3,king_sna
 const STATUS_ORDER = {sale:0,auction:1,sold:2};
 
 const PLACEHOLDER = `<div class="auction-placeholder-card" style="min-height:400px;">
-  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(181,115,58,0.03) 20px,rgba(181,115,58,0.03) 40px);pointer-events:none;"></div>
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 39px,rgba(181,115,58,0.035) 39px,rgba(181,115,58,0.035) 40px),repeating-linear-gradient(90deg,transparent 0,transparent 39px,rgba(181,115,58,0.035) 39px,rgba(181,115,58,0.035) 40px);pointer-events:none;"></div>
   <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;opacity:0.45;">
     <ellipse cx="80" cy="100" rx="60" ry="48" fill="#C4A472"/>
     <ellipse cx="58" cy="86" rx="18" ry="14" fill="#7A5C3A" opacity="0.6"/>
@@ -1537,12 +1616,12 @@ const PLACEHOLDER = `<div class="auction-placeholder-card" style="min-height:400
     <line x1="80" y1="79" x2="74" y2="85" stroke="#C04A6A" stroke-width="2" stroke-linecap="round"/>
     <line x1="80" y1="79" x2="86" y2="85" stroke="#C04A6A" stroke-width="2" stroke-linecap="round"/>
   </svg>
-  <div style="font-size:11px;letter-spacing:2.5px;color:rgba(245,239,228,0.35);font-weight:400;margin-top:16px;text-transform:uppercase;">即將上架</div>
-  <div style="font-size:12px;color:rgba(245,239,228,0.2);margin-top:6px;letter-spacing:0.5px;">敬請期待</div>
+  <div style="font-size:11px;letter-spacing:2.5px;color:rgba(245,239,228,0.35);font-weight:400;margin-top:16px;text-transform:uppercase;">已經被買走了</div>
+  <div style="font-size:12px;color:rgba(245,239,228,0.2);margin-top:6px;letter-spacing:0.5px;">下次不要猶豫</div>
 </div>`;
 
 const PLACEHOLDER_LIGHT = `<div class="auction-placeholder-card" style="min-height:400px;">
-  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(122,92,58,0.05) 20px,rgba(122,92,58,0.05) 40px);pointer-events:none;"></div>
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 39px,rgba(122,92,58,0.04) 39px,rgba(122,92,58,0.04) 40px),repeating-linear-gradient(90deg,transparent 0,transparent 39px,rgba(122,92,58,0.04) 39px,rgba(122,92,58,0.04) 40px);pointer-events:none;"></div>
   <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;opacity:0.55;">
     <ellipse cx="80" cy="100" rx="60" ry="48" fill="#C4A472"/>
     <ellipse cx="58" cy="86" rx="18" ry="14" fill="#7A5C3A" opacity="0.6"/>
@@ -1557,8 +1636,8 @@ const PLACEHOLDER_LIGHT = `<div class="auction-placeholder-card" style="min-heig
     <line x1="80" y1="79" x2="74" y2="85" stroke="#C04A6A" stroke-width="2" stroke-linecap="round"/>
     <line x1="80" y1="79" x2="86" y2="85" stroke="#C04A6A" stroke-width="2" stroke-linecap="round"/>
   </svg>
-  <div style="font-size:11px;letter-spacing:2.5px;color:rgba(74,48,28,0.6);font-weight:500;margin-top:16px;text-transform:uppercase;">即將上架</div>
-  <div style="font-size:12px;color:rgba(74,48,28,0.4);margin-top:6px;letter-spacing:0.5px;">敬請期待</div>
+  <div style="font-size:11px;letter-spacing:2.5px;color:rgba(74,48,28,0.6);font-weight:500;margin-top:16px;text-transform:uppercase;">已經被買走了</div>
+  <div style="font-size:12px;color:rgba(74,48,28,0.4);margin-top:6px;letter-spacing:0.5px;">下次不要猶豫</div>
 </div>`;
 
 /* ── Countdown helper ─────────────────────────────── */
@@ -1759,6 +1838,141 @@ console.log('[HM INDEX] breeding card v4 CSS-FIX: badge/switch desktop enabled')
 console.log('[HM INDEX] breeding groups pinned first + pair names always visible');
 console.log('[HM INDEX] price display normalized: NT$#,###');
 
+const SPECIAL_FACTORS = [0.70,0.75,0.80,0.85];
+function weeklySpecialPriceNumber(s) {
+  const raw=String(s?.price??'').trim(); if(!raw) return null;
+  const digits=raw.replace(/[^0-9]/g,''); return digits?Number(digits):null;
+}
+function weeklySpecialYear(s){return String(s?.birth||'').match(/(?:19|20)\d{2}/)?.[0]||'';}
+function weeklySpecialWeek(){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  const d=new Date(Date.UTC(Number(p.year),Number(p.month)-1,Number(p.day))); d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));
+  const e=new Date(d);e.setUTCDate(e.getUTCDate()+6);
+  return {key:d.toISOString().slice(0,10),label:`${d.toISOString().slice(0,10).replaceAll('-','/')} ～ ${e.toISOString().slice(0,10).replaceAll('-','/')}`};
+}
+function weeklySpecialHash(str){let h=2166136261>>>0;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0;}
+function weeklySpecialNextMondayTs(){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'}).formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  const y=Number(parts.year),m=Number(parts.month)-1,d=Number(parts.day);
+  const base=new Date(Date.UTC(y,m,d));
+  const wd=base.getUTCDay();
+  const days=(8-wd)%7||7;
+  base.setUTCDate(base.getUTCDate()+days);
+  return Date.UTC(base.getUTCFullYear(),base.getUTCMonth(),base.getUTCDate(),0,0,0)-8*60*60*1000;
+}
+function weeklySpecialCountdownText(){
+  let diff=Math.max(0,weeklySpecialNextMondayTs()-Date.now());
+  const days=Math.floor(diff/86400000); diff%=86400000;
+  const h=Math.floor(diff/3600000); diff%=3600000;
+  const m=Math.floor(diff/60000); const s=Math.floor((diff%60000)/1000);
+  const pad=n=>String(n).padStart(2,'0');
+  return `${days}天 ${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+function startWeeklySpecialCountdown(){
+  if(window._weeklySpecialCountdownTimer) clearInterval(window._weeklySpecialCountdownTimer);
+  const tick=()=>{const el=document.getElementById('weekly-special-countdown');if(el)el.textContent=weeklySpecialCountdownText();};
+  tick(); window._weeklySpecialCountdownTimer=setInterval(tick,1000);
+}
+function weeklySpecialDiscount(id,key){return SPECIAL_FACTORS[weeklySpecialHash(`${key}|discount|${id}`)%4];}
+function weeklySpecialDiscountLabel(f){return f===.7?'7 折':f===.75?'7.5 折':f===.8?'8 折':'8.5 折';}
+function weeklySpecialGroupKey(g){
+  const raw=String(g?.id||[String(g?.maleId||''),String(g?.femaleId||'')].sort().join('|'));
+  return `bg:${raw}`;
+}
+function weeklySpecialGroupEntry(g,snakes){
+  const male=snakes.find(s=>String(s.id)===String(g?.maleId));
+  const female=snakes.find(s=>String(s.id)===String(g?.femaleId));
+  if(!male?.id||!female?.id) return null;
+  const total=publicBreedingGroupPrice(male,female);
+  const my=weeklySpecialYear(male),fy=weeklySpecialYear(female);
+  return {id:weeklySpecialGroupKey(g),itemType:'breeding_group',group:g,male,female,status:(male.status==='sale'&&female.status==='sale')?'sale':'inactive',price:total===null?'':String(total),species:male.species||female.species||'ball_python',_specialYears:[my,fy].filter(Boolean),_specialYearLabel:[my,fy].filter(Boolean).join(' / ')};
+}
+function weeklySpecialPools(snakes,groups,year){
+  const groupEntries=(groups||[]).map(g=>weeklySpecialGroupEntry(g,snakes)).filter(Boolean);
+  const groupedIds=new Set();
+  groupEntries.forEach(g=>{groupedIds.add(String(g.male.id));groupedIds.add(String(g.female.id));});
+  const individuals=snakes.filter(s=>s.status==='sale'&&!groupedIds.has(String(s.id))&&!s.breedingPartnerId&&weeklySpecialPriceNumber(s)!==null&&(year==='all'||weeklySpecialYear(s)===year));
+  const activeGroups=groupEntries.filter(g=>g.status==='sale'&&weeklySpecialPriceNumber(g)!==null&&(year==='all'||g._specialYears.includes(year)));
+  return {individuals,activeGroups,groupEntries,all:[...individuals,...activeGroups]};
+}
+function makeWeeklySpecialCard(s,num,factor){
+  const tags=(s.tags||[]).map(t=>`<span class="stag">${t}</span>`).join('');
+  const speciesLabel=SPECIES_LABELS[s.species]||'';
+  const speciesTag=speciesLabel?`<div style="font-size:10px;letter-spacing:2.5px;color:var(--copper);text-transform:uppercase;margin-bottom:6px;font-weight:500;">${speciesLabel}</div>`:'';
+  const original=weeklySpecialPriceNumber(s); const special=Math.round(original*factor);
+  return `<div class="species-card" onclick="openLightbox('${s.imgUrl||''}','${(s.nameZh||'').replace(/'/g,"\\'")} — ${s.code||''}')" style="position:relative;overflow:hidden;">
+    <div style="position:absolute;right:14px;top:14px;z-index:5;background:#8b2f1f;color:#fff;padding:7px 11px;border-radius:3px;font-size:12px;font-weight:700;letter-spacing:1px;box-shadow:0 4px 14px rgba(59,26,16,.18);">🔥 ${weeklySpecialDiscountLabel(factor)}</div>
+    <div class="species-card-top"><span class="species-num">${String(num).padStart(2,'0')}</span><span class="species-morph-badge">本週特價</span></div>
+    <div class="species-art" style="position:relative;width:calc(100% + 64px);margin-left:-32px;margin-top:-44px;margin-bottom:28px;aspect-ratio:1/1;overflow:hidden;"><img src="${s.imgUrl||''}" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;"></div>
+    ${speciesTag}<div class="species-name">${weeklySpecialYear(s)?weeklySpecialYear(s)+' ':''}${s.nameZh||''}</div>
+    ${s.nameEn?`<div class="species-name-en" style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:10px;letter-spacing:.3px;">${s.nameEn}</div>`:''}
+    <div class="species-tags">${tags}</div>
+    <div class="species-footer" style="align-items:flex-end;gap:10px;"><div style="min-width:0;"><div style="font-size:11px;color:var(--muted);text-decoration:line-through;margin-bottom:4px;">原價 NT$${original.toLocaleString('en-US')}</div><div class="species-price" style="color:#8b2f1f;font-weight:700;">NT$${special.toLocaleString('en-US')}</div></div><div style="display:flex;align-items:center;gap:8px;margin-left:auto;"><button type="button" onclick="event.stopPropagation();window.open('https://lin.ee/GhMS0B1','_blank','noopener')" style="border:1px solid #06c755;background:#06c755;color:white;padding:9px 12px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;white-space:nowrap;">LINE 詢問</button><span class="species-arrow">↗</span></div></div>
+  </div>`;
+}
+function makeWeeklySpecialGroupCard(g,num,factor){
+  const maleView=publicBreedingView(g.male,'公蛇'),femaleView=publicBreedingView(g.female,'母蛇');
+  const maleData=encodeURIComponent(JSON.stringify(maleView)).replace(/'/g,'%27');
+  const femaleData=encodeURIComponent(JSON.stringify(femaleView)).replace(/'/g,'%27');
+  const dataId='special_bg_'+String(g.id).replace(/[^a-zA-Z0-9_-]/g,'_');
+  const speciesLabel=SPECIES_LABELS[g.species]||'';
+  const speciesTag=speciesLabel?`<div style="font-size:10px;letter-spacing:2.5px;color:var(--copper);text-transform:uppercase;margin-bottom:6px;font-weight:500;">${speciesLabel}</div>`:'';
+  const tags=maleView.tags.map(t=>`<span class="stag">${t}</span>`).join('');
+  const original=weeklySpecialPriceNumber(g),special=Math.round(original*factor);
+  return `<div class="species-card breeding-public-card" id="${dataId}" data-male="${maleData}" data-female="${femaleData}" style="position:relative;overflow:hidden;">
+    <div style="position:absolute;right:14px;top:14px;z-index:8;background:#8b2f1f;color:#fff;padding:7px 11px;border-radius:3px;font-size:12px;font-weight:700;letter-spacing:1px;box-shadow:0 4px 14px rgba(59,26,16,.18);">🔥 ${weeklySpecialDiscountLabel(factor)}</div>
+    <div class="species-card-top"><span class="species-num">${String(num).padStart(2,'0')}</span><span class="species-morph-badge">本週特價</span></div>
+    <div class="species-art breeding-public-art" style="position:relative;width:calc(100% + 64px);margin-left:-32px;margin-top:-44px;margin-bottom:28px;aspect-ratio:1/1;overflow:hidden;">
+      <img id="${dataId}_img" src="${maleView.imgUrl}" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;" onclick="event.stopPropagation();openLightbox(this.src,document.getElementById('${dataId}_name').textContent+' — '+document.getElementById('${dataId}_code').textContent)">
+      <div class="breeding-public-badge">🧬 繁殖組・整組特價</div>
+      <div class="breeding-public-switcher" onclick="event.stopPropagation()"><button type="button" id="${dataId}_male_btn" class="breeding-public-switch-btn active" onclick="event.stopPropagation();switchPublicBreedingGroup('${dataId}','male')">♂ 公</button><button type="button" id="${dataId}_female_btn" class="breeding-public-switch-btn" onclick="event.stopPropagation();switchPublicBreedingGroup('${dataId}','female')">♀ 母</button></div>
+    </div>
+    ${speciesTag}<div class="species-name" id="${dataId}_name">${maleView.name}</div>
+    <div class="species-name-en" id="${dataId}_en" style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:10px;letter-spacing:.3px;${maleView.nameEn?'':'display:none;'}">${maleView.nameEn}</div>
+    <div class="breeding-pair-summary"><span class="pair-row"><span class="pair-sex">♂ 公</span>${maleView.name}</span><span class="pair-row"><span class="pair-sex">♀ 母</span>${femaleView.name}</span></div>
+    <div class="auction-code" id="${dataId}_code" style="margin-bottom:8px;">${maleView.code}</div>
+    <div class="species-tags" id="${dataId}_tags">${tags}</div>
+    <div style="font-size:10px;color:var(--copper);font-weight:700;margin:8px 0;">整組販售・不可拆售</div>
+    <div class="species-footer" style="align-items:flex-end;gap:10px;"><div style="min-width:0;"><div style="font-size:11px;color:var(--muted);text-decoration:line-through;margin-bottom:4px;">原價 NT$${original.toLocaleString('en-US')}</div><div class="species-price" style="color:#8b2f1f;font-weight:700;">NT$${special.toLocaleString('en-US')}</div></div><div style="display:flex;align-items:center;gap:8px;margin-left:auto;"><button type="button" onclick="event.stopPropagation();window.open('https://lin.ee/GhMS0B1','_blank','noopener')" style="border:1px solid #06c755;background:#06c755;color:white;padding:9px 12px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;white-space:nowrap;">LINE 詢問</button><span class="species-arrow">↗</span></div></div>
+  </div>`;
+}
+function renderWeeklySpecials(snakes,config,groups=[]){
+  const section=document.getElementById('weekly-specials'),grid=document.getElementById('weekly-special-grid'),period=document.getElementById('weekly-special-period');
+  if(!section||!grid) return;
+  if(!config?.enabled){section.style.display='none';return;}
+  const week=weeklySpecialWeek(),year=String(config.year||'all'),qty=Math.max(1,Math.min(30,Number(config.quantity||6)));
+  const pools=weeklySpecialPools(snakes,groups,year);
+  let slots=[];
+  if(config.selectedWeekKey===week.key && Array.isArray(config.selectedIds) && config.selectedIds.length && Number(config.selectionVersion||0)===2){
+    slots=config.selectedIds.map(id=>{
+      const sid=String(id);
+      let item=null;
+      if(sid.startsWith('bg:')) item=pools.groupEntries.find(g=>g.id===sid)||null;
+      else item=snakes.find(s=>String(s.id)===sid)||null;
+      return {id:sid,item};
+    });
+  } else {
+    slots=pools.all.map(s=>({s,rank:weeklySpecialHash(`${week.key}|pick|${s.id}`)})).sort((a,b)=>a.rank-b.rank).slice(0,qty).map(x=>({id:String(x.s.id),item:x.s}));
+  }
+  section.style.display='block';
+  if(period){period.innerHTML=`<div style="text-align:right;min-width:180px"><div style="font-size:9px;letter-spacing:2px;color:var(--copper);font-weight:700;margin-bottom:4px">NEXT DROP · 下次換檔</div><div id="weekly-special-countdown" style="font-size:20px;line-height:1.1;color:var(--brown-deep);font-weight:800;letter-spacing:.5px;font-variant-numeric:tabular-nums">${weeklySpecialCountdownText()}</div><div style="font-size:10px;color:var(--muted);margin-top:5px">每週一 00:00 · 台灣時間</div></div>`;startWeeklySpecialCountdown();}
+  if(!slots.length){grid.innerHTML='';return;}
+  const factors=config.selectedFactors||{};
+  const slotStates=slots.map((slot,i)=>{
+    const s=slot.item;
+    const stillAvailable=!!(s && (s.itemType==='breeding_group' ? (s.status==='sale'&&weeklySpecialPriceNumber(s)!==null) : (s.status==='sale'&&!s.breedingPartnerId&&weeklySpecialPriceNumber(s)!==null)));
+    return {slot,i,s,stillAvailable};
+  });
+  if(slotStates.length&&slotStates.every(x=>!x.stillAvailable)){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:54px 24px;text-align:center;background:rgba(255,255,255,.72);border:1px solid rgba(181,115,58,.18);"><div style="font-size:12px;letter-spacing:2px;color:var(--copper);font-weight:700;margin-bottom:10px">WEEKLY SPECIAL SOLD OUT</div><div style="font-size:22px;color:var(--brown-deep);font-weight:700;margin-bottom:8px">本週特價全數售完</div></div>`;return;
+  }
+  grid.innerHTML=slotStates.map(({slot,i,s,stillAvailable})=>{
+    if(!stillAvailable) return PLACEHOLDER_LIGHT;
+    const factor=Number(factors[slot.id])||weeklySpecialDiscount(slot.id,week.key);
+    return s.itemType==='breeding_group'?makeWeeklySpecialGroupCard(s,i+1,factor):makeWeeklySpecialCard(s,i+1,factor);
+  }).join('');
+}
+
 const SALE_PAGE_SIZE = 12;
 
 function renderSalePagination(totalPages) {
@@ -1896,7 +2110,9 @@ async function loadSnakes() {
     const q = query(collection(db, 'snakes'), orderBy('createdAt', 'asc'));
     const snap = await getDocs(q);
     const rawItems = snap.docs.map(d => ({id:d.id,...d.data()}));
-    const snakes = rawItems.filter(x => x.itemType !== 'breeding_group');
+    const specialConfigRaw = rawItems.find(x => x.itemType === 'special_config' || x.id === 'special_config') || {};
+    const specialConfig = {enabled:!!specialConfigRaw.enabled,year:String(specialConfigRaw.year||'all'),quantity:Math.max(1,Math.min(30,Number(specialConfigRaw.quantity||6))),selectedWeekKey:String(specialConfigRaw.selectedWeekKey||''),selectedIds:Array.isArray(specialConfigRaw.selectedIds)?specialConfigRaw.selectedIds:[],selectedFactors:(specialConfigRaw.selectedFactors&&typeof specialConfigRaw.selectedFactors==='object')?specialConfigRaw.selectedFactors:{},selectionVersion:Number(specialConfigRaw.selectionVersion||0)};
+    const snakes = rawItems.filter(x => x.itemType !== 'breeding_group' && x.itemType !== 'special_config' && x.id !== 'special_config');
 
     // INDEX 以原本個體上的 breedingPartnerId 為主要來源。
     // 這些欄位寫在既有 snake 文件上，不需要另外新增 Firestore 文件。
@@ -1952,6 +2168,7 @@ async function loadSnakes() {
     window._currentSpecies = window._currentSpecies || 'all';
     window._salePage = window._salePage || 1;
 
+    renderWeeklySpecials(snakes, specialConfig, groupDocs);
     renderSaleGrid(snakes, window._currentSpecies);
     renderAuctionGrid(snakes);
 
@@ -2024,7 +2241,7 @@ const trafficDb = getFirestore(trafficApp);
   if (navigator.webdriver) return;
   const PAGE_NAME = document.title.includes('歷史') ? '歷史紀錄' : '首頁';
   const PAGE_FIELD = PAGE_NAME === '歷史紀錄' ? 'page_history' : 'page_home';
-  const actionFields = {'待售個體':'click_sale','競標專區':'click_auction','歷史紀錄':'click_history','查看個體':'click_detail','聯絡':'click_contact','關於':'click_about'};
+  const actionFields = {'特價專區':'click_special','待售個體':'click_sale','競標專區':'click_auction','歷史紀錄':'click_history','查看個體':'click_detail','聯絡':'click_contact','關於':'click_about'};
   function visitorId(){
     const key='hm_traffic_vid_v1'; let id=localStorage.getItem(key);
     if(!id){ id=(crypto.randomUUID?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2))); localStorage.setItem(key,id); }
@@ -2042,7 +2259,8 @@ const trafficDb = getFirestore(trafficApp);
   document.addEventListener('click',function(e){
     const el=e.target.closest('a,button'); if(!el)return;
     const text=(el.textContent||'').replace(/\s+/g,' ').trim(); const href=el.getAttribute('href')||''; let action='';
-    if(href.includes('#species')||text.includes('待售')) action='待售個體';
+    if(href.includes('#weekly-specials')||text.includes('特價')) action='特價專區';
+    else if(href.includes('#species')||text.includes('待售')) action='待售個體';
     else if(href.includes('#auction')||text.includes('競標')) action='競標專區';
     else if(href.includes('archive')||text.includes('歷史')) action='歷史紀錄';
     else if(text.includes('查看個體')) action='查看個體';

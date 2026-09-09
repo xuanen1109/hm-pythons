@@ -213,6 +213,7 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
   font-size:10px; font-weight:700; letter-spacing:2px;
   padding:4px 10px; border-radius:2px;
 }
+.status-ready { background:#5d6470; color:#fff; }
 .status-sale { background:#2A3D2E; color:#B8CDB4; }
 .status-auction { background:rgba(181,115,58,0.9); color:white; }
 .status-sold { background:rgba(139,0,0,0.85); color:white; }
@@ -534,11 +535,17 @@ textarea.hatch-gene-input {
         <button class="sidebar-btn" onclick="showPage('add', this)">
           <span class="sidebar-icon">➕</span> 新增個體
         </button>
+        <button class="sidebar-btn" onclick="showPage('specials', this); renderSpecialAdminPage()">
+          <span class="sidebar-icon">🔥</span> 特價專區
+        </button>
       </div>
       <div class="sidebar-section" style="margin-top:16px;">
         <div class="sidebar-label">快速篩選</div>
         <button class="sidebar-btn" onclick="filterSnakes('all'); showPage('list', document.querySelector('.sidebar-btn'))">
           <span class="sidebar-icon">📋</span> 全部
+        </button>
+        <button class="sidebar-btn" onclick="filterSnakes('ready'); showPage('list', document.querySelector('.sidebar-btn'))">
+          <span class="sidebar-icon">⏳</span> 準備上架
         </button>
         <button class="sidebar-btn" onclick="filterSnakes('sale'); showPage('list', document.querySelector('.sidebar-btn'))">
           <span class="sidebar-icon">✅</span> 待售中
@@ -633,6 +640,46 @@ textarea.hatch-gene-input {
         </div>
 
         <div class="snake-grid" id="snake-grid"></div>
+      </div>
+
+      <!-- WEEKLY SPECIALS PAGE -->
+      <div class="page" id="page-specials">
+        <div class="page-title">🔥 每週特價專區</div>
+        <div class="page-sub">每週一 00:00（台灣時間）換新名單；本週名額固定，售出不補位。只影響官網顯示，不會修改個體原售價。</div>
+
+        <div class="form-card" style="max-width:820px;margin-bottom:18px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:end;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">選擇年份</label>
+              <select class="form-select" id="special-year"></select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">特價數量</label>
+              <input class="form-input" id="special-quantity" type="number" min="1" max="30" value="6">
+            </div>
+          </div>
+          <label style="display:flex;align-items:center;gap:9px;margin-top:18px;font-size:13px;color:var(--brown);cursor:pointer;">
+            <input type="checkbox" id="special-enabled" style="width:17px;height:17px;accent-color:var(--brown-deep);">
+            啟用官網特價專區
+          </label>
+          <div style="margin-top:16px;padding:13px 15px;border-radius:7px;background:rgba(181,115,58,.08);border:1px solid rgba(181,115,58,.18);font-size:12px;line-height:1.8;color:var(--muted);">
+            每隻入選個體會固定隨機套用：<strong style="color:var(--brown)">7 折 / 7.5 折 / 8 折 / 8.5 折</strong>。<br>
+            同一週所有人看到的名單與折扣都相同；下週一才重新抽選。一般待售個體與完整繁殖組都會參與；繁殖組只會整組特價，不拆售。
+          </div>
+          <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+            <button class="submit-btn" style="width:auto;padding:10px 22px;" onclick="saveSpecialConfig()">儲存設定</button>
+            <button class="action-btn" style="padding:9px 16px;" onclick="renderSpecialAdminPage()">重新預覽</button>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--brown);">本週預覽</div>
+            <div id="special-week-label" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
+          </div>
+          <div id="special-preview-count" style="font-size:12px;color:var(--muted);"></div>
+        </div>
+        <div id="special-preview" style="background:#fff;border:1px solid rgba(181,115,58,.12);border-radius:8px;overflow:auto;"></div>
       </div>
 
       <!-- IMPORT PAGE -->
@@ -750,6 +797,7 @@ textarea.hatch-gene-input {
             <label class="form-label">狀態</label>
             <select class="form-select" id="f-status">
               <option value="sale">待售中</option>
+              <option value="ready">準備上架</option>
               <option value="auction">競標中</option>
               <option value="sold">已售出</option>
             </select>
@@ -1406,6 +1454,7 @@ textarea.hatch-gene-input {
           <div class="form-group">
             <label class="form-label">狀態</label>
             <select class="form-select" id="bg-male-status">
+<option value="ready">準備上架</option>
 <option value="sale">待售中</option>
 <option value="auction">競標中</option>
 <option value="sold">已售出</option></select>
@@ -1543,6 +1592,7 @@ textarea.hatch-gene-input {
           <div class="form-group">
             <label class="form-label">狀態</label>
             <select class="form-select" id="bg-female-status">
+<option value="ready">準備上架</option>
 <option value="sale">待售中</option>
 <option value="auction">競標中</option>
 <option value="sold">已售出</option></select>
@@ -1631,6 +1681,7 @@ textarea.hatch-gene-input {
     <div class="modal-title">更改狀態</div>
     <div class="modal-sub" id="modal-snake-name">選擇此個體的新狀態</div>
     <div class="modal-btns">
+      <button class="modal-option" onclick="selectStatus('ready', this)">⏳ 準備上架</button>
       <button class="modal-option" onclick="selectStatus('sale', this)">✅ 待售中</button>
       <button class="modal-option" onclick="selectStatus('auction', this)">🔨 競標中</button>
       <button class="modal-option" onclick="selectStatus('sold', this)">📦 已售出</button>
@@ -1672,6 +1723,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 let allSnakes = [];
+let specialConfig = { enabled: false, year: 'all', quantity: 6 };
 let currentFilter = 'all';
 // 60×40 mm 標籤列印選取（僅個體，不含繁殖組）
 const labelPrintIds = new Set();
@@ -1827,6 +1879,17 @@ async function loadSnakes() {
   const snakeSnap = await getDocs(query(collection(db, 'snakes'), orderBy('createdAt', 'desc')));
   const rawItems = snakeSnap.docs.map(d => ({ id: d.id, _docId: d.id, ...d.data() }));
 
+  const configDoc = rawItems.find(x => x.itemType === 'special_config' || x.id === 'special_config');
+  if (configDoc) specialConfig = {
+    enabled: !!configDoc.enabled,
+    year: String(configDoc.year || 'all'),
+    quantity: Math.max(1, Math.min(30, Number(configDoc.quantity || 6))),
+    selectedWeekKey: String(configDoc.selectedWeekKey || ''),
+    selectedIds: Array.isArray(configDoc.selectedIds) ? configDoc.selectedIds : [],
+    selectedFactors: (configDoc.selectedFactors && typeof configDoc.selectedFactors === 'object') ? configDoc.selectedFactors : {},
+    selectionVersion: Number(configDoc.selectionVersion || 0)
+  };
+
   const cloudGroups = rawItems
     .filter(x => x.itemType === 'breeding_group' && x.maleId && x.femaleId)
     .map(x => ({
@@ -1837,8 +1900,9 @@ async function loadSnakes() {
       _storage: 'cloud'
     }));
 
-  allSnakes = rawItems.filter(x => x.itemType !== 'breeding_group');
+  allSnakes = rawItems.filter(x => x.itemType !== 'breeding_group' && x.itemType !== 'special_config' && x.id !== 'special_config');
   window.allSnakes = allSnakes;
+  await ensureWeeklySpecialSnapshot();
 
   // fallback：若舊版只留下公母個體上的 partner 欄位，也把它還原成繁殖組。
   const cloudKeys = new Set(cloudGroups.map(g => [String(g.maleId), String(g.femaleId)].sort().join('|')));
@@ -1881,7 +1945,7 @@ async function loadSnakes() {
 }
 function renderSnakes() {
   const grid = document.getElementById('snake-grid');
-  const statusOrder = { auction: 0, sale: 1, sold: 2 };
+  const statusOrder = { ready: 0, auction: 1, sale: 2, sold: 3 };
   const filtered = (currentFilter === 'all' ? [...allSnakes] : allSnakes.filter(s => s.status === currentFilter))
     .sort((a, b) => (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99));
 
@@ -1985,8 +2049,8 @@ function renderSnakes() {
   }).join('');
 
   const snakeCards = visibleSnakes.map(s => {
-    const badgeClass = s.status === 'sale' ? 'status-sale' : s.status === 'auction' ? 'status-auction' : 'status-sold';
-    const badgeText = s.status === 'sale' ? '待售中' : s.status === 'auction' ? '競標中' : '已售出';
+    const badgeClass = s.status === 'ready' ? 'status-ready' : s.status === 'sale' ? 'status-sale' : s.status === 'auction' ? 'status-auction' : 'status-sold';
+    const badgeText = s.status === 'ready' ? '準備上架' : s.status === 'sale' ? '待售中' : s.status === 'auction' ? '競標中' : '已售出';
     const tags = (s.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
     const selectedForGroup = bgSelectionIds.has(String(s.id));
     return `
@@ -2594,7 +2658,8 @@ window.openStatusModal = (id, name, status) => {
   document.getElementById('modal-snake-name').textContent = name;
   document.querySelectorAll('.modal-option').forEach(btn => {
     btn.classList.remove('selected');
-    if ((btn.textContent.includes('待售') && status==='sale') ||
+    if ((btn.textContent.includes('準備') && status==='ready') ||
+        (btn.textContent.includes('待售') && status==='sale') ||
         (btn.textContent.includes('競標') && status==='auction') ||
         (btn.textContent.includes('已售') && status==='sold')) {
       btn.classList.add('selected');
@@ -3315,6 +3380,150 @@ window.deleteBreedingGroup = async (id) => {
   }
 };
 
+// Weekly specials ----------------------------------------------------------
+function specialPriceNumber(s) {
+  const raw = String(s?.price ?? '').trim();
+  if (!raw) return null;
+  const digits = raw.replace(/[^0-9]/g, '');
+  return digits ? Number(digits) : null;
+}
+function specialBirthYear(s) {
+  return String(s?.birth || '').match(/(?:19|20)\d{2}/)?.[0] || '';
+}
+function specialTaipeiWeek() {
+  const parts = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'})
+    .formatToParts(new Date()).reduce((a,p)=>(a[p.type]=p.value,a),{});
+  const d = new Date(Date.UTC(Number(parts.year), Number(parts.month)-1, Number(parts.day)));
+  const diff = (d.getUTCDay()+6)%7;
+  d.setUTCDate(d.getUTCDate()-diff);
+  const monday = d.toISOString().slice(0,10);
+  const end = new Date(d); end.setUTCDate(end.getUTCDate()+6);
+  return {key:monday,label:`${monday.replaceAll('-','/')} ～ ${end.toISOString().slice(0,10).replaceAll('-','/')}`};
+}
+function specialHash(str) {
+  let h = 2166136261 >>> 0;
+  for (let i=0;i<str.length;i++) { h ^= str.charCodeAt(i); h = Math.imul(h,16777619); }
+  return h >>> 0;
+}
+const SPECIAL_FACTORS=[0.70,0.75,0.80,0.85];
+function specialDiscountFor(id, weekKey) {
+  return SPECIAL_FACTORS[specialHash(`${weekKey}|discount|${id}`)%SPECIAL_FACTORS.length];
+}
+function specialDiscountLabel(f) { return f===.7?'7 折':f===.75?'7.5 折':f===.8?'8 折':'8.5 折'; }
+function specialGroupKey(g) {
+  const raw = String(g?.id || [String(g?.maleId||''), String(g?.femaleId||'')].sort().join('|'));
+  return `bg:${raw}`;
+}
+function specialGroupEntry(g) {
+  const male = bgResolveSide(g, 'male');
+  const female = bgResolveSide(g, 'female');
+  if (!male?.id || !female?.id) return null;
+  const mp = specialPriceNumber(male), fp = specialPriceNumber(female);
+  const total = mp === null || fp === null ? null : mp + fp;
+  const my = specialBirthYear(male), fy = specialBirthYear(female);
+  return {
+    id: specialGroupKey(g),
+    itemType: 'breeding_group',
+    group: g, male, female,
+    status: (male.status === 'sale' && female.status === 'sale') ? 'sale' : 'inactive',
+    price: total === null ? '' : String(total),
+    species: male.species || female.species || 'ball_python',
+    birth: my || fy || '',
+    _specialYearLabel: [my,fy].filter(Boolean).join(' / '),
+    _specialYears: [my,fy].filter(Boolean),
+    nameZh: `繁殖組｜${male.nameZh||male.morph||'公蛇'}（公） × ${female.nameZh||female.morph||'母蛇'}（母）`,
+    nameEn: 'Breeding Pair'
+  };
+}
+function specialCandidatePool(snakes, config) {
+  const year=String(config?.year||'all');
+  const groupedIds=new Set();
+  (breedingGroups||[]).forEach(g=>{
+    if(g?.maleId) groupedIds.add(String(g.maleId));
+    if(g?.femaleId) groupedIds.add(String(g.femaleId));
+  });
+  const individuals=snakes.filter(s=>
+    s.status==='sale' && !groupedIds.has(String(s.id)) && !s.breedingPartnerId &&
+    specialPriceNumber(s)!==null && (year==='all'||specialBirthYear(s)===year)
+  );
+  const groups=(breedingGroups||[]).map(specialGroupEntry).filter(Boolean).filter(g=>
+    g.status==='sale' && specialPriceNumber(g)!==null && (year==='all'||g._specialYears.includes(year))
+  );
+  return [...individuals,...groups];
+}
+function specialResolveSelected(id, snakes) {
+  const sid=String(id);
+  if(sid.startsWith('bg:')) {
+    const g=(breedingGroups||[]).find(x=>specialGroupKey(x)===sid);
+    return g ? specialGroupEntry(g) : null;
+  }
+  return snakes.find(s=>String(s.id)===sid)||null;
+}
+function buildWeeklySpecialSnapshot(snakes, config) {
+  const week=specialTaipeiWeek();
+  const quantity=Math.max(1,Math.min(30,Number(config?.quantity||6)));
+  const picks=specialCandidatePool(snakes,config)
+    .map(s=>({s,rank:specialHash(`${week.key}|pick|${s.id}`)})).sort((a,b)=>a.rank-b.rank).slice(0,quantity).map(x=>x.s);
+  const factors={}; picks.forEach(s=>factors[s.id]=specialDiscountFor(s.id,week.key));
+  return {week,picks,factors};
+}
+function computeWeeklySpecials(snakes, config) {
+  if(!config?.enabled) return [];
+  const week=specialTaipeiWeek();
+  if(config.selectedWeekKey===week.key && Array.isArray(config.selectedIds) && Number(config.selectionVersion||0)===2){
+    const factors=config.selectedFactors||{};
+    return config.selectedIds.map(id=>specialResolveSelected(id,snakes)).filter(Boolean)
+      .map(s=>({...s,_specialFactor:Number(factors[s.id])||specialDiscountFor(s.id,week.key),_specialSold:(s.itemType==='breeding_group'?s.status!=='sale':(s.status!=='sale'||!!s.breedingPartnerId))}));
+  }
+  const snap=buildWeeklySpecialSnapshot(snakes,config);
+  return snap.picks.map(s=>({...s,_specialFactor:snap.factors[s.id],_specialSold:false}));
+}
+async function ensureWeeklySpecialSnapshot(){
+  if(!specialConfig?.enabled) return;
+  const week=specialTaipeiWeek();
+  if(specialConfig.selectedWeekKey===week.key && Array.isArray(specialConfig.selectedIds) && Number(specialConfig.selectionVersion||0)===2) return;
+  const snap=buildWeeklySpecialSnapshot(allSnakes,specialConfig);
+  const selectedIds=snap.picks.map(s=>s.id);
+  await setDoc(doc(db,'snakes','special_config'),{itemType:'special_config',selectedWeekKey:week.key,selectedIds,selectedFactors:snap.factors,selectionVersion:2,weekGeneratedAt:serverTimestamp(),updatedAt:serverTimestamp()},{merge:true});
+  specialConfig={...specialConfig,selectedWeekKey:week.key,selectedIds,selectedFactors:snap.factors,selectionVersion:2};
+}
+window.renderSpecialAdminPage = function() {
+  const yearEl=document.getElementById('special-year');
+  const qtyEl=document.getElementById('special-quantity');
+  const enabledEl=document.getElementById('special-enabled');
+  if (!yearEl || !qtyEl || !enabledEl) return;
+  const years=[...new Set(allSnakes.map(s=>specialBirthYear(s)).filter(Boolean))].sort((a,b)=>Number(b)-Number(a));
+  const current=String(specialConfig.year||'all');
+  yearEl.innerHTML='<option value="all">全部年份</option>'+years.map(y=>`<option value="${y}">${y} 年</option>`).join('');
+  yearEl.value=years.includes(current)?current:'all';
+  qtyEl.value=Math.max(1,Math.min(30,Number(specialConfig.quantity||6)));
+  enabledEl.checked=!!specialConfig.enabled;
+  const previewCfg={...specialConfig,enabled:enabledEl.checked,year:yearEl.value,quantity:Number(qtyEl.value||6)};
+  const picks=computeWeeklySpecials(allSnakes,previewCfg);
+  const week=specialTaipeiWeek();
+  document.getElementById('special-week-label').textContent=`本週週期：${week.label}｜下週一自動重新抽選`;
+  const activeCount=picks.filter(s=>!s._specialSold).length; document.getElementById('special-preview-count').textContent=previewCfg.enabled?`本週固定 ${picks.length} 個名額｜尚有 ${activeCount} 個品項`:'目前未啟用';
+  const box=document.getElementById('special-preview');
+  if (!previewCfg.enabled) { box.innerHTML='<div style="padding:26px;text-align:center;color:var(--muted);font-size:12px;">特價專區目前關閉</div>'; return; }
+  if (!picks.length) { box.innerHTML='<div style="padding:26px;text-align:center;color:var(--muted);font-size:12px;">這個年份目前沒有符合條件的待售個體或繁殖組</div>'; return; }
+  box.innerHTML=`<table class="im-table" style="width:100%"><thead><tr><th>品項</th><th>年份</th><th>原價</th><th>折扣</th><th>本週特價</th></tr></thead><tbody>${picks.map(s=>{const p=specialPriceNumber(s),sp=p===null?null:Math.round(p*s._specialFactor);const isGroup=s.itemType==='breeding_group';const label=isGroup?s.nameZh:(s.nameZh||s.morph||'-');const yr=isGroup?(s._specialYearLabel||'-'):(specialBirthYear(s)||'-');return `<tr style="${s._specialSold?'opacity:.48':''}"><td><strong>${isGroup?'🧬 ':''}${label}</strong><div style="font-size:10px;color:var(--muted);margin-top:2px">${isGroup?'整組販售・不可拆售':(s.code||'')}${s._specialSold?' · 已離開本週特價':''}</div></td><td>${yr}</td><td>${p===null?'—':'NT$'+p.toLocaleString()}</td><td><strong style="color:#a84a24">${specialDiscountLabel(s._specialFactor)}</strong></td><td><strong style="color:#8b1e12">${s._specialSold||sp===null?'—':'NT$'+sp.toLocaleString()}</strong></td></tr>`}).join('')}</tbody></table>`;
+};
+['special-year','special-quantity','special-enabled'].forEach(id=>document.addEventListener('change',e=>{if(e.target?.id===id){const year=document.getElementById('special-year')?.value||'all';const quantity=Number(document.getElementById('special-quantity')?.value||6);const enabled=!!document.getElementById('special-enabled')?.checked;const old=specialConfig;specialConfig={...old,enabled,year,quantity,selectedWeekKey:'',selectedIds:[],selectedFactors:{},selectionVersion:2};renderSpecialAdminPage();specialConfig=old;}}));
+window.saveSpecialConfig = async function() {
+  const enabled=!!document.getElementById('special-enabled')?.checked;
+  const year=String(document.getElementById('special-year')?.value||'all');
+  const quantity=Math.max(1,Math.min(30,Number(document.getElementById('special-quantity')?.value||6)));
+  try {
+    const base={enabled,year,quantity};
+    const snap=enabled?buildWeeklySpecialSnapshot(allSnakes,base):{week:specialTaipeiWeek(),picks:[],factors:{}};
+    const selectedIds=snap.picks.map(s=>s.id);
+    await setDoc(doc(db,'snakes','special_config'),{itemType:'special_config',enabled,year,quantity,selectedWeekKey:snap.week.key,selectedIds,selectedFactors:snap.factors,selectionVersion:2,weekGeneratedAt:serverTimestamp(),updatedAt:serverTimestamp(),createdAt:serverTimestamp()},{merge:true});
+    specialConfig={enabled,year,quantity,selectedWeekKey:snap.week.key,selectedIds,selectedFactors:snap.factors,selectionVersion:2};
+    showToast('✅ 特價專區設定已儲存，本週名單已鎖定（繁殖組整組計算）');
+    renderSpecialAdminPage();
+  } catch(e) { console.error('[specials] save failed',e); showToast('❌ 儲存失敗：'+e.message); }
+};
+
 // UI helpers
 window.showPage = (page, btn) => {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -3428,6 +3637,7 @@ window.showToast = function showToast(msg) {
       <div>
         <label class="form-label">狀態</label>
         <select class="form-select" id="edit-status">
+          <option value="ready">準備上架</option>
           <option value="sale">待售中</option>
           <option value="auction">競標中</option>
           <option value="sold">已售出</option>
@@ -5514,14 +5724,15 @@ window.imPushToSite = (id) => {
     <div class="im-modal-title">🌐 推送到官網</div>
     <p class="im-confirm-msg" style="margin-bottom:16px">
       將 <strong>${r.gene}</strong> 新增到官網展示。<br>
-      <span style="font-size:12px;color:var(--muted)">會在「所有個體」頁面顯示，狀態預設為「已售出」。</span>
+      <span style="font-size:12px;color:var(--muted)">會在「所有個體」頁面顯示，狀態預設為「準備上架」，整理完成後再改成「待售中」即可正式顯示。</span>
     </p>
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">官網顯示狀態</label>
       <select class="form-select" id="push-status">
-        <option value="sold">已售出</option>
+        <option value="ready" selected>準備上架</option>
         <option value="sale">待售中</option>
         <option value="auction">競標中</option>
+        <option value="sold">已售出</option>
       </select>
     </div>
     <div class="form-group" style="margin-bottom:12px">
@@ -5675,10 +5886,11 @@ window.imDoPush = async (id) => {
     if (typeof loadSnakes === 'function') await loadSnakes();
 
     // 顯示成功 + 立即上傳照片按鈕
+    const pushedStatusLabel = status === 'ready' ? '準備上架' : status === 'sale' ? '待售中' : status === 'auction' ? '競標中' : '已售出';
     document.getElementById('im-modal-body').innerHTML = `
       <div class="im-modal-title" style="color:#2a6b3a">✅ 推送成功！</div>
       <p class="im-confirm-msg" style="margin-bottom:20px">
-        <strong>${r.gene}</strong> 已上架到官網。<br>
+        <strong>${r.gene}</strong> 已送入「${pushedStatusLabel}」區。<br>
         <span style="font-size:12px;color:var(--muted)">現在要補上照片嗎？</span>
       </p>
       <div class="im-form-actions">
@@ -7751,8 +7963,8 @@ const trafficFirebaseConfig = {
 const trafficAdminApp=getApps().find(a=>a.name==='hm-traffic-admin')||initializeApp(trafficFirebaseConfig,'hm-traffic-admin');
 const trafficAdminDb=getFirestore(trafficAdminApp);
 function tDate(offset=0){const d=new Date(Date.now()+offset*86400000);return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(d)}
-function emptyDay(date){return {date,views:0,visitors:[],pages:{'首頁':0,'歷史紀錄':0},clicks:{'待售個體':0,'競標專區':0,'歷史紀錄':0,'查看個體':0,'聯絡':0,'關於':0}}}
-function decode(snap){const f=snap.data()||{};return {date:String(f.date||snap.id),views:Number(f.views||0),visitors:Array.isArray(f.visitors)?f.visitors:[],pages:{'首頁':Number(f.page_home||0),'歷史紀錄':Number(f.page_history||0)},clicks:{'待售個體':Number(f.click_sale||0),'競標專區':Number(f.click_auction||0),'歷史紀錄':Number(f.click_history||0),'查看個體':Number(f.click_detail||0),'聯絡':Number(f.click_contact||0),'關於':Number(f.click_about||0)}}}
+function emptyDay(date){return {date,views:0,visitors:[],pages:{'首頁':0,'歷史紀錄':0},clicks:{'特價專區':0,'待售個體':0,'競標專區':0,'歷史紀錄':0,'查看個體':0,'聯絡':0,'關於':0}}}
+function decode(snap){const f=snap.data()||{};return {date:String(f.date||snap.id),views:Number(f.views||0),visitors:Array.isArray(f.visitors)?f.visitors:[],pages:{'首頁':Number(f.page_home||0),'歷史紀錄':Number(f.page_history||0)},clicks:{'特價專區':Number(f.click_special||0),'待售個體':Number(f.click_sale||0),'競標專區':Number(f.click_auction||0),'歷史紀錄':Number(f.click_history||0),'查看個體':Number(f.click_detail||0),'聯絡':Number(f.click_contact||0),'關於':Number(f.click_about||0)}}}
 function aggregate(days){const vs=new Set();let views=0,clicks=0;for(const d of days){views+=Number(d.views||0);(d.visitors||[]).forEach(v=>vs.add(v));clicks+=Object.values(d.clicks||{}).reduce((a,b)=>a+Number(b||0),0)}return {views,visitors:vs.size,clicks}}
 window.loadWebsiteTraffic=async function(){
  const status=document.getElementById('traffic-status'); if(!status)return; status.textContent='載入中…';
