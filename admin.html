@@ -486,6 +486,8 @@ textarea.hatch-gene-input {
   #traffic-main-grid { grid-template-columns:1fr !important; }
 }
 
+
+@media(max-width:900px){.import-layout{grid-template-columns:1fr !important}.import-layout .form-card[style*="position:sticky"]{position:static !important}}
 </style>
 </head>
 <body>
@@ -595,6 +597,9 @@ textarea.hatch-gene-input {
         </button>
         <button class="sidebar-btn" onclick="showPage('im-cost', this); imRenderCostPage()">
           <span class="sidebar-icon">⚙️</span> 成本參數設定
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-import', this); imRenderImportPage()">
+          <span class="sidebar-icon">📦</span> 進口管理
         </button>
         <button class="sidebar-btn" onclick="showPage('im-profit', this); imRenderProfit()">
           <span class="sidebar-icon">💵</span> 分潤結算
@@ -1238,6 +1243,58 @@ textarea.hatch-gene-input {
             <button class="submit-btn" style="flex:1" onclick="imSaveCostParams()">💾 儲存</button>
           </div>
           <div id="cost-save-msg" style="margin-top:10px;font-size:12px;color:#2a6b3a;display:none">✅ 已儲存！KPI 頁面將使用此資料計算成本。</div>
+        </div>
+      </div>
+
+      <!-- IM: IMPORT MANAGEMENT -->
+      <div class="page" id="page-im-import">
+        <div class="page-title">📦 進口管理</div>
+        <div class="page-sub">手動填寫進口成本，試算整批落地成本與實際成本匯率</div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:18px;align-items:start" class="import-layout">
+          <div class="form-card" style="max-width:none">
+            <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">批次基本資料</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px">
+              <div><label class="form-label">批次名稱</label><input class="form-input" id="import-batch-name" placeholder="例如：2026 日本秋季進口"></div>
+              <div><label class="form-label">來源國</label><select class="form-select" id="import-country" onchange="imImportCountryChanged(this.value)"><option value="JP">🇯🇵 日本</option><option value="US">🇺🇸 美國</option><option value="CA">🇨🇦 加拿大</option><option value="EU">🇪🇺 歐洲</option></select></div>
+              <div><label class="form-label">外幣</label><input class="form-input" id="import-currency" value="JPY" readonly style="background:var(--cream)"></div>
+              <div style="grid-column:span 2"><label class="form-label">匯率（1 外幣 = 幾元台幣）</label><div style="display:flex;gap:8px;align-items:center"><input class="form-input" id="import-rate" type="number" min="0" step="0.0001" value="0.22" oninput="imImportRecalc()"><button type="button" class="btn-small" style="white-space:nowrap;padding:10px 12px" onclick="imImportRefreshFx(true)">↻ 更新匯率</button></div><div id="import-fx-status" style="font-size:10px;color:var(--muted);margin-top:4px">自動取得市場參考匯率，可手動覆寫。</div></div>
+              <div><label class="form-label">進口隻數</label><input class="form-input" id="import-qty" type="number" min="1" step="1" value="1" oninput="imImportRecalc()"></div>
+              <div><label class="form-label">蛇隻貨款總額（外幣）</label><input class="form-input" id="import-purchase" type="number" min="0" step="1" value="0" oninput="imImportRecalc()"></div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px">
+              <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase">固定成本</div>
+              <button class="btn-small" onclick="imImportAddCost('fixed')">＋ 新增成本</button>
+            </div>
+            <div id="import-fixed-costs"></div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px">
+              <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase">浮動成本</div>
+              <button class="btn-small" onclick="imImportAddCost('variable')">＋ 新增成本</button>
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin:-2px 0 9px">可選「直接金額」或「單價 × 數量」；例如每條 US$46 × 6 條。</div>
+            <div id="import-variable-costs"></div>
+
+            <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+              <button class="submit-btn" style="flex:1;min-width:150px" onclick="imImportSaveBatch()">💾 儲存批次</button>
+              <button class="btn-small" style="padding:10px 16px" onclick="imImportResetForm()">清空試算</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-card" style="max-width:none;position:sticky;top:84px">
+              <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">即時計算</div>
+              <div id="import-summary"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:22px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div><div style="font-size:16px;font-weight:600;color:var(--brown)">已儲存批次</div><div style="font-size:11px;color:var(--muted);margin-top:3px">可重新載入比較或刪除</div></div>
+          </div>
+          <div id="import-batch-history"></div>
         </div>
       </div>
 
@@ -6879,6 +6936,295 @@ window.imSaveCostParams = async () => {
   } catch(e) {
     window.showToast('❌ 儲存失敗：'+e.message);
   }
+};
+
+// ── IMPORT MANAGEMENT ─────────────────────────────
+let _importBatches = [];
+let _importFixedCosts = [];
+let _importVariableCosts = [];
+const IMPORT_DOC_ID = 'import_management';
+
+function imImportEsc(v='') {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function imImportNum(id) { return Number(document.getElementById(id)?.value || 0) || 0; }
+function imImportCurrencyLabel() { return (document.getElementById('import-currency')?.value || '外幣').trim().toUpperCase(); }
+function imImportMoney(n) { return `NT$${Math.round(Number(n)||0).toLocaleString('zh-TW')}`; }
+function imImportForeign(n) { return `${imImportCurrencyLabel()} ${(Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:2})}`; }
+function imImportUid() { return 'imp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7); }
+
+
+const IM_IMPORT_MARKETS = {
+  JP: {country:'日本', currency:'JPY', flag:'🇯🇵'},
+  US: {country:'美國', currency:'USD', flag:'🇺🇸'},
+  CA: {country:'加拿大', currency:'CAD', flag:'🇨🇦'},
+  EU: {country:'歐洲', currency:'EUR', flag:'🇪🇺'}
+};
+let _importFxLoading = false;
+
+function imImportMarketByCountryValue(v) {
+  const raw=String(v||'').trim();
+  if (IM_IMPORT_MARKETS[raw]) return IM_IMPORT_MARKETS[raw];
+  const byName=Object.values(IM_IMPORT_MARKETS).find(x=>x.country===raw || x.currency===raw.toUpperCase());
+  return byName || IM_IMPORT_MARKETS.JP;
+}
+function imImportCountryCodeFromSaved(v,currency) {
+  const raw=String(v||'').trim();
+  if (IM_IMPORT_MARKETS[raw]) return raw;
+  const found=Object.entries(IM_IMPORT_MARKETS).find(([k,x])=>x.country===raw || x.currency===String(currency||'').toUpperCase());
+  return found ? found[0] : 'JP';
+}
+window.imImportCountryChanged = async function(code) {
+  const m=imImportMarketByCountryValue(code);
+  const cur=document.getElementById('import-currency');
+  if(cur) cur.value=m.currency;
+  imImportRenderCostRows('fixed');
+  imImportRenderCostRows('variable');
+  imImportRecalc();
+  await imImportRefreshFx(false);
+};
+window.imImportRefreshFx = async function(showToast=false) {
+  if (_importFxLoading) return;
+  const code=document.getElementById('import-country')?.value || 'JP';
+  const m=imImportMarketByCountryValue(code);
+  const status=document.getElementById('import-fx-status');
+  const rateEl=document.getElementById('import-rate');
+  _importFxLoading=true;
+  if(status) status.textContent=`${m.flag} ${m.currency} → TWD 匯率更新中…`;
+  try {
+    let rate=0, source='';
+    try {
+      const r=await fetch(`https://open.er-api.com/v6/latest/${encodeURIComponent(m.currency)}`, {cache:'no-store'});
+      if(!r.ok) throw new Error('ER API '+r.status);
+      const j=await r.json();
+      rate=Number(j?.rates?.TWD)||0;
+      if(rate>0) source='ExchangeRate-API';
+    } catch(e1) {
+      const r2=await fetch(`https://api.frankfurter.app/latest?from=${encodeURIComponent(m.currency)}&to=TWD`, {cache:'no-store'});
+      if(!r2.ok) throw new Error('Frankfurter '+r2.status);
+      const j2=await r2.json();
+      rate=Number(j2?.rates?.TWD)||0;
+      if(rate>0) source='Frankfurter';
+    }
+    if(!(rate>0)) throw new Error('沒有取得有效匯率');
+    if(rateEl) rateEl.value = rate < 1 ? rate.toFixed(4) : rate.toFixed(3);
+    imImportRecalc();
+    const now=new Date();
+    if(status) status.textContent=`${m.flag} 目前參考：1 ${m.currency} ≈ ${Number(rateEl?.value||rate).toLocaleString('zh-TW',{maximumFractionDigits:4})} TWD · ${now.toLocaleString('zh-TW')} · ${source} · 可手動覆寫`;
+    if(showToast && window.showToast) window.showToast('✅ 匯率已更新');
+  } catch(e) {
+    console.warn('自動匯率取得失敗',e);
+    if(status) status.textContent=`⚠️ 無法自動取得 ${m.currency}/TWD，請手動輸入匯率。`;
+    if(showToast && window.showToast) window.showToast('⚠️ 匯率連線失敗，請手動輸入');
+  } finally { _importFxLoading=false; }
+};
+
+function imImportDefaultCosts() {
+  _importFixedCosts = [
+    {id:imImportUid(), name:'國際運費', amount:0, currency:'foreign'},
+    {id:imImportUid(), name:'報關 / 關稅', amount:0, currency:'twd'},
+    {id:imImportUid(), name:'手續費 / 代辦費', amount:0, currency:'twd'}
+  ];
+  _importVariableCosts = [
+    {id:imImportUid(), name:'境內運輸 / 接送', amount:0, currency:'foreign', calcMode:'total', quantity:0},
+    {id:imImportUid(), name:'檢疫 / 文件', amount:0, currency:'foreign', calcMode:'total', quantity:0}
+  ];
+}
+
+function imImportRenderCostRows(type) {
+  const arr = type === 'fixed' ? _importFixedCosts : _importVariableCosts;
+  const el = document.getElementById(type === 'fixed' ? 'import-fixed-costs' : 'import-variable-costs');
+  if (!el) return;
+  if (!arr.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">尚未新增成本</div>'; return; }
+  const rate = imImportNum('import-rate');
+  const importQty = Math.max(1, Math.floor(imImportNum('import-qty') || 1));
+  if (type === 'fixed') {
+    el.innerHTML = arr.map((r,i)=>`<div style="display:grid;grid-template-columns:minmax(140px,1.4fr) minmax(100px,.8fr) 120px 36px;gap:8px;margin-bottom:8px;align-items:center">
+      <input class="form-input" style="padding:8px 10px" value="${imImportEsc(r.name)}" placeholder="成本名稱" oninput="imImportUpdateCost('${type}',${i},'name',this.value)">
+      <input class="form-input" style="padding:8px 10px" type="number" min="0" step="0.01" value="${Number(r.amount)||0}" oninput="imImportUpdateCost('${type}',${i},'amount',this.value)">
+      <select class="form-select" style="padding:8px 8px" onchange="imImportUpdateCost('${type}',${i},'currency',this.value)">
+        <option value="foreign" ${r.currency==='foreign'?'selected':''}>${imImportCurrencyLabel()}</option>
+        <option value="twd" ${r.currency==='twd'?'selected':''}>TWD</option>
+      </select>
+      <button class="btn-small" style="padding:7px 8px;color:#a11;border-color:#e0b8b8" onclick="imImportRemoveCost('${type}',${i})">×</button>
+    </div>`).join('');
+    return;
+  }
+  el.innerHTML = arr.map((r,i)=>{
+    const mode = r.calcMode || 'total';
+    const qty = Number(r.quantity)||importQty;
+    const raw = (Number(r.amount)||0) * (mode === 'multiply' ? qty : 1);
+    const twd = r.currency === 'foreign' ? raw * rate : raw;
+    return `<div style="border:1px solid rgba(181,115,58,.16);border-radius:8px;padding:9px 10px;margin-bottom:9px;background:rgba(255,255,255,.42)">
+      <div style="display:grid;grid-template-columns:minmax(180px,1fr) 150px;gap:8px;margin-bottom:8px">
+        <input class="form-input" style="padding:8px 10px;min-width:0" value="${imImportEsc(r.name)}" placeholder="成本名稱" oninput="imImportUpdateCost('variable',${i},'name',this.value)">
+        <select class="form-select" style="padding:8px 7px;min-width:0" onchange="imImportUpdateCost('variable',${i},'calcMode',this.value)">
+          <option value="total" ${mode==='total'?'selected':''}>直接金額</option>
+          <option value="multiply" ${mode==='multiply'?'selected':''}>單價 × 數量</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:${mode==='multiply'?'minmax(100px,1fr) 20px minmax(70px,.65fr)':'minmax(150px,1fr)'} 105px minmax(105px,.8fr) 38px;gap:8px;align-items:center">
+        <input class="form-input" style="padding:8px 9px;min-width:0" type="number" min="0" step="0.01" value="${Number(r.amount)||0}" placeholder="${mode==='multiply'?'單價':'金額'}" oninput="imImportUpdateCost('variable',${i},'amount',this.value)">
+        ${mode==='multiply'?`<div style="text-align:center;color:var(--muted);font-size:14px">×</div><input class="form-input" style="padding:8px 8px;min-width:0" type="number" min="0" step="1" value="${qty}" title="數量" placeholder="數量" oninput="imImportUpdateCost('variable',${i},'quantity',this.value)">`:''}
+        <select class="form-select" style="padding:8px 7px;min-width:0" onchange="imImportUpdateCost('variable',${i},'currency',this.value)">
+          <option value="foreign" ${r.currency==='foreign'?'selected':''}>${imImportCurrencyLabel()}</option>
+          <option value="twd" ${r.currency==='twd'?'selected':''}>TWD</option>
+        </select>
+        <div style="font-size:10px;color:var(--muted);line-height:1.3;white-space:nowrap"><span style="display:block">小計</span><strong id="import-var-subtotal-${i}" style="font-size:12px;color:var(--brown)">${imImportMoney(twd)}</strong></div>
+        <button class="btn-small" style="padding:7px 8px;color:#a11;border-color:#e0b8b8" onclick="imImportRemoveCost('variable',${i})">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.imImportAddCost = function(type) {
+  const arr = type === 'fixed' ? _importFixedCosts : _importVariableCosts;
+  arr.push(type === 'variable' ? {id:imImportUid(), name:'', amount:0, currency:'twd', calcMode:'total', quantity:0} : {id:imImportUid(), name:'', amount:0, currency:'twd'});
+  imImportRenderCostRows(type); imImportRecalc();
+};
+window.imImportRemoveCost = function(type,index) {
+  const arr = type === 'fixed' ? _importFixedCosts : _importVariableCosts;
+  arr.splice(index,1); imImportRenderCostRows(type); imImportRecalc();
+};
+window.imImportUpdateCost = function(type,index,key,value) {
+  const arr = type === 'fixed' ? _importFixedCosts : _importVariableCosts;
+  if (!arr[index]) return;
+  arr[index][key] = (key === 'amount' || key === 'quantity') ? (Number(value)||0) : value;
+  if (type === 'variable' && key === 'calcMode' && value === 'multiply' && !Number(arr[index].quantity)) arr[index].quantity = Math.max(1, Math.floor(imImportNum('import-qty') || 1));
+  if (type === 'variable' && key === 'calcMode') imImportRenderCostRows('variable');
+  imImportRecalc();
+};
+
+function imImportCostTwd(row, rate, importQty=1) {
+  const amount = Number(row?.amount)||0;
+  const qty = Number(row?.quantity)||Math.max(1,Number(importQty)||1);
+  const n = row?.calcMode === 'multiply' ? amount * qty : amount;
+  return row?.currency === 'foreign' ? n*rate : n;
+}
+function imImportCalc() {
+  const rate = imImportNum('import-rate');
+  const qty = Math.max(1, Math.floor(imImportNum('import-qty') || 1));
+  const purchaseForeign = imImportNum('import-purchase');
+  const purchaseTwd = purchaseForeign * rate;
+  const fixedTwd = _importFixedCosts.reduce((s,r)=>s+imImportCostTwd(r,rate,qty),0);
+  const variableTwd = _importVariableCosts.reduce((s,r)=>s+imImportCostTwd(r,rate,qty),0);
+  const landedTotal = purchaseTwd + fixedTwd + variableTwd;
+  const landedPerHead = qty ? landedTotal / qty : 0;
+  // 實際成本匯率：把所有固定／浮動進口成本攤回蛇隻原始外幣貨款。
+  // 例如總落地成本 NT$72,387、蛇款 US$1,100 => 65.81 TWD/USD。
+  const effectiveRate = purchaseForeign > 0 ? landedTotal / purchaseForeign : 0;
+  const costMultiplier = purchaseTwd > 0 ? landedTotal / purchaseTwd : 0;
+  const rateIncreasePct = rate > 0 && effectiveRate > 0 ? (effectiveRate / rate - 1) * 100 : 0;
+  return {rate,qty,purchaseForeign,purchaseTwd,fixedTwd,variableTwd,landedTotal,landedPerHead,effectiveRate,costMultiplier,rateIncreasePct};
+}
+
+window.imImportRecalc = function() {
+  // 輸入數字時不要重新 render 成本列，否則 input DOM 會被重建而失去焦點。
+  // 只有新增/刪除、切換算法、切換國家時才重畫成本列。
+  const c = imImportCalc();
+  const _rateNow = c.rate;
+  const _qtyNow = c.qty;
+  _importVariableCosts.forEach((r,i)=>{
+    const sub = document.getElementById(`import-var-subtotal-${i}`);
+    if (sub) sub.textContent = imImportMoney(imImportCostTwd(r,_rateNow,_qtyNow));
+  });
+  const el = document.getElementById('import-summary');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:grid;gap:9px">
+      <div style="background:var(--cream);border-radius:7px;padding:12px 14px"><div style="font-size:10px;color:var(--muted)">蛇隻貨款</div><div style="font-size:18px;font-weight:700;color:var(--brown)">${imImportMoney(c.purchaseTwd)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${imImportForeign(c.purchaseForeign)}</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:white;border:1px solid rgba(181,115,58,.15);border-radius:7px;padding:11px"><div style="font-size:10px;color:var(--muted)">固定成本</div><strong>${imImportMoney(c.fixedTwd)}</strong></div><div style="background:white;border:1px solid rgba(181,115,58,.15);border-radius:7px;padding:11px"><div style="font-size:10px;color:var(--muted)">浮動成本</div><strong>${imImportMoney(c.variableTwd)}</strong></div></div>
+      <div style="border-top:1px solid rgba(181,115,58,.18);padding-top:12px"><div style="font-size:10px;color:var(--muted)">整批落地成本</div><div style="font-size:24px;font-weight:700;color:var(--brown)">${imImportMoney(c.landedTotal)}</div></div>
+      <div style="background:#fff7ed;border:1px solid rgba(181,115,58,.28);border-radius:8px;padding:14px">
+        <div style="font-size:10px;color:var(--copper);font-weight:700;letter-spacing:1px">實際成本匯率</div>
+        <div style="font-size:26px;font-weight:800;color:var(--brown);margin-top:3px">${c.effectiveRate>0?c.effectiveRate.toFixed(c.effectiveRate<1?4:2):'—'}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">1 ${imImportCurrencyLabel()} = ${c.effectiveRate>0?c.effectiveRate.toFixed(c.effectiveRate<1?4:2):'—'} TWD（已含全部成本）</div>
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(181,115,58,.15);font-size:10px;color:var(--muted)">
+          <span>市場匯率 ${c.rate>0?c.rate.toFixed(c.rate<1?4:2):'—'}</span>
+          <span>成本倍率 ${c.costMultiplier>0?c.costMultiplier.toFixed(3):'—'}x</span>
+          <span>墊高 ${c.rateIncreasePct>0?c.rateIncreasePct.toFixed(1):'0.0'}%</span>
+        </div>
+      </div>
+    </div>`;
+
+  // 清除舊版殘留的銷售預估卡片：進口管理只保留成本與實際成本匯率。
+  const legacyLabels = ['預估可售數','預估可售隻數','損益兩平需售','預估整批毛利'];
+  Array.from(el.querySelectorAll('div')).forEach(node => {
+    const t = (node.textContent || '').trim();
+    if (legacyLabels.some(label => t.startsWith(label))) {
+      const card = node.closest('[data-import-forecast-card]') || node.parentElement;
+      if (card && card !== el) card.remove();
+    }
+  });
+};
+
+async function imImportLoadBatches() {
+  try {
+    const snap = await getDoc(doc(db2,'im_cost_params',IMPORT_DOC_ID));
+    _importBatches = snap.exists() && Array.isArray(snap.data().batches) ? snap.data().batches : [];
+  } catch(e) { console.error('載入進口批次失敗',e); _importBatches=[]; }
+}
+async function imImportPersist() {
+  await setDoc(doc(db2,'im_cost_params',IMPORT_DOC_ID), {batches:_importBatches, updatedAt:new Date().toISOString()}, {merge:true});
+}
+function imImportCurrentPayload() {
+  const c = imImportCalc();
+  return {
+    id: imImportUid(),
+    name: document.getElementById('import-batch-name')?.value?.trim() || `進口批次 ${new Date().toLocaleDateString('zh-TW')}`,
+    country: imImportMarketByCountryValue(document.getElementById('import-country')?.value).country,
+    countryCode: document.getElementById('import-country')?.value || 'JP',
+    currency: imImportCurrencyLabel(), rate:c.rate, qty:c.qty,
+    purchaseForeign:c.purchaseForeign,
+    fixedCosts: JSON.parse(JSON.stringify(_importFixedCosts)),
+    variableCosts: JSON.parse(JSON.stringify(_importVariableCosts)),
+    calc:c, createdAt:new Date().toISOString()
+  };
+}
+window.imImportSaveBatch = async function() {
+  try {
+    const p = imImportCurrentPayload();
+    _importBatches.unshift(p);
+    await imImportPersist();
+    imImportRenderHistory();
+    window.showToast('✅ 進口批次已儲存');
+  } catch(e) { window.showToast('❌ 儲存失敗：'+e.message); }
+};
+window.imImportLoadBatch = function(id) {
+  const b=_importBatches.find(x=>x.id===id); if(!b) return;
+  document.getElementById('import-batch-name').value=b.name||'';
+  const savedCountryCode=b.countryCode || imImportCountryCodeFromSaved(b.country,b.currency);
+  document.getElementById('import-country').value=savedCountryCode;
+  document.getElementById('import-currency').value=imImportMarketByCountryValue(savedCountryCode).currency;
+  document.getElementById('import-rate').value=b.rate||0;
+  document.getElementById('import-qty').value=b.qty||1;
+  document.getElementById('import-purchase').value=b.purchaseForeign||0;
+  _importFixedCosts=JSON.parse(JSON.stringify(b.fixedCosts||[]));
+  _importVariableCosts=JSON.parse(JSON.stringify(b.variableCosts||[]));
+  imImportRenderCostRows('fixed'); imImportRenderCostRows('variable'); imImportRecalc();
+  document.getElementById('page-im-import')?.scrollIntoView({behavior:'smooth',block:'start'});
+};
+window.imImportDeleteBatch = async function(id) {
+  if(!confirm('確定刪除這筆進口批次？')) return;
+  _importBatches=_importBatches.filter(x=>x.id!==id);
+  try { await imImportPersist(); imImportRenderHistory(); window.showToast('已刪除'); }
+  catch(e){ window.showToast('❌ 刪除失敗：'+e.message); }
+};
+function imImportRenderHistory() {
+  const el=document.getElementById('import-batch-history'); if(!el) return;
+  if(!_importBatches.length){ el.innerHTML='<div style="background:white;border:1px solid rgba(181,115,58,.12);border-radius:8px;padding:18px;color:var(--muted);font-size:12px">尚未儲存進口批次。</div>'; return; }
+  el.innerHTML=`<div style="background:white;border:1px solid rgba(181,115,58,.12);border-radius:8px;overflow:hidden"><div style="display:grid;grid-template-columns:1.3fr .65fr .55fr .8fr .75fr .75fr 120px;gap:8px;padding:10px 12px;background:var(--cream);font-size:10px;color:var(--muted)"><div>批次</div><div>來源</div><div>隻數</div><div>落地總成本</div><div>單隻成本</div><div>實際匯率</div><div>操作</div></div>${_importBatches.map(b=>{const c=b.calc||{};return `<div style="display:grid;grid-template-columns:1.3fr .65fr .55fr .8fr .75fr .75fr 120px;gap:8px;padding:12px;border-top:1px solid rgba(181,115,58,.1);align-items:center;font-size:12px"><div><strong>${imImportEsc(b.name)}</strong><div style="font-size:10px;color:var(--muted);margin-top:2px">${b.createdAt?new Date(b.createdAt).toLocaleDateString('zh-TW'):''}</div></div><div>${imImportEsc(b.country||'—')}</div><div>${b.qty||0}</div><div>${imImportMoney(c.landedTotal||0)}</div><div>${imImportMoney(c.landedPerHead||0)}</div><div>${c.effectiveRate?Number(c.effectiveRate).toFixed(Number(c.effectiveRate)<1?4:2):'—'}</div><div style="display:flex;gap:5px"><button class="btn-small" onclick="imImportLoadBatch('${b.id}')">載入</button><button class="btn-small" style="color:#a11" onclick="imImportDeleteBatch('${b.id}')">刪除</button></div></div>`}).join('')}</div>`;
+}
+window.imImportResetForm = function() {
+  ['import-batch-name'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('import-country').value='JP'; document.getElementById('import-currency').value='JPY'; document.getElementById('import-rate').value='0.22'; document.getElementById('import-qty').value='1'; document.getElementById('import-purchase').value='0';
+  imImportDefaultCosts(); imImportRenderCostRows('fixed'); imImportRenderCostRows('variable'); imImportRecalc(); imImportRefreshFx(false);
+};
+window.imRenderImportPage = async function() {
+  if(!_importFixedCosts.length && !_importVariableCosts.length) imImportDefaultCosts();
+  await imImportLoadBatches();
+  imImportRenderCostRows('fixed'); imImportRenderCostRows('variable'); imImportRecalc(); imImportRenderHistory();
+  imImportRefreshFx(false);
 };
 
 // ── FEMALE KPI PAGE ───────────────────────────────

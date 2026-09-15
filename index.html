@@ -1616,11 +1616,31 @@ const PLACEHOLDER = `<div class="auction-placeholder-card" style="min-height:400
     <line x1="80" y1="79" x2="74" y2="85" stroke="#C04A6A" stroke-width="2" stroke-linecap="round"/>
     <line x1="80" y1="79" x2="86" y2="85" stroke="#C04A6A" stroke-width="2" stroke-linecap="round"/>
   </svg>
-  <div style="font-size:11px;letter-spacing:2.5px;color:rgba(245,239,228,0.35);font-weight:400;margin-top:16px;text-transform:uppercase;">已經被買走了</div>
-  <div style="font-size:12px;color:rgba(245,239,228,0.2);margin-top:6px;letter-spacing:0.5px;">下次不要猶豫</div>
+  <div style="font-size:11px;letter-spacing:2.5px;color:rgba(245,239,228,0.35);font-weight:400;margin-top:16px;text-transform:uppercase;">即將上架</div>
+  <div style="font-size:12px;color:rgba(245,239,228,0.2);margin-top:6px;letter-spacing:0.5px;">敬請期待</div>
 </div>`;
 
 const PLACEHOLDER_LIGHT = `<div class="auction-placeholder-card" style="min-height:400px;">
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 39px,rgba(122,92,58,0.04) 39px,rgba(122,92,58,0.04) 40px),repeating-linear-gradient(90deg,transparent 0,transparent 39px,rgba(122,92,58,0.04) 39px,rgba(122,92,58,0.04) 40px);pointer-events:none;"></div>
+  <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;opacity:0.55;">
+    <ellipse cx="80" cy="100" rx="60" ry="48" fill="#C4A472"/>
+    <ellipse cx="58" cy="86" rx="18" ry="14" fill="#7A5C3A" opacity="0.6"/>
+    <ellipse cx="96" cy="102" rx="14" ry="11" fill="#7A5C3A" opacity="0.55"/>
+    <ellipse cx="68" cy="114" rx="13" ry="10" fill="#7A5C3A" opacity="0.5"/>
+    <ellipse cx="108" cy="90" rx="11" ry="9" fill="#7A5C3A" opacity="0.48"/>
+    <path d="M 128 95 Q 148 80 140 64 Q 133 52 122 58" stroke="#C4A472" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <ellipse cx="80" cy="52" rx="26" ry="22" fill="#C4A472"/>
+    <circle cx="70" cy="46" r="9" fill="white"/><circle cx="70" cy="46" r="6" fill="#D4880A"/><circle cx="70" cy="46" r="3" fill="#1C2418"/>
+    <circle cx="90" cy="46" r="9" fill="white"/><circle cx="90" cy="46" r="6" fill="#D4880A"/><circle cx="90" cy="46" r="3" fill="#1C2418"/>
+    <line x1="80" y1="70" x2="80" y2="79" stroke="#C04A6A" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="80" y1="79" x2="74" y2="85" stroke="#C04A6A" stroke-width="2" stroke-linecap="round"/>
+    <line x1="80" y1="79" x2="86" y2="85" stroke="#C04A6A" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <div style="font-size:11px;letter-spacing:2.5px;color:rgba(74,48,28,0.6);font-weight:500;margin-top:16px;text-transform:uppercase;">即將上架</div>
+  <div style="font-size:12px;color:rgba(74,48,28,0.4);margin-top:6px;letter-spacing:0.5px;">敬請期待</div>
+</div>`;
+
+const SPECIAL_SOLD_PLACEHOLDER_LIGHT = `<div class="auction-placeholder-card" style="min-height:400px;">
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 39px,rgba(122,92,58,0.04) 39px,rgba(122,92,58,0.04) 40px),repeating-linear-gradient(90deg,transparent 0,transparent 39px,rgba(122,92,58,0.04) 39px,rgba(122,92,58,0.04) 40px);pointer-events:none;"></div>
   <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style="width:110px;height:110px;opacity:0.55;">
     <ellipse cx="80" cy="100" rx="60" ry="48" fill="#C4A472"/>
@@ -1967,7 +1987,7 @@ function renderWeeklySpecials(snakes,config,groups=[]){
     grid.innerHTML=`<div style="grid-column:1/-1;padding:54px 24px;text-align:center;background:rgba(255,255,255,.72);border:1px solid rgba(181,115,58,.18);"><div style="font-size:12px;letter-spacing:2px;color:var(--copper);font-weight:700;margin-bottom:10px">WEEKLY SPECIAL SOLD OUT</div><div style="font-size:22px;color:var(--brown-deep);font-weight:700;margin-bottom:8px">本週特價全數售完</div></div>`;return;
   }
   grid.innerHTML=slotStates.map(({slot,i,s,stillAvailable})=>{
-    if(!stillAvailable) return PLACEHOLDER_LIGHT;
+    if(!stillAvailable) return SPECIAL_SOLD_PLACEHOLDER_LIGHT;
     const factor=Number(factors[slot.id])||weeklySpecialDiscount(slot.id,week.key);
     return s.itemType==='breeding_group'?makeWeeklySpecialGroupCard(s,i+1,factor):makeWeeklySpecialCard(s,i+1,factor);
   }).join('');
