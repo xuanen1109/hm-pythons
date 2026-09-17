@@ -1780,7 +1780,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 let allSnakes = [];
-let specialConfig = { enabled: false, year: 'all', quantity: 6 };
+let specialConfig = { enabled: false, year: 'all', quantity: 6, selectedSlots: [] };
 let currentFilter = 'all';
 // 60×40 mm 標籤列印選取（僅個體，不含繁殖組）
 const labelPrintIds = new Set();
@@ -1943,6 +1943,7 @@ async function loadSnakes() {
     quantity: Math.max(1, Math.min(30, Number(configDoc.quantity || 6))),
     selectedWeekKey: String(configDoc.selectedWeekKey || ''),
     selectedIds: Array.isArray(configDoc.selectedIds) ? configDoc.selectedIds : [],
+    selectedSlots: Array.isArray(configDoc.selectedSlots) ? configDoc.selectedSlots : [],
     selectedFactors: (configDoc.selectedFactors && typeof configDoc.selectedFactors === 'object') ? configDoc.selectedFactors : {},
     selectionVersion: Number(configDoc.selectionVersion || 0)
   };
@@ -3524,9 +3525,33 @@ function buildWeeklySpecialSnapshot(snakes, config) {
   const factors={}; picks.forEach(s=>factors[s.id]=specialDiscountFor(s.id,week.key));
   return {week,picks,factors};
 }
+function specialSlotFromItem(s, factor){
+  if(!s) return null;
+  if(s.itemType==='breeding_group') return {type:'breeding_group',id:String(s.id),maleId:String(s.male?.id||s.group?.maleId||''),femaleId:String(s.female?.id||s.group?.femaleId||''),factor:Number(factor)||null};
+  return {type:'individual',id:String(s.id),factor:Number(factor)||null};
+}
+function specialResolveSlot(slot,snakes){
+  if(!slot) return null;
+  if(slot.type==='breeding_group'){
+    const male=snakes.find(s=>String(s.id)===String(slot.maleId));
+    const female=snakes.find(s=>String(s.id)===String(slot.femaleId));
+    if(!male?.id||!female?.id) return null;
+    const total=(specialPriceNumber(male)===null||specialPriceNumber(female)===null)?null:specialPriceNumber(male)+specialPriceNumber(female);
+    const my=specialBirthYear(male),fy=specialBirthYear(female);
+    return {id:String(slot.id||`bg:${[slot.maleId,slot.femaleId].sort().join('|')}`),itemType:'breeding_group',male,female,group:{maleId:slot.maleId,femaleId:slot.femaleId},status:(male.status==='sale'&&female.status==='sale')?'sale':'inactive',price:total===null?'':String(total),species:male.species||female.species||'ball_python',_specialYearLabel:[my,fy].filter(Boolean).join(' / '),_specialYears:[my,fy].filter(Boolean),nameZh:`繁殖組｜${male.nameZh||male.morph||'公蛇'}（公） × ${female.nameZh||female.morph||'母蛇'}（母）`,nameEn:'Breeding Pair'};
+  }
+  return snakes.find(s=>String(s.id)===String(slot.id))||null;
+}
 function computeWeeklySpecials(snakes, config) {
   if(!config?.enabled) return [];
   const week=specialTaipeiWeek();
+  if(config.selectedWeekKey===week.key && Number(config.selectionVersion||0)>=3 && Array.isArray(config.selectedSlots)){
+    return config.selectedSlots.map(slot=>{
+      const s=specialResolveSlot(slot,snakes);
+      if(!s) return {...slot,id:String(slot.id||''),_specialFactor:Number(slot.factor)||specialDiscountFor(String(slot.id||''),week.key),_specialSold:true,_missing:true};
+      return {...s,_specialFactor:Number(slot.factor)||specialDiscountFor(s.id,week.key),_specialSold:(s.itemType==='breeding_group'?s.status!=='sale':(s.status!=='sale'||!!s.breedingPartnerId))};
+    });
+  }
   if(config.selectedWeekKey===week.key && Array.isArray(config.selectedIds) && Number(config.selectionVersion||0)===2){
     const factors=config.selectedFactors||{};
     return config.selectedIds.map(id=>specialResolveSelected(id,snakes)).filter(Boolean)
@@ -3538,11 +3563,23 @@ function computeWeeklySpecials(snakes, config) {
 async function ensureWeeklySpecialSnapshot(){
   if(!specialConfig?.enabled) return;
   const week=specialTaipeiWeek();
-  if(specialConfig.selectedWeekKey===week.key && Array.isArray(specialConfig.selectedIds) && Number(specialConfig.selectionVersion||0)===2) return;
+  if(specialConfig.selectedWeekKey===week.key && Number(specialConfig.selectionVersion||0)>=3 && Array.isArray(specialConfig.selectedSlots)) return;
+  if(specialConfig.selectedWeekKey===week.key && Number(specialConfig.selectionVersion||0)===2 && Array.isArray(specialConfig.selectedIds)){
+    const factors=specialConfig.selectedFactors||{};
+    const selectedSlots=specialConfig.selectedIds.map(id=>{
+      const s=specialResolveSelected(id,allSnakes);
+      if(!s) return {type:String(id).startsWith('bg:')?'breeding_group':'individual',id:String(id),factor:Number(factors[id])||specialDiscountFor(String(id),week.key)};
+      return specialSlotFromItem(s,Number(factors[s.id])||specialDiscountFor(s.id,week.key));
+    }).filter(Boolean);
+    await setDoc(doc(db,'snakes','special_config'),{itemType:'special_config',selectedSlots,selectionVersion:3,updatedAt:serverTimestamp()},{merge:true});
+    specialConfig={...specialConfig,selectedSlots,selectionVersion:3};
+    return;
+  }
   const snap=buildWeeklySpecialSnapshot(allSnakes,specialConfig);
   const selectedIds=snap.picks.map(s=>s.id);
-  await setDoc(doc(db,'snakes','special_config'),{itemType:'special_config',selectedWeekKey:week.key,selectedIds,selectedFactors:snap.factors,selectionVersion:2,weekGeneratedAt:serverTimestamp(),updatedAt:serverTimestamp()},{merge:true});
-  specialConfig={...specialConfig,selectedWeekKey:week.key,selectedIds,selectedFactors:snap.factors,selectionVersion:2};
+  const selectedSlots=snap.picks.map(s=>specialSlotFromItem(s,snap.factors[s.id])).filter(Boolean);
+  await setDoc(doc(db,'snakes','special_config'),{itemType:'special_config',selectedWeekKey:week.key,selectedIds,selectedSlots,selectedFactors:snap.factors,selectionVersion:3,weekGeneratedAt:serverTimestamp(),updatedAt:serverTimestamp()},{merge:true});
+  specialConfig={...specialConfig,selectedWeekKey:week.key,selectedIds,selectedSlots,selectedFactors:snap.factors,selectionVersion:3};
 }
 window.renderSpecialAdminPage = function() {
   const yearEl=document.getElementById('special-year');
@@ -3565,7 +3602,7 @@ window.renderSpecialAdminPage = function() {
   if (!picks.length) { box.innerHTML='<div style="padding:26px;text-align:center;color:var(--muted);font-size:12px;">這個年份目前沒有符合條件的待售個體或繁殖組</div>'; return; }
   box.innerHTML=`<table class="im-table" style="width:100%"><thead><tr><th>品項</th><th>年份</th><th>原價</th><th>折扣</th><th>本週特價</th></tr></thead><tbody>${picks.map(s=>{const p=specialPriceNumber(s),sp=p===null?null:Math.round(p*s._specialFactor);const isGroup=s.itemType==='breeding_group';const label=isGroup?s.nameZh:(s.nameZh||s.morph||'-');const yr=isGroup?(s._specialYearLabel||'-'):(specialBirthYear(s)||'-');return `<tr style="${s._specialSold?'opacity:.48':''}"><td><strong>${isGroup?'🧬 ':''}${label}</strong><div style="font-size:10px;color:var(--muted);margin-top:2px">${isGroup?'整組販售・不可拆售':(s.code||'')}${s._specialSold?' · 已離開本週特價':''}</div></td><td>${yr}</td><td>${p===null?'—':'NT$'+p.toLocaleString()}</td><td><strong style="color:#a84a24">${specialDiscountLabel(s._specialFactor)}</strong></td><td><strong style="color:#8b1e12">${s._specialSold||sp===null?'—':'NT$'+sp.toLocaleString()}</strong></td></tr>`}).join('')}</tbody></table>`;
 };
-['special-year','special-quantity','special-enabled'].forEach(id=>document.addEventListener('change',e=>{if(e.target?.id===id){const year=document.getElementById('special-year')?.value||'all';const quantity=Number(document.getElementById('special-quantity')?.value||6);const enabled=!!document.getElementById('special-enabled')?.checked;const old=specialConfig;specialConfig={...old,enabled,year,quantity,selectedWeekKey:'',selectedIds:[],selectedFactors:{},selectionVersion:2};renderSpecialAdminPage();specialConfig=old;}}));
+['special-year','special-quantity','special-enabled'].forEach(id=>document.addEventListener('change',e=>{if(e.target?.id===id){const year=document.getElementById('special-year')?.value||'all';const quantity=Number(document.getElementById('special-quantity')?.value||6);const enabled=!!document.getElementById('special-enabled')?.checked;const old=specialConfig;specialConfig={...old,enabled,year,quantity,selectedWeekKey:'',selectedIds:[],selectedSlots:[],selectedFactors:{},selectionVersion:3};renderSpecialAdminPage();specialConfig=old;}}));
 window.saveSpecialConfig = async function() {
   const enabled=!!document.getElementById('special-enabled')?.checked;
   const year=String(document.getElementById('special-year')?.value||'all');
@@ -3574,8 +3611,9 @@ window.saveSpecialConfig = async function() {
     const base={enabled,year,quantity};
     const snap=enabled?buildWeeklySpecialSnapshot(allSnakes,base):{week:specialTaipeiWeek(),picks:[],factors:{}};
     const selectedIds=snap.picks.map(s=>s.id);
-    await setDoc(doc(db,'snakes','special_config'),{itemType:'special_config',enabled,year,quantity,selectedWeekKey:snap.week.key,selectedIds,selectedFactors:snap.factors,selectionVersion:2,weekGeneratedAt:serverTimestamp(),updatedAt:serverTimestamp(),createdAt:serverTimestamp()},{merge:true});
-    specialConfig={enabled,year,quantity,selectedWeekKey:snap.week.key,selectedIds,selectedFactors:snap.factors,selectionVersion:2};
+    const selectedSlots=snap.picks.map(s=>specialSlotFromItem(s,snap.factors[s.id])).filter(Boolean);
+    await setDoc(doc(db,'snakes','special_config'),{itemType:'special_config',enabled,year,quantity,selectedWeekKey:snap.week.key,selectedIds,selectedSlots,selectedFactors:snap.factors,selectionVersion:3,weekGeneratedAt:serverTimestamp(),updatedAt:serverTimestamp(),createdAt:serverTimestamp()},{merge:true});
+    specialConfig={enabled,year,quantity,selectedWeekKey:snap.week.key,selectedIds,selectedSlots,selectedFactors:snap.factors,selectionVersion:3};
     showToast('✅ 特價專區設定已儲存，本週名單已鎖定（繁殖組整組計算）');
     renderSpecialAdminPage();
   } catch(e) { console.error('[specials] save failed',e); showToast('❌ 儲存失敗：'+e.message); }

@@ -1963,7 +1963,22 @@ function renderWeeklySpecials(snakes,config,groups=[]){
   const week=weeklySpecialWeek(),year=String(config.year||'all'),qty=Math.max(1,Math.min(30,Number(config.quantity||6)));
   const pools=weeklySpecialPools(snakes,groups,year);
   let slots=[];
-  if(config.selectedWeekKey===week.key && Array.isArray(config.selectedIds) && config.selectedIds.length && Number(config.selectionVersion||0)===2){
+  if(config.selectedWeekKey===week.key && Number(config.selectionVersion||0)>=3 && Array.isArray(config.selectedSlots) && config.selectedSlots.length){
+    slots=config.selectedSlots.map(slot=>{
+      const id=String(slot?.id||'');
+      let item=null;
+      if(slot?.type==='breeding_group'){
+        const male=snakes.find(s=>String(s.id)===String(slot.maleId));
+        const female=snakes.find(s=>String(s.id)===String(slot.femaleId));
+        if(male?.id&&female?.id){
+          const total=(weeklySpecialPriceNumber(male)===null||weeklySpecialPriceNumber(female)===null)?null:weeklySpecialPriceNumber(male)+weeklySpecialPriceNumber(female);
+          const my=weeklySpecialYear(male),fy=weeklySpecialYear(female);
+          item={id,itemType:'breeding_group',group:{maleId:slot.maleId,femaleId:slot.femaleId},male,female,status:(male.status==='sale'&&female.status==='sale')?'sale':'inactive',price:total===null?'':String(total),species:male.species||female.species||'ball_python',_specialYears:[my,fy].filter(Boolean),_specialYearLabel:[my,fy].filter(Boolean).join(' / ')};
+        }
+      } else item=snakes.find(s=>String(s.id)===id)||null;
+      return {id,item,factor:Number(slot?.factor)||null};
+    });
+  } else if(config.selectedWeekKey===week.key && Array.isArray(config.selectedIds) && config.selectedIds.length && Number(config.selectionVersion||0)===2){
     slots=config.selectedIds.map(id=>{
       const sid=String(id);
       let item=null;
@@ -1988,7 +2003,7 @@ function renderWeeklySpecials(snakes,config,groups=[]){
   }
   grid.innerHTML=slotStates.map(({slot,i,s,stillAvailable})=>{
     if(!stillAvailable) return SPECIAL_SOLD_PLACEHOLDER_LIGHT;
-    const factor=Number(factors[slot.id])||weeklySpecialDiscount(slot.id,week.key);
+    const factor=Number(slot.factor)||Number(factors[slot.id])||weeklySpecialDiscount(slot.id,week.key);
     return s.itemType==='breeding_group'?makeWeeklySpecialGroupCard(s,i+1,factor):makeWeeklySpecialCard(s,i+1,factor);
   }).join('');
 }
@@ -2131,7 +2146,7 @@ async function loadSnakes() {
     const snap = await getDocs(q);
     const rawItems = snap.docs.map(d => ({id:d.id,...d.data()}));
     const specialConfigRaw = rawItems.find(x => x.itemType === 'special_config' || x.id === 'special_config') || {};
-    const specialConfig = {enabled:!!specialConfigRaw.enabled,year:String(specialConfigRaw.year||'all'),quantity:Math.max(1,Math.min(30,Number(specialConfigRaw.quantity||6))),selectedWeekKey:String(specialConfigRaw.selectedWeekKey||''),selectedIds:Array.isArray(specialConfigRaw.selectedIds)?specialConfigRaw.selectedIds:[],selectedFactors:(specialConfigRaw.selectedFactors&&typeof specialConfigRaw.selectedFactors==='object')?specialConfigRaw.selectedFactors:{},selectionVersion:Number(specialConfigRaw.selectionVersion||0)};
+    const specialConfig = {enabled:!!specialConfigRaw.enabled,year:String(specialConfigRaw.year||'all'),quantity:Math.max(1,Math.min(30,Number(specialConfigRaw.quantity||6))),selectedWeekKey:String(specialConfigRaw.selectedWeekKey||''),selectedIds:Array.isArray(specialConfigRaw.selectedIds)?specialConfigRaw.selectedIds:[],selectedSlots:Array.isArray(specialConfigRaw.selectedSlots)?specialConfigRaw.selectedSlots:[],selectedFactors:(specialConfigRaw.selectedFactors&&typeof specialConfigRaw.selectedFactors==='object')?specialConfigRaw.selectedFactors:{},selectionVersion:Number(specialConfigRaw.selectionVersion||0)};
     const snakes = rawItems.filter(x => x.itemType !== 'breeding_group' && x.itemType !== 'special_config' && x.id !== 'special_config');
 
     // INDEX 以原本個體上的 breedingPartnerId 為主要來源。
