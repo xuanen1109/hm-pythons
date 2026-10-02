@@ -488,6 +488,16 @@ textarea.hatch-gene-input {
 
 
 @media(max-width:900px){.import-layout{grid-template-columns:1fr !important}.import-layout .form-card[style*="position:sticky"]{position:static !important}}
+
+/* ── 寄賣／展示管理 ───────────────────────────── */
+.consign-batch-card{background:#fff;border:1px solid rgba(181,115,58,.14);border-radius:9px;margin-bottom:14px;overflow:hidden}
+.consign-batch-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;background:#fffaf4;border-bottom:1px solid rgba(181,115,58,.1)}
+.consign-batch-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.consign-price-input{width:110px;padding:6px 8px;border:1px solid rgba(181,115,58,.25);border-radius:4px;font:inherit;color:var(--brown)}
+.consign-note-input{width:150px;padding:6px 8px;border:1px solid rgba(181,115,58,.25);border-radius:4px;font:inherit;color:var(--brown)}
+.consign-status{padding:5px 7px;border:1px solid rgba(181,115,58,.25);border-radius:4px;background:#fff;color:var(--brown);font:inherit;font-size:11px}
+@media(max-width:800px){#im-consignment-summary{grid-template-columns:1fr 1fr !important}.consign-basic-grid{grid-template-columns:1fr !important}}
+
 </style>
 </head>
 <body>
@@ -543,19 +553,19 @@ textarea.hatch-gene-input {
       </div>
       <div class="sidebar-section" style="margin-top:16px;">
         <div class="sidebar-label">快速篩選</div>
-        <button class="sidebar-btn" onclick="filterSnakes('all'); showPage('list', document.querySelector('.sidebar-btn'))">
+        <button class="sidebar-btn" data-snake-filter="all" onclick="filterSnakes('all'); showPage('list', this)">
           <span class="sidebar-icon">📋</span> 全部
         </button>
-        <button class="sidebar-btn" onclick="filterSnakes('ready'); showPage('list', document.querySelector('.sidebar-btn'))">
+        <button class="sidebar-btn" data-snake-filter="ready" onclick="filterSnakes('ready'); showPage('list', this)">
           <span class="sidebar-icon">⏳</span> 準備上架
         </button>
-        <button class="sidebar-btn" onclick="filterSnakes('sale'); showPage('list', document.querySelector('.sidebar-btn'))">
+        <button class="sidebar-btn" data-snake-filter="sale" onclick="filterSnakes('sale'); showPage('list', this)">
           <span class="sidebar-icon">✅</span> 待售中
         </button>
-        <button class="sidebar-btn" onclick="filterSnakes('auction'); showPage('list', document.querySelector('.sidebar-btn'))">
+        <button class="sidebar-btn" data-snake-filter="auction" onclick="filterSnakes('auction'); showPage('list', this)">
           <span class="sidebar-icon">🔨</span> 競標中
         </button>
-        <button class="sidebar-btn" onclick="filterSnakes('sold'); showPage('list', document.querySelector('.sidebar-btn'))">
+        <button class="sidebar-btn" data-snake-filter="sold" onclick="filterSnakes('sold'); showPage('list', this)">
           <span class="sidebar-icon">📦</span> 已售出
         </button>
       </div>
@@ -577,6 +587,9 @@ textarea.hatch-gene-input {
         <button class="sidebar-btn" onclick="showPage('im-sales', this); imLoadAndRender('sales')">
           <span class="sidebar-icon">💰</span> 銷售記錄
         </button>
+        <button class="sidebar-btn" onclick="showPage('im-consignment', this); imLoadConsignmentPage()">
+          <span class="sidebar-icon">🤝</span> 寄賣／展示
+        </button>
         <button class="sidebar-btn" onclick="showPage('im-fund', this); imLoadFundPage()">
           <span class="sidebar-icon">🏦</span> 公基金
         </button>
@@ -597,6 +610,9 @@ textarea.hatch-gene-input {
         </button>
         <button class="sidebar-btn" onclick="showPage('im-cost', this); imRenderCostPage()">
           <span class="sidebar-icon">⚙️</span> 成本參數設定
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-trade', this); imTradeLoadPage()">
+          <span class="sidebar-icon">🌏</span> 進出口管理
         </button>
         <button class="sidebar-btn" onclick="showPage('im-import', this); imRenderImportPage()">
           <span class="sidebar-icon">📦</span> 進口管理
@@ -624,12 +640,13 @@ textarea.hatch-gene-input {
       <div class="page active" id="page-list">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
           <div>
-            <div class="page-title">所有個體</div>
+            <div class="page-title" id="list-title">所有個體</div>
             <div class="page-sub" id="list-sub">載入中...</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="startBreedingGroupSelection()">🧬 新增繁殖組</button>
             <button id="label-print-btn" class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="printSelectedLabels()">🏷️ 列印貼紙 <span id="label-print-count">0</span></button>
+            <button id="consignment-create-btn" class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" type="button" onclick="imOpenConsignmentFromSaleSnakes()">🤝 建立寄賣單 <span id="consignment-select-count">0</span></button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleText()">📋 匯出待售文字</button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleTextNoPrice()">📋 匯出無售價</button>
           </div>
@@ -1006,9 +1023,42 @@ textarea.hatch-gene-input {
           <select class="form-select" style="width:160px;padding:7px 10px" id="im-f-sales-status" onchange="imRenderTable('sales')"><option value="">全部狀態</option><option>待售</option><option>到貨、結案</option><option>出貨中、面交 (已收款)</option></select>
           <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-sales-owner" onchange="imRenderTable('sales')"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
           <select class="form-select" style="width:100px;padding:7px 10px" id="im-f-sales-year" onchange="imRenderTable('sales')"><option value="">全部年份</option></select>
+          <button class="action-btn" style="padding:7px 12px;color:#7a4a18;border-color:rgba(181,115,58,.35);background:#fffaf4" onclick="imPrintSelectedPurchaseCertificates()">🧾 購買證明</button>
         </div>
         <div style="background:white;border:1px solid rgba(181,115,58,0.12);border-radius:8px;overflow:auto">
           <table class="im-table" id="im-table-sales"></table>
+        </div>
+      </div>
+
+
+      <!-- IM: CONSIGNMENT / DISPLAY -->
+      <div class="page" id="page-im-consignment">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:12px;flex-wrap:wrap">
+          <div>
+            <div class="page-title">🤝 寄賣／展示管理</div>
+            <div class="page-sub" style="margin-bottom:0">建立交接單、寄賣價與盒標，並追蹤個體後續狀態</div>
+          </div>
+          <button class="submit-btn" style="width:auto;padding:8px 18px" onclick="filterSnakes('sale'); showPage('list', document.querySelector('[data-snake-filter=\'sale\']'))">＋ 從待售中勾選個體</button>
+        </div>
+        <div id="im-consignment-summary" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0"></div>
+        <div id="im-consignment-history"></div>
+      </div>
+
+      <div class="im-modal-overlay" id="im-consignment-modal-overlay" onclick="if(event.target===this)imCloseConsignmentModal()">
+        <div class="im-modal" style="max-width:900px">
+          <div class="im-modal-title" id="consign-modal-title">建立寄賣／展示交接單</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px" class="consign-basic-grid">
+            <div><label class="form-label">交付對象</label><input class="form-input" id="consign-recipient" placeholder="例如：蒼汰" value="蒼汰"></div>
+            <div><label class="form-label">交付日期</label><input class="form-input" id="consign-date" type="date"></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">價格直接使用官網「待售中」目前售價，不另外套用倍數。</div>
+          <div style="overflow:auto;border:1px solid rgba(181,115,58,.12);border-radius:8px">
+            <table class="im-table"><thead><tr><th>編號</th><th>中文名稱</th><th>性別</th><th>基因</th><th>官網售價</th><th>備註</th></tr></thead><tbody id="consign-item-rows"></tbody></table>
+          </div>
+          <div class="im-form-actions">
+            <button class="im-btn-cancel" onclick="imCloseConsignmentModal()">取消</button>
+            <button class="submit-btn" id="consign-save-btn" style="width:auto;padding:8px 20px" onclick="imSaveConsignmentBatch()">💾 儲存交接單</button>
+          </div>
         </div>
       </div>
 
@@ -1243,6 +1293,113 @@ textarea.hatch-gene-input {
             <button class="submit-btn" style="flex:1" onclick="imSaveCostParams()">💾 儲存</button>
           </div>
           <div id="cost-save-msg" style="margin-top:10px;font-size:12px;color:#2a6b3a;display:none">✅ 已儲存！KPI 頁面將使用此資料計算成本。</div>
+        </div>
+      </div>
+
+
+      <!-- IM: IMPORT / EXPORT MANAGEMENT -->
+      <div class="page" id="page-im-trade">
+        <style>
+          #page-im-trade .trade-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:14px 0 18px}
+          #page-im-trade .trade-card{background:#fff;border:1px solid rgba(181,115,58,.15);border-radius:9px;padding:13px}
+          #page-im-trade .trade-card small{display:block;font-size:10px;color:var(--muted);margin-bottom:4px}
+          #page-im-trade .trade-card strong{font-size:18px;color:var(--brown)}
+          #page-im-trade .trade-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+          #page-im-trade .trade-table-wrap{background:#fff;border:1px solid rgba(181,115,58,.14);border-radius:9px;overflow:auto;max-height:68vh}
+          #page-im-trade table{width:100%;border-collapse:collapse;min-width:1280px;font-size:11px}
+          #page-im-trade th{position:sticky;top:0;z-index:2;background:var(--cream);color:var(--brown);font-size:10px;padding:9px 7px;border-bottom:1px solid rgba(181,115,58,.18);white-space:nowrap;text-align:left}
+          #page-im-trade td{padding:7px;border-bottom:1px solid rgba(181,115,58,.08);vertical-align:middle}
+          #page-im-trade .trade-input{width:100%;min-width:88px;padding:7px 8px;border:1px solid rgba(59,26,16,.14);border-radius:5px;background:#fff;font:inherit}
+          #page-im-trade .trade-morph{min-width:290px;line-height:1.35}
+          #page-im-trade .grade-group{display:flex;gap:3px}
+          #page-im-trade .grade-btn{border:1px solid rgba(181,115,58,.24);background:#fff;color:var(--muted);border-radius:4px;padding:5px 7px;cursor:pointer;font-size:10px;font-weight:700}
+          #page-im-trade .grade-btn.active{background:var(--copper);color:white;border-color:var(--copper)}
+          #page-im-trade .ledger-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:16px;margin-top:20px;align-items:start}
+          #page-im-trade .expense-row{display:grid;grid-template-columns:1.5fr .8fr .65fr .7fr 36px;gap:7px;align-items:center;margin-bottom:7px}
+          #page-im-trade .trade-badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#f6efe6;color:#8a4d23;font-size:10px;font-weight:700}
+          @media(max-width:1000px){#page-im-trade .trade-summary{grid-template-columns:repeat(2,minmax(0,1fr))}#page-im-trade .ledger-grid{grid-template-columns:1fr}}
+        </style>
+
+        <div class="page-title">🌏 進出口管理</div>
+        <div class="page-sub">2026-09-29 球蟒清單 · 145 隻（♀ 82 / ♂ 63）｜個體定價、S/A/B/C 分級與整批帳務管理</div>
+
+        <div class="trade-summary">
+          <div class="trade-card"><small>清單總數</small><strong id="trade-sum-count">145</strong></div>
+          <div class="trade-card"><small>已分級</small><strong id="trade-sum-graded">0</strong></div>
+          <div class="trade-card"><small>個體成本合計</small><strong id="trade-sum-cost">NT$0</strong></div>
+          <div class="trade-card"><small>零售價合計</small><strong id="trade-sum-retail">NT$0</strong></div>
+          <div class="trade-card"><small>批次總成本</small><strong id="trade-sum-batch">NT$0</strong></div>
+        </div>
+
+        <div class="form-card" style="max-width:none;padding:14px 16px">
+          <div class="trade-toolbar">
+            <input class="form-input" id="trade-search" style="max-width:320px" placeholder="搜尋編號 / Morph" oninput="imTradeRenderTable()">
+            <select class="form-select" id="trade-sex-filter" style="width:120px" onchange="imTradeRenderTable()">
+              <option value="">全部性別</option><option value="F">♀ 母</option><option value="M">♂ 公</option>
+            </select>
+            <select class="form-select" id="trade-grade-filter" style="width:130px" onchange="imTradeRenderTable()">
+              <option value="">全部等級</option><option value="S">S級</option><option value="A">A級</option><option value="B">B級</option><option value="C">C級</option><option value="none">未分級</option>
+            </select>
+            <span class="trade-badge" id="trade-filter-count">145 隻</span>
+            <button class="btn-small" onclick="imTradeSaveNow()">💾 立即儲存</button>
+          </div>
+
+          <div class="trade-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:92px">編號</th>
+                  <th style="width:55px">性別</th>
+                  <th>Morph</th>
+                  <th style="width:170px">等級</th>
+                  <th style="width:120px">成本價<br><span style="font-weight:400;color:var(--muted)">NT$</span></th>
+                  <th style="width:120px">零售價<br><span style="font-weight:400;color:var(--muted)">NT$</span></th>
+                  <th style="width:120px">日本批發價<br><span style="font-weight:400;color:var(--muted)">JPY ¥</span></th>
+                  <th style="width:120px">MorphMarket<br><span style="font-weight:400;color:var(--muted)">USD $</span></th>
+                  <th style="width:180px">備註</th>
+                </tr>
+              </thead>
+              <tbody id="trade-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="ledger-grid">
+          <div class="form-card" style="max-width:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">
+              <div>
+                <div style="font-size:15px;font-weight:700;color:var(--brown)">🧾 批次記帳</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:3px">記錄這批貨的總成本、物流、檢疫、手續費與其他額外支出</div>
+              </div>
+              <button class="btn-small" onclick="imTradeAddExpense()">＋ 額外支出</button>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px">
+              <div><label class="form-label">批次名稱</label><input class="form-input" id="trade-batch-name" value="2026-09-29 球蟒批次" oninput="imTradeScheduleSave()"></div>
+              <div><label class="form-label">來源／目的地</label><input class="form-input" id="trade-route" placeholder="例如：韓國 → 台灣 / 台灣 → 日本" oninput="imTradeScheduleSave()"></div>
+              <div><label class="form-label">基礎貨款總成本（NT$）</label><input class="form-input" id="trade-base-cost" type="number" min="0" step="1" value="0" oninput="imTradeLedgerChanged()"></div>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;color:var(--copper);margin-bottom:8px">額外支出</div>
+            <div style="display:grid;grid-template-columns:1.5fr .8fr .65fr .7fr 36px;gap:7px;margin-bottom:5px;font-size:9px;color:var(--muted)">
+              <div>項目</div><div>金額</div><div>幣別</div><div>換算匯率</div><div></div>
+            </div>
+            <div id="trade-expenses"></div>
+
+            <div style="margin-top:14px">
+              <label class="form-label">批次備註</label>
+              <textarea class="form-input" id="trade-batch-note" rows="3" placeholder="付款、運輸、檢疫、報關或其他備註" oninput="imTradeScheduleSave()"></textarea>
+            </div>
+          </div>
+
+          <div class="form-card" style="max-width:none;position:sticky;top:84px">
+            <div style="font-size:15px;font-weight:700;color:var(--brown);margin-bottom:12px">帳務摘要</div>
+            <div id="trade-ledger-summary"></div>
+            <div style="margin-top:12px;font-size:10px;color:var(--muted);line-height:1.6">
+              ※ 個體「成本價」與批次帳務分開記錄。<br>
+              ※ 批次總成本 = 基礎貨款 + 所有額外支出換算後金額。
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1784,6 +1941,7 @@ let specialConfig = { enabled: false, year: 'all', quantity: 6, selectedSlots: [
 let currentFilter = 'all';
 // 60×40 mm 標籤列印選取（僅個體，不含繁殖組）
 const labelPrintIds = new Set();
+const consignmentSnakeIds = new Set();
 let editingId = null;
 let newStatus = null;
 let currentTags = [];
@@ -2003,6 +2161,17 @@ async function loadSnakes() {
 }
 function renderSnakes() {
   const grid = document.getElementById('snake-grid');
+  const listTitle = document.getElementById('list-title');
+  if (listTitle) {
+    const titleMap = {
+      all: '所有個體',
+      ready: '準備上架',
+      sale: '待售中',
+      auction: '競標中',
+      sold: '已售出'
+    };
+    listTitle.textContent = titleMap[currentFilter] || '所有個體';
+  }
   const statusOrder = { ready: 0, auction: 1, sale: 2, sold: 3 };
   const filtered = (currentFilter === 'all' ? [...allSnakes] : allSnakes.filter(s => s.status === currentFilter))
     .sort((a, b) => (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99));
@@ -2118,6 +2287,11 @@ function renderSnakes() {
           <input type="checkbox" ${labelPrintIds.has(String(s.id)) ? 'checked' : ''} onchange="toggleLabelPrintSnake('${s.id}', this.checked)" style="width:17px;height:17px;accent-color:var(--copper);">
           貼紙
         </label>` : ''}
+      ${!bgSelectionMode && currentFilter === 'sale' ? `
+        <label onclick="event.stopPropagation()" style="position:absolute;left:10px;top:52px;z-index:8;background:rgba(247,251,247,.97);border:1px solid rgba(42,107,58,.28);border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#2a6b3a;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.10);">
+          <input type="checkbox" ${consignmentSnakeIds.has(String(s.id)) ? 'checked' : ''} onchange="toggleConsignmentSnake('${s.id}', this.checked)" style="width:17px;height:17px;accent-color:#2a6b3a;">
+          寄賣
+        </label>` : ''}
       ${bgSelectionMode ? `
         <label onclick="event.stopPropagation()" style="position:absolute;left:10px;top:10px;z-index:8;background:rgba(255,255,255,.94);border:1px solid rgba(59,26,16,.18);border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--brown);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);">
           <input type="checkbox" ${selectedForGroup ? 'checked' : ''} onchange="toggleBreedingGroupSnake('${s.id}', this.checked)" style="width:17px;height:17px;accent-color:var(--copper);">
@@ -2148,6 +2322,7 @@ function renderSnakes() {
   grid.innerHTML = groupCards + snakeCards;
   bgUpdateSelectionBar();
   updateLabelPrintCount();
+  updateConsignmentSelectCount();
 }
 
 function updateLabelPrintCount() {
@@ -2162,6 +2337,28 @@ window.toggleLabelPrintSnake = (id, checked) => {
   if (checked) labelPrintIds.add(String(id));
   else labelPrintIds.delete(String(id));
   updateLabelPrintCount();
+};
+
+function updateConsignmentSelectCount() {
+  const validSaleIds = new Set(allSnakes.filter(s => s.status === 'sale').map(s => String(s.id)));
+  [...consignmentSnakeIds].forEach(id => { if (!validSaleIds.has(String(id))) consignmentSnakeIds.delete(id); });
+  const el = document.getElementById('consignment-select-count');
+  if (el) el.textContent = String(consignmentSnakeIds.size);
+}
+
+window.toggleConsignmentSnake = (id, checked) => {
+  if (checked) consignmentSnakeIds.add(String(id));
+  else consignmentSnakeIds.delete(String(id));
+  updateConsignmentSelectCount();
+};
+
+window.getSelectedConsignmentSaleSnakes = () =>
+  allSnakes.filter(s => s.status === 'sale' && consignmentSnakeIds.has(String(s.id)));
+
+window.clearSelectedConsignmentSaleSnakes = () => {
+  consignmentSnakeIds.clear();
+  updateConsignmentSelectCount();
+  renderSnakes();
 };
 
 function labelEsc(v) {
@@ -4085,8 +4282,9 @@ window.imRenderTable = (section) => {
     if(salesFundSummary) salesFundSummary.innerHTML=imFundOwnerSummaryHtml();
 
     document.getElementById('im-table-sales').innerHTML = `<thead><tr>
-      <th>所有人</th><th>產品編號</th><th>基因</th><th>性別</th><th>個性</th><th>售價</th><th>公基金</th><th>狀態</th><th>繳納</th><th>買家</th><th>出貨日</th><th>操作</th>
+      <th style="width:38px"><input type="checkbox" title="全選目前列表個體" onchange="imPurchaseCertSelectVisible(this.checked)"></th><th>所有人</th><th>產品編號</th><th>基因</th><th>性別</th><th>個性</th><th>售價</th><th>公基金</th><th>狀態</th><th>繳納</th><th>買家</th><th>出貨日</th><th>操作</th>
     </tr></thead><tbody>${rows.map(r=>`<tr>
+      <td data-label="勾選" style="text-align:center"><input type="checkbox" ${window._purchaseCertSelected?.has(r._id)?'checked':''} onchange="imPurchaseCertToggle('${r._id}',this.checked)" title="勾選個體，可開購買證明或建立寄賣單"></td>
       <td data-label="所有人">${ownerSpan(r.owner)}</td>
       <td data-label="產品編號" style="font-size:10px;color:var(--muted);white-space:nowrap">${r.saleId||''}</td>
       <td data-label="基因" style="font-size:11px;max-width:200px">${r.gene||''}</td>
@@ -4103,8 +4301,9 @@ window.imRenderTable = (section) => {
         <button class="action-btn danger" onclick="imConfirmDelete('sales','${r._id}','${esc(r.gene)}')">刪除</button>
         <button class="action-btn" style="color:#2a6b3a;border-color:rgba(42,107,58,0.3)" onclick="imPushToSite('${r._id}')" title="推送到官網展示">🌐 推官網</button>
         <button class="action-btn" style="color:#8b4ab5;border-color:rgba(139,74,181,0.3)" onclick="imOpenPhotoLabel('${r._id}')" title="生成標籤圖">🎨 標籤圖</button>
+        <button class="action-btn" style="color:#7a4a18;border-color:rgba(181,115,58,0.35)" onclick="imPrintPurchaseCertificates(['${r._id}'])" title="列印購買證明">🧾 證明</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
+    </tr>`).join('')||'<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
   }
   else if (section === 'breeding') {
     const q = (document.getElementById('im-q-breeding')||{}).value?.toLowerCase()||'';
@@ -4146,6 +4345,372 @@ window.imRenderTable = (section) => {
       </td>
     </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">沒有資料</td></tr>'}</tbody>`;
   }
+};
+
+
+
+// ── PURCHASE CERTIFICATE ────────────────────────────────────────────────
+window._purchaseCertSelected = window._purchaseCertSelected || new Set();
+window.imPurchaseCertToggle = (id, checked) => {
+  if (checked) window._purchaseCertSelected.add(id); else window._purchaseCertSelected.delete(id);
+};
+window.imPurchaseCertSelectVisible = (checked) => {
+  const q = (document.getElementById('im-q-sales')||{}).value?.toLowerCase()||'';
+  const st = (document.getElementById('im-f-sales-status')||{}).value||'';
+  const ow = (document.getElementById('im-f-sales-owner')||{}).value||'';
+  const yr = (document.getElementById('im-f-sales-year')||{}).value||'';
+  (IM.sales||[]).filter(r=>{
+    const txt=((r.saleId||'')+(r.gene||'')+(r.owner||'')+(r.buyer||'')).toLowerCase();
+    return (!q||txt.includes(q)) && (!st||r.status===st) && (!ow||r.owner===ow) && (!yr||String(getSalesRowYear(r))===String(yr));
+  }).forEach(r=> checked ? window._purchaseCertSelected.add(r._id) : window._purchaseCertSelected.delete(r._id));
+  imRenderTable('sales');
+};
+window.imPrintSelectedPurchaseCertificates = () => {
+  const ids=[...(window._purchaseCertSelected||[])];
+  if(!ids.length){ window.showToast('請先勾選要開立購買證明的個體'); return; }
+  imPrintPurchaseCertificates(ids);
+};
+function imCertDate(v){
+  if(!v) return '';
+  const s=String(v).trim().replace(/\//g,'-');
+  const m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  return m ? `${m[1]}/${String(m[2]).padStart(2,'0')}/${String(m[3]).padStart(2,'0')}` : String(v);
+}
+function imCertSex(v){ return v==='M'?'公 Male':v==='F'?'母 Female':'未知 Unknown'; }
+window.imPrintPurchaseCertificates = (ids) => {
+  const rows=(ids||[]).map(id=>(IM.sales||[]).find(r=>r._id===id)).filter(Boolean);
+  if(!rows.length){ window.showToast('找不到勾選的個體資料'); return; }
+  const logo=document.querySelector('.login-logo')?.src||'';
+  const today=new Date().toISOString().slice(0,10);
+  const pages=rows.map((r,i)=>{
+    const pd=imCertDate(r.purchaseDate || r.ship || today);
+    const buyer=(r.buyer||'').trim() || '—';
+    const price=Number(r.price)||0;
+    return `<section class="cert-page">
+      <div class="cert-frame">
+        <header class="cert-head">
+          ${logo?`<img src="${logo}" class="cert-logo">`:''}
+          <div><div class="brand">hm.pythons</div><div class="brand-sub">TAIWAN BALL PYTHON BREEDER</div></div>
+          <div class="cert-title"><strong>購買證明書</strong><span>PURCHASE CERTIFICATE</span></div>
+        </header>
+        <div class="rule"></div>
+        <div class="cert-grid">
+          <div><label>購買日期</label><b>${esc(pd||'—')}</b></div>
+          <div><label>個體編號</label><b>${esc(r.saleId||'—')}</b></div>
+          <div><label>物種</label><b>${esc(r.species||'—')}</b></div>
+          <div><label>性別</label><b>${esc(imCertSex(r.sex))}</b></div>
+          <div class="wide"><label>基因 / 品系</label><b>${esc(r.gene||'—')}</b></div>
+          <div class="wide"><label>買家</label><b>${esc(buyer)}</b></div>
+          ${price?`<div><label>購買金額</label><b>NT$${price.toLocaleString('zh-TW')}</b></div>`:''}
+          <div><label>賣家</label><b>hm.pythons</b></div>
+        </div>
+        <div class="note"><label>備註</label><div>${esc(r.certificateNote||'本證明用於確認上述個體之購買紀錄。')}</div></div>
+        <footer>hm.pythons · Taiwan Ball Python Breeder</footer>
+      </div>
+    </section>`;
+  }).join('');
+  const w=window.open('','_blank');
+  if(!w){ window.showToast('瀏覽器阻擋了列印視窗，請允許彈出式視窗'); return; }
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>hm.pythons 購買證明</title><style>
+    @page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;background:#eee;font-family:"Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;color:#35170e}.cert-page{width:210mm;height:297mm;padding:18mm;background:#f8f2e8;page-break-after:always}.cert-page:last-child{page-break-after:auto}.cert-frame{height:100%;background:#fff;border:1px solid #d8b992;padding:15mm;position:relative}.cert-head{display:grid;grid-template-columns:24mm 1fr auto;gap:6mm;align-items:center}.cert-logo{width:22mm;height:22mm;object-fit:contain}.brand{font-family:Georgia,serif;font-size:22px;font-weight:700}.brand-sub{font-size:8px;letter-spacing:3px;color:#b5733a;margin-top:3px}.cert-title{text-align:right}.cert-title strong{display:block;font-size:26px;font-weight:700}.cert-title span{display:block;font-size:9px;letter-spacing:3px;color:#a66532;margin-top:5px}.rule{height:1px;background:#c98d58;margin:10mm 0}.cert-grid{display:grid;grid-template-columns:1fr 1fr;gap:7mm 12mm}.cert-grid>div{border-bottom:1px solid #e4d4c1;padding-bottom:4mm;min-height:18mm}.cert-grid .wide{grid-column:1/-1}.cert-grid label,.note label{display:block;font-size:10px;letter-spacing:1.5px;color:#9a6b49;margin-bottom:2mm}.cert-grid b{font-size:17px;line-height:1.5;font-weight:600}.note{margin-top:9mm;border:1px solid #eadcca;background:#fcf8f2;padding:6mm;min-height:32mm}.note div{font-size:13px;line-height:1.8;color:#6b5344}footer{position:absolute;left:15mm;right:15mm;bottom:12mm;border-top:1px solid #e4d4c1;padding-top:4mm;text-align:center;font-size:9px;letter-spacing:1.5px;color:#a17b61}@media print{body{background:#fff}.cert-page{padding:18mm}}
+  </style></head><body>${pages}<script>window.onload=()=>{setTimeout(()=>window.print(),250)}<\/script></body></html>`);
+  w.document.close();
+};
+
+
+// ── CONSIGNMENT / DISPLAY MANAGEMENT ───────────────────────────────────
+let _consignmentBatches = [];
+let _consignmentDraftRows = [];
+let _consignmentAppendTargetId = null;
+const _consignmentLabelSelected = new Set();
+const CONSIGNMENT_DOC_ID = 'consignment_management';
+
+function imConsignmentUid(){ return 'con_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7); }
+function imConsignmentToday(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function imConsignmentSex(v){ return v==='M'?'♂ 公':v==='F'?'♀ 母':'—'; }
+function imConsignmentMoney(n){ return `NT$${Math.round(Number(n)||0).toLocaleString('zh-TW')}`; }
+function imConsignmentEsc(v=''){ return esc(String(v??'')); }
+
+async function imLoadConsignmentData(){
+  try{
+    const snap=await getDoc(doc(db2,'im_cost_params',CONSIGNMENT_DOC_ID));
+    const data=snap.exists()?snap.data():{};
+    _consignmentBatches=Array.isArray(data.batches)?data.batches:[];
+  }catch(e){
+    console.error('[consignment] load failed',e);
+    _consignmentBatches=[];
+    window.showToast?.('⚠️ 寄賣資料讀取失敗：'+e.message);
+  }
+}
+async function imPersistConsignmentData(){
+  await setDoc(doc(db2,'im_cost_params',CONSIGNMENT_DOC_ID),{batches:_consignmentBatches,updatedAt:serverTimestamp()},{merge:true});
+}
+
+window.imLoadConsignmentPage=async()=>{ await imLoadAll(); await imLoadConsignmentData(); imRenderConsignmentPage(); };
+
+
+function imConsignmentParsePrice(v){
+  const n = Number(String(v ?? '').replace(/[^\d.]/g,''));
+  return Number.isFinite(n) ? n : 0;
+}
+function imConsignmentSnakeGene(s){
+  const tags = Array.isArray(s?.tags) ? s.tags.filter(Boolean) : [];
+  if(tags.length) return tags.join(' / ');
+  return String(s?.morph || s?.nameEn || '').trim();
+}
+window.imOpenConsignmentFromSaleSnakes=async()=>{
+  let rows = window.getSelectedConsignmentSaleSnakes ? window.getSelectedConsignmentSaleSnakes() : [];
+  if(!rows.length){ window.showToast('請先到「待售中」勾選要寄賣的個體'); return; }
+  let targetBatch = null;
+  if (_consignmentAppendTargetId) {
+    await imLoadConsignmentData();
+    targetBatch = _consignmentBatches.find(b=>b.id===_consignmentAppendTargetId) || null;
+    if (!targetBatch) { _consignmentAppendTargetId = null; window.showToast('找不到原本的寄賣單，請重新操作'); return; }
+    const existingIds = new Set((targetBatch.items||[]).map(x=>String(x.sourceId||'')));
+    const before = rows.length;
+    rows = rows.filter(s=>!existingIds.has(String(s.id)));
+    if (!rows.length) { window.showToast('你勾選的個體都已經在這張寄賣單裡'); return; }
+    if (rows.length < before) window.showToast('已略過原本就在寄賣單裡的個體');
+  }
+  _consignmentDraftRows = rows.map(s=>{
+    const originalPrice = imConsignmentParsePrice(s.price);
+    return {sourceId:String(s.id),saleId:String(s.code||''),nameZh:String(s.nameZh||''),nameEn:String(s.nameEn||s.morph||''),species:String(s.species||''),sex:String(s.sex||''),gene:imConsignmentSnakeGene(s),owner:'',originalPrice,consignmentPrice:Math.round(originalPrice),note:'',status:'寄賣中'};
+  });
+  const titleEl=document.getElementById('consign-modal-title');
+  const saveEl=document.getElementById('consign-save-btn');
+  if(targetBatch){
+    document.getElementById('consign-recipient').value=targetBatch.recipient||'蒼汰';
+    document.getElementById('consign-date').value=targetBatch.handoffDate||imConsignmentToday();
+    if(titleEl) titleEl.textContent=`新增個體到寄賣單｜${targetBatch.recipient||'寄賣'}`;
+    if(saveEl) saveEl.textContent='➕ 加入這張寄賣單';
+  }else{
+    document.getElementById('consign-recipient').value='蒼汰';
+    document.getElementById('consign-date').value=imConsignmentToday();
+    if(titleEl) titleEl.textContent='建立寄賣／展示交接單';
+    if(saveEl) saveEl.textContent='💾 儲存交接單';
+  }
+  imRenderConsignmentDraftRows();
+  document.getElementById('im-consignment-modal-overlay').classList.add('show');
+};
+
+window.imOpenConsignmentFromSelected=async()=>{
+  const ids=[...(window._purchaseCertSelected||[])];
+  if(!ids.length){ window.showToast('請先勾選要寄賣／展示的個體'); return; }
+  await imLoadAll();
+  const rows=ids.map(id=>(IM.sales||[]).find(r=>r._id===id)).filter(Boolean);
+  if(!rows.length){ window.showToast('找不到勾選的個體資料'); return; }
+  _consignmentDraftRows=rows.map(r=>({
+    sourceId:r._id,saleId:r.saleId||'',nameZh:r.nameZh||'',nameEn:r.nameEn||'',species:r.species||'',sex:r.sex||'',gene:r.gene||'',owner:r.owner||'',
+    originalPrice:Number(r.price)||0,consignmentPrice:Math.round(Number(r.price)||0),note:'',status:'寄賣中'
+  }));
+  document.getElementById('consign-recipient').value='蒼汰';
+  document.getElementById('consign-date').value=imConsignmentToday();
+  imRenderConsignmentDraftRows();
+  document.getElementById('im-consignment-modal-overlay').classList.add('show');
+};
+window.imCloseConsignmentModal=()=>{
+  document.getElementById('im-consignment-modal-overlay')?.classList.remove('show');
+  _consignmentAppendTargetId=null;
+  const titleEl=document.getElementById('consign-modal-title');
+  const saveEl=document.getElementById('consign-save-btn');
+  if(titleEl) titleEl.textContent='建立寄賣／展示交接單';
+  if(saveEl) saveEl.textContent='💾 儲存交接單';
+};
+
+window.imConsignmentMultiplierChanged=()=>{
+  const sel=document.getElementById('consign-multiplier'),wrap=document.getElementById('consign-custom-wrap');
+  if(!sel||!wrap)return;
+  wrap.style.display=sel.value==='custom'?'block':'none';
+  imConsignmentApplyMultiplier();
+};
+window.imConsignmentApplyMultiplier=()=>{
+  const sel=document.getElementById('consign-multiplier');
+  let mult=sel?.value==='custom'?Number(document.getElementById('consign-custom-multiplier')?.value||1):Number(sel?.value||1);
+  if(!Number.isFinite(mult)||mult<=0)mult=1;
+  _consignmentDraftRows.forEach(r=>r.consignmentPrice=Math.round((Number(r.originalPrice)||0)*mult));
+  imRenderConsignmentDraftRows();
+};
+window.imConsignmentDraftPrice=(i,v)=>{
+  if(_consignmentDraftRows[i])_consignmentDraftRows[i].consignmentPrice=Math.max(0,Number(v)||0);
+  const r=_consignmentDraftRows[i],el=document.getElementById(`consign-row-mult-${i}`);
+  if(r&&el){ const m=r.originalPrice>0?r.consignmentPrice/r.originalPrice:0; el.textContent=m?`${m.toFixed(2)}×`:'—'; }
+};
+window.imConsignmentDraftNote=(i,v)=>{ if(_consignmentDraftRows[i])_consignmentDraftRows[i].note=v; };
+
+function imRenderConsignmentDraftRows(){
+  const tb=document.getElementById('consign-item-rows'); if(!tb)return;
+  tb.innerHTML=_consignmentDraftRows.map((r,i)=>`<tr>
+      <td data-label="編號" style="font-size:10px;white-space:nowrap">${imConsignmentEsc(r.saleId||'—')}</td>
+      <td data-label="中文名稱" style="font-weight:700">${imConsignmentEsc(r.nameZh||'—')}</td>
+      <td data-label="性別">${imConsignmentSex(r.sex)}</td>
+      <td data-label="基因" style="min-width:180px">${imConsignmentEsc(r.gene||'—')}</td>
+      <td data-label="官網售價" style="white-space:nowrap;font-weight:700">${imConsignmentMoney(r.originalPrice)}</td>
+      <td data-label="備註"><input class="consign-note-input" value="${imConsignmentEsc(r.note||'')}" oninput="imConsignmentDraftNote(${i},this.value)" placeholder="可留空"></td>
+    </tr>`).join('');
+}
+
+window.imSaveConsignmentBatch=async()=>{
+  const recipient=(document.getElementById('consign-recipient')?.value||'').trim();
+  const handoffDate=document.getElementById('consign-date')?.value||imConsignmentToday();
+  if(!recipient){ window.showToast('請填寫交付對象'); return; }
+  if(!_consignmentDraftRows.length){ window.showToast('沒有可儲存的個體'); return; }
+  try{
+    await imLoadConsignmentData();
+    if(_consignmentAppendTargetId){
+      const target=_consignmentBatches.find(b=>b.id===_consignmentAppendTargetId);
+      if(!target){ window.showToast('找不到原本的寄賣單'); return; }
+      const existingIds=new Set((target.items||[]).map(x=>String(x.sourceId||'')));
+      const adding=_consignmentDraftRows.filter(r=>!existingIds.has(String(r.sourceId||'')));
+      if(!adding.length){ window.showToast('沒有新的個體可以加入'); return; }
+      target.items=[...(target.items||[]),...adding.map(r=>({...r}))];
+      target.recipient=recipient; target.handoffDate=handoffDate; target.updatedAt=new Date().toISOString();
+      await imPersistConsignmentData();
+      _consignmentAppendTargetId=null;
+      window.showToast(`✅ 已新增 ${adding.length} 隻到原寄賣單`);
+    }else{
+      const batch={id:imConsignmentUid(),recipient,handoffDate,createdAt:new Date().toISOString(),items:_consignmentDraftRows.map(r=>({...r}))};
+      _consignmentBatches.unshift(batch);
+      await imPersistConsignmentData();
+      window.showToast('✅ 寄賣／展示交接單已儲存');
+    }
+    document.getElementById('im-consignment-modal-overlay')?.classList.remove('show');
+    window.clearSelectedConsignmentSaleSnakes?.();
+    const titleEl=document.getElementById('consign-modal-title'); const saveEl=document.getElementById('consign-save-btn');
+    if(titleEl) titleEl.textContent='建立寄賣／展示交接單';
+    if(saveEl) saveEl.textContent='💾 儲存交接單';
+    showPage('im-consignment'); imRenderConsignmentPage();
+  }catch(e){ console.error(e); window.showToast('❌ 儲存失敗：'+e.message); }
+};
+
+window.imRenderConsignmentPage=()=>{
+  const sum=document.getElementById('im-consignment-summary'),hist=document.getElementById('im-consignment-history');
+  if(!sum||!hist)return;
+  const all=_consignmentBatches.flatMap(b=>Array.isArray(b.items)?b.items:[]);
+  const active=all.filter(x=>x.status==='寄賣中').length,sold=all.filter(x=>x.status==='蒼汰賣出'||x.status==='HM.PYTHON賣出').length,settled=all.filter(x=>x.status==='已結清').length;
+  sum.innerHTML=[['寄賣批次',`${_consignmentBatches.length} 批`],['目前寄賣中',`${active} 隻`],['已售出',`${sold} 隻`],['已結清',`${settled} 隻`]]
+    .map(([l,v])=>`<div class="im-kpi"><div class="im-kpi-label">${l}</div><div class="im-kpi-value" style="font-size:18px">${v}</div></div>`).join('');
+
+  hist.innerHTML=_consignmentBatches.map(b=>{
+    const items=b.items||[], total=items.reduce((s,x)=>s+(Number(x.consignmentPrice)||0),0);
+    return `<div class="consign-batch-card">
+      <div class="consign-batch-head">
+        <div><div style="font-size:15px;font-weight:700">${imConsignmentEsc(b.recipient||'未命名寄賣方')}</div><div class="consign-batch-meta">${imConsignmentEsc(b.handoffDate||'—')} · ${items.length} 隻 · 寄賣總價 ${imConsignmentMoney(total)}</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="action-btn" style="color:#2a6b3a;border-color:rgba(42,107,58,.35)" onclick="imAddSnakesToConsignment('${b.id}')">＋ 新增蛇隻</button>
+          <button class="action-btn" onclick="imPrintConsignmentHandoff('${b.id}')">🧾 一式兩份交接單</button>
+          <button class="action-btn" onclick="imPrintSelectedConsignmentLabels('${b.id}')">🏷️ 列印勾選盒標 <span id="consign-label-count-${b.id}">${items.filter((_,i)=>_consignmentLabelSelected.has(`${b.id}::${i}`)).length}</span></button>
+          <button class="action-btn" onclick="imPrintConsignmentLabels('${b.id}')">全部盒標</button>
+          <button class="action-btn danger" onclick="imDeleteConsignmentBatch('${b.id}')">刪除</button>
+        </div>
+      </div>
+      <div style="overflow:auto"><table class="im-table"><thead><tr><th>盒標</th><th>編號</th><th>中文名稱</th><th>性別</th><th>基因</th><th>官網售價</th><th>狀態</th><th>備註</th><th>操作</th></tr></thead><tbody>
+      ${items.map((r,i)=>{const m=(Number(r.originalPrice)||0)>0?(Number(r.consignmentPrice)||0)/(Number(r.originalPrice)||1):0;const labelKey=`${b.id}::${i}`;return `<tr>
+        <td data-label="盒標" style="text-align:center"><input type="checkbox" ${_consignmentLabelSelected.has(labelKey)?'checked':''} onchange="imToggleConsignmentLabel('${b.id}',${i},this.checked)" style="width:18px;height:18px;accent-color:var(--copper)"></td>
+        <td data-label="編號">${imConsignmentEsc(r.saleId||'—')}</td><td data-label="中文名稱" style="font-weight:700">${imConsignmentEsc(r.nameZh||'—')}</td><td data-label="性別">${imConsignmentSex(r.sex)}</td><td data-label="基因">${imConsignmentEsc(r.gene||'—')}</td>
+        <td data-label="官網售價" style="font-weight:700">${imConsignmentMoney(r.originalPrice)}</td>
+        <td data-label="狀態"><select class="consign-status" onchange="imConsignmentUpdateItemStatus('${b.id}',${i},this.value)">${['寄賣中','我方取回','蒼汰賣出','HM.PYTHON賣出','已結清'].map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+        <td data-label="備註">
+          <input class="consign-note-input" style="width:180px" value="${imConsignmentEsc(r.note||'')}" placeholder="輸入備註" onchange="imConsignmentUpdateItemNote('${b.id}',${i},this.value)">
+        </td>
+        <td data-label="操作"><button class="action-btn danger" style="white-space:nowrap" onclick="imRemoveConsignmentItem('${b.id}',${i})">移除</button></td>
+        </tr>`;}).join('')}
+      </tbody></table></div>
+    </div>`;
+  }).join('') || `<div style="padding:36px;text-align:center;background:white;border:1px dashed rgba(181,115,58,.25);border-radius:8px;color:var(--muted)">尚未建立寄賣／展示交接單</div>`;
+};
+
+window.imAddSnakesToConsignment=async(batchId)=>{
+  await imLoadConsignmentData();
+  const b=_consignmentBatches.find(x=>x.id===batchId);
+  if(!b){ window.showToast('找不到這張寄賣單'); return; }
+  _consignmentAppendTargetId=batchId;
+  window.clearSelectedConsignmentSaleSnakes?.();
+  filterSnakes('sale');
+  showPage('list', document.querySelector('[data-snake-filter="sale"]'));
+  window.showToast(`請勾選要新增到「${b.recipient||'寄賣'}」的蛇，再按上方「建立寄賣單」`);
+};
+
+window.imRemoveConsignmentItem=async(batchId,index)=>{
+  const b=_consignmentBatches.find(x=>x.id===batchId);
+  if(!b||!b.items?.[index])return;
+  const item=b.items[index];
+  if(!confirm(`確定從這張寄賣單移除「${item.nameZh||item.saleId||'這隻個體'}」？`))return;
+  b.items.splice(index,1);
+  try{ await imPersistConsignmentData(); imRenderConsignmentPage(); window.showToast('已從寄賣單移除'); }
+  catch(e){ window.showToast('❌ 移除失敗：'+e.message); }
+};
+
+window.imConsignmentUpdateItemStatus=async(batchId,index,status)=>{
+  const b=_consignmentBatches.find(x=>x.id===batchId); if(!b||!b.items?.[index])return;
+  b.items[index].status=status;
+  try{ await imPersistConsignmentData(); imRenderConsignmentPage(); }catch(e){ window.showToast('❌ 狀態儲存失敗：'+e.message); }
+};
+
+window.imConsignmentUpdateItemNote=async(batchId,index,note)=>{
+  const b=_consignmentBatches.find(x=>x.id===batchId); if(!b||!b.items?.[index])return;
+  b.items[index].note=String(note||'');
+  try{
+    await imPersistConsignmentData();
+    window.showToast?.('✅ 備註已儲存');
+  }catch(e){
+    window.showToast?.('❌ 備註儲存失敗：'+e.message);
+  }
+};
+window.imDeleteConsignmentBatch=async(id)=>{
+  const b=_consignmentBatches.find(x=>x.id===id); if(!b)return;
+  if(!confirm(`確定刪除「${b.recipient||''}」這筆寄賣交接單？`))return;
+  _consignmentBatches=_consignmentBatches.filter(x=>x.id!==id);
+  try{ await imPersistConsignmentData(); imRenderConsignmentPage(); window.showToast('已刪除寄賣交接單'); }catch(e){ window.showToast('❌ 刪除失敗：'+e.message); }
+};
+
+window.imPrintConsignmentHandoff=(batchId)=>{
+  const b=_consignmentBatches.find(x=>x.id===batchId); if(!b)return;
+  const copy=(name)=>`<section class="sheet"><div class="frame">
+    <header><div><h1>寄賣／展示交接單</h1><small>CONSIGNMENT HANDOVER</small></div><strong>${name}</strong></header>
+    <div class="meta"><span>交付對象：<b>${imConsignmentEsc(b.recipient||'')}</b></span><span>交付日期：<b>${imConsignmentEsc(b.handoffDate||'')}</b></span><span>數量：<b>${(b.items||[]).length} 隻</b></span></div>
+    <table><thead><tr><th>#</th><th>編號</th><th>中文名稱</th><th>性別</th><th>基因</th><th>官網售價</th><th>售出方式</th><th>備註</th></tr></thead><tbody>
+    ${(b.items||[]).map((r,i)=>{const m=(Number(r.originalPrice)||0)>0?(Number(r.consignmentPrice)||0)/(Number(r.originalPrice)||1):0;return `<tr><td>${i+1}</td><td>${imConsignmentEsc(r.saleId||'')}</td><td><b>${imConsignmentEsc(r.nameZh||'—')}</b></td><td>${imConsignmentEsc(imConsignmentSex(r.sex))}</td><td>${imConsignmentEsc(r.gene||'')}</td><td><b>${imConsignmentMoney(r.originalPrice)}</b></td><td class="sell-check">□ 蒼汰賣出<br>□ HM.PYTHON賣出</td><td>${imConsignmentEsc(r.note||'')}</td></tr>`;}).join('')}
+    </tbody></table><div class="sign"><div>交付人簽收：________________________</div><div>收件人簽收：________________________</div><div>日期：________________________</div></div>
+  </div></section>`;
+  const w=window.open('','_blank'); if(!w){window.showToast('請允許彈出式視窗');return;}
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>寄賣展示交接單</title><style>
+  @page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#eee;font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;color:#35170e}.sheet{width:210mm;height:297mm;padding:8mm 10mm;background:#f8f2e8;page-break-after:always;overflow:hidden}.sheet:last-child{page-break-after:auto}.frame{height:281mm;background:#fff;border:1px solid #d8b992;padding:7mm 8mm;overflow:hidden}header{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4mm;border-bottom:1px solid #c98d58;padding-bottom:3mm}h1{margin:0;font-size:18px;font-weight:700;line-height:1.15}header small{display:block;color:#a66532;letter-spacing:1.4px;margin-top:1.5px;font-size:8.5px}header>strong{font-size:11px;color:#7a4a18}.meta{display:flex;gap:7mm;flex-wrap:wrap;padding:3mm 0;font-size:9px;line-height:1.2}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.4px;line-height:1.22}th,td{border:1px solid #dfd0be;padding:1.35mm 1.1mm;text-align:left;vertical-align:top;word-break:break-word;overflow-wrap:anywhere}th{background:#fbf5ed;font-size:7.2px;white-space:nowrap}.sell-check{white-space:nowrap;line-height:1.45;font-size:7.1px}.sign{display:grid;grid-template-columns:1fr 1fr;column-gap:10mm;row-gap:4mm;margin-top:5mm;font-size:9px}.sign div:last-child{grid-column:1/-1}.sheet table th:nth-child(1),.sheet table td:nth-child(1){width:4.5%}.sheet table th:nth-child(2),.sheet table td:nth-child(2){width:12.5%}.sheet table th:nth-child(3),.sheet table td:nth-child(3){width:15%}.sheet table th:nth-child(4),.sheet table td:nth-child(4){width:5.5%}.sheet table th:nth-child(5),.sheet table td:nth-child(5){width:24%}.sheet table th:nth-child(6),.sheet table td:nth-child(6){width:11%}.sheet table th:nth-child(7),.sheet table td:nth-child(7){width:15%}.sheet table th:nth-child(8),.sheet table td:nth-child(8){width:12.5%}@media print{html,body{background:#fff}.sheet{break-after:page}.sheet:last-child{break-after:auto}}</style></head><body>${copy('我方留存')}${copy('寄賣方留存')}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);
+  w.document.close();
+};
+
+
+window.imToggleConsignmentLabel=(batchId,index,checked)=>{
+  const key=`${batchId}::${index}`;
+  if(checked) _consignmentLabelSelected.add(key);
+  else _consignmentLabelSelected.delete(key);
+  const countEl=document.getElementById(`consign-label-count-${batchId}`);
+  if(countEl){
+    let n=0;
+    const b=_consignmentBatches.find(x=>x.id===batchId);
+    (b?.items||[]).forEach((_,i)=>{ if(_consignmentLabelSelected.has(`${batchId}::${i}`)) n++; });
+    countEl.textContent=String(n);
+  }
+};
+
+function imOpenConsignmentLabelPrint(items){
+  const labels=(items||[]).map(r=>`<section class="label"><div class="code">${imConsignmentEsc(r.saleId||'—')} · ${imConsignmentEsc(imConsignmentSex(r.sex))}</div><div class="zh">${imConsignmentEsc(r.nameZh||'—')}</div><div class="gene">${imConsignmentEsc(r.nameEn||r.gene||'—')}</div><div class="price">${imConsignmentMoney(r.originalPrice)}</div></section>`).join('');
+  const w=window.open('','_blank');
+  if(!w){window.showToast('請允許彈出式視窗');return;}
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>寄賣盒標</title><style>@page{size:60mm 40mm;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;color:#35170e}.label{width:60mm;height:40mm;padding:4mm 5mm;page-break-after:always;position:relative;border:.3mm solid #d8b992}.label:last-child{page-break-after:auto}.code{font-size:10px;font-weight:700}.zh{font-size:12px;font-weight:800;margin-top:2mm}.gene{font-size:8.5px;line-height:1.3;margin-top:1.5mm;max-height:10mm;overflow:hidden}.price{position:absolute;right:5mm;bottom:4mm;font-size:16px;font-weight:800;color:#b5733a}</style></head><body>${labels}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);
+  w.document.close();
+}
+
+window.imPrintSelectedConsignmentLabels=(batchId)=>{
+  const b=_consignmentBatches.find(x=>x.id===batchId); if(!b)return;
+  const selected=(b.items||[]).filter((_,i)=>_consignmentLabelSelected.has(`${batchId}::${i}`));
+  if(!selected.length){ window.showToast('請先勾選要列印盒標的蛇隻'); return; }
+  imOpenConsignmentLabelPrint(selected);
+};
+
+window.imPrintConsignmentLabels=(batchId)=>{
+  const b=_consignmentBatches.find(x=>x.id===batchId); if(!b)return;
+  imOpenConsignmentLabelPrint(b.items||[]);
 };
 
 
@@ -5057,6 +5622,7 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">來源</label><select class="form-select" id="im-f-source">${['品牌自繁','內部出清','外部代售'].map(x=>`<option ${(r.source||'品牌自繁')===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">銷售管道</label><input class="form-input" id="im-f-channel" value="${esc(r.channel||'')}"></div>
       <div class="form-group im-form-full"><label class="form-label">買家資訊</label><input class="form-input" id="im-f-buyer" value="${esc(r.buyer||'')}"></div>
+      <div class="form-group"><label class="form-label">購買日期</label><input class="form-input" id="im-f-purchaseDate" type="date" value="${esc((r.purchaseDate||'').toString().replace(/\//g,'-'))}"></div>
       <div class="form-group"><label class="form-label">出貨日期</label><input class="form-input" id="im-f-ship" value="${esc(r.ship||'')}"></div>
       <div class="form-group"><label class="form-label">出生/進貨日期</label><input class="form-input" id="im-f-birth" value="${esc(r.birth||'')}"></div>
       <div class="form-group"><label class="form-label">體重 (g)</label><input class="form-input" id="im-f-weight" type="number" min="0" placeholder="例：120" value="${r.weight||''}"></div>
@@ -5316,6 +5882,7 @@ window.imSave = async (section, id) => {
       fundPaid: g('im-f-fund-paid')?.value==='paid',
       source:g('im-f-source').value, status:g('im-f-status').value,
       channel:g('im-f-channel').value, buyer:g('im-f-buyer').value,
+      purchaseDate:g('im-f-purchaseDate')?.value||'',
       ship:g('im-f-ship').value, delivery, sireA:g('im-f-sireA').value, damB:g('im-f-damB').value,
       frozen:g('im-f-frozen')?.value||'',
       nature:g('im-f-nature')?.value||'',
@@ -7263,6 +7830,220 @@ window.imRenderImportPage = async function() {
   await imImportLoadBatches();
   imImportRenderCostRows('fixed'); imImportRenderCostRows('variable'); imImportRecalc(); imImportRenderHistory();
   imImportRefreshFx(false);
+};
+
+
+// ── IMPORT / EXPORT MANAGEMENT ─────────────────────
+const TRADE_DOC_ID = 'trade_management';
+const TRADE_SEED = [{"code":"F4735C","sex":"F","morph":"Blackhead Lavender Het Pied"},{"code":"F4736C","sex":"F","morph":"Blackhead Lavender Het Pied"},{"code":"F4737C","sex":"M","morph":"Blackhead Lavender Het Pied"},{"code":"F4738C","sex":"F","morph":"Confusion Blackhead Lavender Het Pied"},{"code":"F4739C","sex":"F","morph":"Confusion Blackhead Lavender Het Pied"},{"code":"F4740C","sex":"M","morph":"DG Het Clown"},{"code":"F4741C","sex":"F","morph":"YB DG Het Clown"},{"code":"F4742C","sex":"F","morph":"YB DG Het Clown"},{"code":"F4743C","sex":"F","morph":"Redstripe Spotnose YB DH DG Clown"},{"code":"F4744C","sex":"F","morph":"Redstripe DG Het Clown"},{"code":"F4745C","sex":"M","morph":"Banana Leopard Pastel YB or Specter"},{"code":"F4746C","sex":"M","morph":"Banana Pastel YB or Specter"},{"code":"F4747C","sex":"F","morph":"Leopard Pastel YB or Specter"},{"code":"F4748C","sex":"F","morph":"Leopard Pastel YB or Specter"},{"code":"F4749C","sex":"M","morph":"Banana Leopard Pastel YB or Specter"},{"code":"F4750C","sex":"M","morph":"Banana Leopard Pastel YB or Specter"},{"code":"F4751C","sex":"F","morph":"Leopard Mahogany DH DG Pied"},{"code":"F4752C","sex":"F","morph":"Leopard Mahogany DH DG Pied"},{"code":"F4753C","sex":"F","morph":"Leopard Mahogany DH DG Pied"},{"code":"F4754C","sex":"F","morph":"Leopard Mahogany Pied Het DG"},{"code":"F4755C","sex":"M","morph":"Hurricane 66%TH MJ Axanthic Clown Pied"},{"code":"F4756C","sex":"M","morph":"Hurricane 66%TH MJ Axanthic Clown Pied"},{"code":"F4757C","sex":"F","morph":"Hurricane Clown 66%DH MJ Axanthic Pied"},{"code":"F4758C","sex":"M","morph":"Hurricane Clown Pied 66%MJ Axanthic"},{"code":"F4759C","sex":"F","morph":"Lightning 66%Clown"},{"code":"F4760C","sex":"F","morph":"Leopard Enchi Het Clown"},{"code":"F4761C","sex":"M","morph":"OD Leopard Enchi Het Clown"},{"code":"F4762C","sex":"F","morph":"Banana Enchi Fire Het Clown"},{"code":"F4763C","sex":"M","morph":"66%TH MJ Axanthic Clown Pied"},{"code":"F4764C","sex":"M","morph":"Hurricane Pied 66%DH MJ Axanthic Clown"},{"code":"F4765C","sex":"M","morph":"Hurricane Clown 66%DH MJ Axanthic Pied"},{"code":"F4766C","sex":"M","morph":"Hurricane YB Clown 66%DH MJ Axanthic Pied"},{"code":"F4767C","sex":"F","morph":"Hurricane MJ Axanthic DH Clown Pied"},{"code":"F4768C","sex":"F","morph":"Wookie Pixel Het Clown"},{"code":"F4769C","sex":"M","morph":"Wookie Blackpastel Het Clown Pos Pixel"},{"code":"F4770C","sex":"F","morph":"Blackpastel Mojave Redstripe YB or Gravel Het Clown 50%DG"},{"code":"F4771C","sex":"F","morph":"Mojave Redstripe Highway Het Clown 50%DG"},{"code":"F4773C","sex":"M","morph":"GHI Blackpastel Highway Het Clown 50%DG"},{"code":"F4774C","sex":"F","morph":"Blackpastel Redstripe Spotnose YB or Gravel Het Clown 50%DG"},{"code":"F4775C","sex":"M","morph":"Mojave Redstripe Clown 50%DG"},{"code":"F4776C","sex":"F","morph":"Mojave Redstripe YB or Gravel Clown 50%DG"},{"code":"F4777C","sex":"F","morph":"Confusion Lavender Het Pied"},{"code":"F4778C","sex":"M","morph":"Blackhead Lavender Het Pied"},{"code":"F4779C","sex":"M","morph":"Confusion Lavender Het Pied"},{"code":"F4780C","sex":"M","morph":"Wookie Mojave YB Het Clown"},{"code":"F4781C","sex":"M","morph":"Wookie Mojave YB Pinstripe Het Clown"},{"code":"F4782C","sex":"M","morph":"Wookie YB Pinstripe Clown"},{"code":"F4783C","sex":"F","morph":"Mojave YB Pinstripe Clown"},{"code":"F4784C","sex":"M","morph":"Wookie Mojave YB Clown"},{"code":"F4785C","sex":"F","morph":"Wookie Mojave YB Pinstripe Clown"},{"code":"F4786C","sex":"M","morph":"Chocolate Het Clown 50%Albino"},{"code":"F4787C","sex":"M","morph":"Cinnamon Chocolate Het Clown 50%Albino"},{"code":"F4788C","sex":"M","morph":"Confusion Leopard Spotnose Het Clown 50%Albino"},{"code":"F4789C","sex":"F","morph":"Confusion Chocolate Leopard Clown 50%Albino"},{"code":"F4790C","sex":"M","morph":"Confusion Lavender"},{"code":"F4791C","sex":"M","morph":"Confusion Lavender"},{"code":"F4792C","sex":"F","morph":"Lavender"},{"code":"F4793C","sex":"F","morph":"Confusion Blackhead Lavender"},{"code":"F4794C","sex":"F","morph":"Leopard DH DG Pied"},{"code":"F4795C","sex":"F","morph":"Leopard DH DG Pied"},{"code":"F4796C","sex":"F","morph":"Blackpastel Leopard DH DG Pied"},{"code":"F4797C","sex":"M","morph":"Blackpastel Leopard Pied Het DG"},{"code":"F4798C","sex":"M","morph":"Leopard Pied Het DG"},{"code":"F4799C","sex":"M","morph":"Leopard Pied Het DG"},{"code":"F4801C","sex":"M","morph":"YB Het Pied"},{"code":"F4802C","sex":"F","morph":"OD Ivory Pied Pos Calico"},{"code":"F4803C","sex":"M","morph":"Ivory Pied"},{"code":"F4804C","sex":"F","morph":"Enchi Spotnose Het Clown 50%Albino"},{"code":"F4805C","sex":"F","morph":"Banana Confusion Spotnose Het Clown 50%Albino"},{"code":"F4806C","sex":"F","morph":"Chocolate Confusion Leopard Lesser Clown 50%Albino"},{"code":"F4807C","sex":"M","morph":"Enchi Spotnose Clown 50%Albino"},{"code":"F4808C","sex":"F","morph":"Banana Lesser Chocolate Confusion Clown 50%Albino"},{"code":"F4809C","sex":"F","morph":"Enchi DH DG Clown 66%Hypo 50%Pied"},{"code":"F4810C","sex":"F","morph":"Enchi Super Pastel DG Het Clown 66%Hypo 50%Pied"},{"code":"F4811C","sex":"F","morph":"Leopard Butter Enchi Pastel Hypo DH DG Clown 50%Pied"},{"code":"F4812C","sex":"M","morph":"Leopard Butter DG Het Clown 66%Hypo 50%Pied"},{"code":"F4813C","sex":"F","morph":"Leopard Butter Enchi Pastel Hypo DG Het Clown 50%Pied"},{"code":"F4814C","sex":"F","morph":"Enchi Pastel DH DG Clown 66%Hypo 50%Pied"},{"code":"F4815C","sex":"F","morph":"Leopard Butter Pastel DG Het Clown 66%Hypo 50%Pied"},{"code":"F4816C","sex":"M","morph":"Leopard Enchi Pastel DH DG Clown 66%Hypo 50%Pied"},{"code":"F4817C","sex":"F","morph":"Chocolate Confusion Leopard Lesser Het Clown 66%Albino"},{"code":"F4818C","sex":"F","morph":"Confusion Leopard Spotnose Het Clown 66%Albino"},{"code":"F4819C","sex":"M","morph":"Confusion Batman 66%Albino"},{"code":"F4820C","sex":"F","morph":"Leopard Chocolate Albino Clown"},{"code":"F4823C","sex":"F","morph":"Confusion Chocolate Leopard Albino Clown"},{"code":"F4824C","sex":"F","morph":"Leopard Enchi Calico YB Het Clown"},{"code":"F4825C","sex":"F","morph":"Leopard YB Calico Het Clown"},{"code":"F4826C","sex":"M","morph":"Banana Enchi Calico Het Clown"},{"code":"F4827C","sex":"M","morph":"Banana Leopard Enchi YB Het Clown"},{"code":"F4828C","sex":"M","morph":"Banana Leopard Enchi Calico YB Het Clown"},{"code":"F4829C","sex":"M","morph":"Banana Enchi Calico YB Het Clown"},{"code":"F4830C","sex":"F","morph":"Pied Het MJ Axanthic"},{"code":"F4831C","sex":"F","morph":"Pied Het MJ Axanthic"},{"code":"F4833C","sex":"F","morph":"Lightning"},{"code":"F4834C","sex":"M","morph":"Pastel DH Clown Pied 66%DG"},{"code":"F4835C","sex":"F","morph":"OD Leopard DH Clown Pied 66%DG"},{"code":"F4836C","sex":"M","morph":"Pastel Pied Het Clown 66%DG"},{"code":"F4837C","sex":"F","morph":"Pastel Pied Het Clown 66%DG"},{"code":"F4838C","sex":"F","morph":"Leopard Pastel Pied Het Clown 66%DG"},{"code":"F4839C","sex":"M","morph":"Leopard Pied Het Clown 66%DG"},{"code":"F4840C","sex":"M","morph":"Blackhead Lavender"},{"code":"F4841C","sex":"F","morph":"Confusion Lavender"},{"code":"F4842C","sex":"F","morph":"Lavender"},{"code":"F4843C","sex":"M","morph":"Blackpastel Ultramel"},{"code":"F4844C","sex":"F","morph":"Blackpastel Ultramel"},{"code":"F4845C","sex":"F","morph":"Blackhead Leopard Mojave Ultramel"},{"code":"F4846C","sex":"M","morph":"Leopard YB DH DG Clown 66%Pied 50%Hypo"},{"code":"F4847C","sex":"M","morph":"Pinstripe DH DG Clown 66%Pied 50%Hypo"},{"code":"F4848C","sex":"F","morph":"Leopard Pinstripe DH DG Clown 66%Pied 50%Hypo"},{"code":"F4849C","sex":"F","morph":"Pinstripe Clown Het DG 66%Pied 50%Hypo"},{"code":"F4850C","sex":"F","morph":"Leopard YB Clown Het DG 66%Pied 50%Hypo"},{"code":"F4851C","sex":"M","morph":"Clown Pied Het DG 50%Hypo"},{"code":"F4852C","sex":"F","morph":"Leopard Pinstripe Clown Pied Het DG 50%Hypo"},{"code":"F4854C","sex":"F","morph":"Chocolate DH Lavender Clown 50%Albino"},{"code":"F4855C","sex":"M","morph":"Chocolate DH Lavender Clown 50%Albino"},{"code":"F4856C","sex":"M","morph":"Confusion Chocolate DH Lavender Clown 50%Albino"},{"code":"F4857C","sex":"F","morph":"Confusion Chocolate Leopard DH Lavender Clown 50%Albino"},{"code":"F4858C","sex":"F","morph":"Spotnose Clown Het Lavender 50%Albino"},{"code":"F4859C","sex":"F","morph":"Spotnose Clown Het Lavender 50%Albino"},{"code":"F4860C","sex":"F","morph":"Spotnose Clown Het Lavender 50%Albino"},{"code":"F4861C","sex":"F","morph":"Spotnose Clown Het Lavender 50%Albino"},{"code":"F4862C","sex":"M","morph":"Leopard Spotnose Redstripe DH DG Clown"},{"code":"F4863C","sex":"M","morph":"Leopard Spotnose Redstripe YB DH DG Clown"},{"code":"F4864C","sex":"F","morph":"Leopard Spotnose Redstripe YB DG Het Clown"},{"code":"F4865C","sex":"M","morph":"Spotnose YB DG Het Clown"},{"code":"F4866C","sex":"F","morph":"Redstripe Spotnose YB DG Het Clown"},{"code":"F4867C","sex":"F","morph":"Spotnose YB Clown Het DG"},{"code":"F4868C","sex":"F","morph":"Spotnose YB DG Clown"},{"code":"F4869C","sex":"F","morph":"Blackhead Phantom 66%Clown"},{"code":"F4870C","sex":"F","morph":"Blackhead Phantom Leopard 66%Clown"},{"code":"F4871C","sex":"F","morph":"Blackhead Phantom Leopard 66%Clown"},{"code":"F4872C","sex":"F","morph":"Blackhead Phantom Pastel Clown"},{"code":"F4873C","sex":"M","morph":"Blackhead Phantom Clown"},{"code":"F4874C","sex":"M","morph":"Blackhead Phantom Leopard Clown"},{"code":"F4875C","sex":"M","morph":"Enchi Het Pied"},{"code":"F4876C","sex":"F","morph":"OD Enchi Phantom YB Het Pied"},{"code":"F4877C","sex":"M","morph":"OD Enchi YB Het Pied"},{"code":"F4878C","sex":"F","morph":"Phantom Enchi YB Pied"},{"code":"F4879C","sex":"M","morph":"Blackhead Chocolate Clown 50%Albino"},{"code":"F4880C","sex":"M","morph":"Confusion Chocolate Clown 50%Albino"},{"code":"F4881C","sex":"F","morph":"Confusion Blackhead Spotnose Clown 50%Albino"},{"code":"F4882C","sex":"M","morph":"Confusion Chocolate Leopard Clown 50%Albino"},{"code":"F4883C","sex":"M","morph":"Confusion Chocolate Leopard Blackhead Clown 50%Albino"},{"code":"F4884C","sex":"M","morph":"Enchi YB Het Pied"},{"code":"F4885C","sex":"F","morph":"Ivory Pied"}];
+let _tradeItems = [];
+let _tradeExpenses = [];
+let _tradeSaveTimer = null;
+let _tradeLoaded = false;
+
+function imTradeMoney(n, currency='TWD') {
+  const v = Number(n)||0;
+  if (currency === 'JPY') return '¥' + Math.round(v).toLocaleString('ja-JP');
+  if (currency === 'USD') return 'US$' + v.toLocaleString('en-US', {maximumFractionDigits:2});
+  if (currency === 'KRW') return '₩' + Math.round(v).toLocaleString('ko-KR');
+  return 'NT$' + Math.round(v).toLocaleString('zh-TW');
+}
+function imTradeEsc(s) {
+  return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function imTradeSeedItems() {
+  return TRADE_SEED.map(s => ({...s, grade:'', cost:0, retail:0, japanWholesale:0, morphMarket:0, note:''}));
+}
+function imTradeExpenseId() {
+  return 'te_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+function imTradeDefaultExpenses() {
+  return [
+    {id:imTradeExpenseId(), name:'國際運費', amount:0, currency:'TWD', rate:1},
+    {id:imTradeExpenseId(), name:'檢疫／報關', amount:0, currency:'TWD', rate:1},
+    {id:imTradeExpenseId(), name:'代購／貿易商費用', amount:0, currency:'TWD', rate:1},
+    {id:imTradeExpenseId(), name:'國內運費', amount:0, currency:'TWD', rate:1}
+  ];
+}
+function imTradeMergeSavedItems(saved) {
+  const map = new Map((Array.isArray(saved)?saved:[]).map(x=>[String(x.code||''),x]));
+  return TRADE_SEED.map(base => {
+    const old = map.get(base.code) || {};
+    return {
+      ...base,
+      grade:String(old.grade||''),
+      cost:Number(old.cost)||0,
+      retail:Number(old.retail)||0,
+      japanWholesale:Number(old.japanWholesale)||0,
+      morphMarket:Number(old.morphMarket)||0,
+      note:String(old.note||'')
+    };
+  });
+}
+async function imTradeLoadData() {
+  try {
+    const snap = await getDoc(doc(db2,'im_cost_params',TRADE_DOC_ID));
+    const d = snap.exists() ? (snap.data()||{}) : {};
+    _tradeItems = imTradeMergeSavedItems(d.items);
+    _tradeExpenses = Array.isArray(d.expenses) && d.expenses.length ? d.expenses.map(x=>({
+      id:String(x.id||imTradeExpenseId()), name:String(x.name||''), amount:Number(x.amount)||0,
+      currency:String(x.currency||'TWD'), rate:Number(x.rate)||1
+    })) : imTradeDefaultExpenses();
+    _tradeLoaded = true;
+    const n=document.getElementById('trade-batch-name'); if(n) n.value=d.batchName||'2026-09-29 球蟒批次';
+    const r=document.getElementById('trade-route'); if(r) r.value=d.route||'';
+    const b=document.getElementById('trade-base-cost'); if(b) b.value=Number(d.baseCost)||0;
+    const note=document.getElementById('trade-batch-note'); if(note) note.value=d.batchNote||'';
+  } catch(e) {
+    console.error('進出口管理載入失敗',e);
+    _tradeItems = imTradeSeedItems();
+    _tradeExpenses = imTradeDefaultExpenses();
+    _tradeLoaded = true;
+    window.showToast?.('⚠️ 進出口資料載入失敗，先顯示預設清單');
+  }
+}
+function imTradePayload() {
+  return {
+    items:_tradeItems.map(x=>({
+      code:x.code, sex:x.sex, morph:x.morph, grade:x.grade||'',
+      cost:Number(x.cost)||0, retail:Number(x.retail)||0,
+      japanWholesale:Number(x.japanWholesale)||0, morphMarket:Number(x.morphMarket)||0,
+      note:String(x.note||'')
+    })),
+    expenses:_tradeExpenses,
+    batchName:document.getElementById('trade-batch-name')?.value?.trim() || '2026-09-29 球蟒批次',
+    route:document.getElementById('trade-route')?.value?.trim() || '',
+    baseCost:Number(document.getElementById('trade-base-cost')?.value)||0,
+    batchNote:document.getElementById('trade-batch-note')?.value || '',
+    updatedAt:new Date().toISOString()
+  };
+}
+async function imTradePersist(showMessage=false) {
+  if(!_tradeLoaded) return;
+  try {
+    await setDoc(doc(db2,'im_cost_params',TRADE_DOC_ID), imTradePayload(), {merge:true});
+    if(showMessage) window.showToast?.('✅ 進出口管理已儲存');
+  } catch(e) {
+    console.error('進出口管理儲存失敗',e);
+    if(showMessage) window.showToast?.('❌ 儲存失敗：'+e.message);
+  }
+}
+window.imTradeScheduleSave = function() {
+  clearTimeout(_tradeSaveTimer);
+  _tradeSaveTimer=setTimeout(()=>imTradePersist(false),600);
+};
+window.imTradeSaveNow = async function() {
+  clearTimeout(_tradeSaveTimer);
+  await imTradePersist(true);
+};
+window.imTradeSetGrade = function(code, grade) {
+  const row=_tradeItems.find(x=>x.code===code); if(!row)return;
+  row.grade = row.grade===grade ? '' : grade;
+  imTradeRenderTable();
+  imTradeUpdateSummary();
+  imTradeScheduleSave();
+};
+window.imTradeUpdateField = function(code,key,value) {
+  const row=_tradeItems.find(x=>x.code===code); if(!row)return;
+  row[key] = ['cost','retail','japanWholesale','morphMarket'].includes(key) ? (Number(value)||0) : value;
+  imTradeUpdateSummary();
+  imTradeScheduleSave();
+};
+window.imTradeRenderTable = function() {
+  const body=document.getElementById('trade-table-body'); if(!body)return;
+  const q=(document.getElementById('trade-search')?.value||'').trim().toLowerCase();
+  const sex=document.getElementById('trade-sex-filter')?.value||'';
+  const grade=document.getElementById('trade-grade-filter')?.value||'';
+  const rows=_tradeItems.filter(x=>{
+    const okQ=!q || (x.code+' '+x.morph).toLowerCase().includes(q);
+    const okSex=!sex || x.sex===sex;
+    const okGrade=!grade || (grade==='none' ? !x.grade : x.grade===grade);
+    return okQ && okSex && okGrade;
+  });
+  const count=document.getElementById('trade-filter-count'); if(count)count.textContent=rows.length+' 隻';
+  body.innerHTML=rows.map(x=>`<tr>
+    <td><strong>${imTradeEsc(x.code)}</strong></td>
+    <td>${x.sex==='F'?'♀ 母':'♂ 公'}</td>
+    <td class="trade-morph">${imTradeEsc(x.morph)}</td>
+    <td><div class="grade-group">${['S','A','B','C'].map(g=>`<button class="grade-btn ${x.grade===g?'active':''}" onclick="imTradeSetGrade('${x.code}','${g}')">${g}</button>`).join('')}</div></td>
+    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.cost)||''}" placeholder="0" oninput="imTradeUpdateField('${x.code}','cost',this.value)"></td>
+    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.retail)||''}" placeholder="0" oninput="imTradeUpdateField('${x.code}','retail',this.value)"></td>
+    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.japanWholesale)||''}" placeholder="0" oninput="imTradeUpdateField('${x.code}','japanWholesale',this.value)"></td>
+    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.morphMarket)||''}" placeholder="0" oninput="imTradeUpdateField('${x.code}','morphMarket',this.value)"></td>
+    <td><input class="trade-input" value="${imTradeEsc(x.note)}" placeholder="備註" oninput="imTradeUpdateField('${x.code}','note',this.value)"></td>
+  </tr>`).join('');
+};
+function imTradeExpenseTwd(x) {
+  const amt=Number(x.amount)||0;
+  const cur=String(x.currency||'TWD');
+  if(cur==='TWD') return amt;
+  return amt*(Number(x.rate)||0);
+}
+window.imTradeRenderExpenses = function() {
+  const el=document.getElementById('trade-expenses'); if(!el)return;
+  el.innerHTML=_tradeExpenses.map((x,i)=>`<div class="expense-row">
+    <input class="form-input" style="padding:8px" value="${imTradeEsc(x.name)}" placeholder="費用名稱" oninput="imTradeUpdateExpense(${i},'name',this.value)">
+    <input class="form-input" style="padding:8px" type="number" min="0" step="0.01" value="${Number(x.amount)||''}" placeholder="0" oninput="imTradeUpdateExpense(${i},'amount',this.value)">
+    <select class="form-select" style="padding:8px" onchange="imTradeUpdateExpense(${i},'currency',this.value)">
+      ${['TWD','JPY','USD','KRW'].map(c=>`<option value="${c}" ${x.currency===c?'selected':''}>${c}</option>`).join('')}
+    </select>
+    <input class="form-input" style="padding:8px" type="number" min="0" step="0.0001" value="${Number(x.rate)||1}" ${x.currency==='TWD'?'disabled':''} title="1 外幣 = 幾元台幣" oninput="imTradeUpdateExpense(${i},'rate',this.value)">
+    <button class="btn-small" style="color:#a11;padding:7px" onclick="imTradeRemoveExpense(${i})">×</button>
+  </div>`).join('') || '<div style="font-size:11px;color:var(--muted);padding:8px 0">尚無額外支出。</div>';
+};
+window.imTradeAddExpense = function() {
+  _tradeExpenses.push({id:imTradeExpenseId(),name:'',amount:0,currency:'TWD',rate:1});
+  imTradeRenderExpenses(); imTradeUpdateSummary(); imTradeScheduleSave();
+};
+window.imTradeRemoveExpense = function(i) {
+  _tradeExpenses.splice(i,1); imTradeRenderExpenses(); imTradeUpdateSummary(); imTradeScheduleSave();
+};
+window.imTradeUpdateExpense = function(i,key,value) {
+  if(!_tradeExpenses[i])return;
+  _tradeExpenses[i][key]=['amount','rate'].includes(key)?(Number(value)||0):value;
+  if(key==='currency' && value==='TWD') _tradeExpenses[i].rate=1;
+  if(key==='currency') imTradeRenderExpenses();
+  imTradeUpdateSummary(); imTradeScheduleSave();
+};
+window.imTradeLedgerChanged = function() {
+  imTradeUpdateSummary(); imTradeScheduleSave();
+};
+window.imTradeUpdateSummary = function() {
+  const totalCost=_tradeItems.reduce((s,x)=>s+(Number(x.cost)||0),0);
+  const totalRetail=_tradeItems.reduce((s,x)=>s+(Number(x.retail)||0),0);
+  const graded=_tradeItems.filter(x=>x.grade).length;
+  const base=Number(document.getElementById('trade-base-cost')?.value)||0;
+  const extra=_tradeExpenses.reduce((s,x)=>s+imTradeExpenseTwd(x),0);
+  const batch=base+extra;
+
+  const byGrade={S:0,A:0,B:0,C:0};
+  _tradeItems.forEach(x=>{if(byGrade[x.grade]!==undefined)byGrade[x.grade]++;});
+
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('trade-sum-count',String(_tradeItems.length));
+  set('trade-sum-graded',`${graded} / ${_tradeItems.length}`);
+  set('trade-sum-cost',imTradeMoney(totalCost));
+  set('trade-sum-retail',imTradeMoney(totalRetail));
+  set('trade-sum-batch',imTradeMoney(batch));
+
+  const el=document.getElementById('trade-ledger-summary');
+  if(el) el.innerHTML=`
+    <div style="display:grid;gap:9px">
+      <div style="background:var(--cream);padding:12px;border-radius:7px"><small style="color:var(--muted)">基礎貨款</small><div style="font-size:20px;font-weight:800;color:var(--brown)">${imTradeMoney(base)}</div></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span>額外支出</span><strong>${imTradeMoney(extra)}</strong></div>
+      <div style="border-top:1px solid rgba(181,115,58,.18);padding-top:10px"><small style="color:var(--muted)">本批總成本</small><div style="font-size:26px;font-weight:800;color:var(--brown)">${imTradeMoney(batch)}</div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:4px">
+        ${['S','A','B','C'].map(g=>`<div style="text-align:center;background:#faf7f2;border-radius:6px;padding:8px 4px"><div style="font-size:10px;color:var(--muted)">${g}級</div><strong>${byGrade[g]}</strong></div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px"><span>個體成本合計</span><span>${imTradeMoney(totalCost)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>零售價合計</span><span>${imTradeMoney(totalRetail)}</span></div>
+    </div>`;
+};
+window.imTradeLoadPage = async function() {
+  if(!_tradeLoaded) await imTradeLoadData();
+  imTradeRenderTable();
+  imTradeRenderExpenses();
+  imTradeUpdateSummary();
 };
 
 // ── FEMALE KPI PAGE ───────────────────────────────
