@@ -41,6 +41,26 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
 }
 .google-btn:hover { background:var(--cream); }
 .access-denied { color:var(--red); font-size:13px; margin-top:12px; display:none; }
+.inapp-warning{
+  display:none;
+  margin-top:14px;
+  padding:14px 15px;
+  border:1px solid rgba(181,115,58,.28);
+  border-radius:8px;
+  background:#FFF8EE;
+  color:var(--brown);
+  text-align:left;
+  font-size:12px;
+  line-height:1.7;
+}
+.inapp-warning strong{display:block;font-size:13px;margin-bottom:4px;color:#8A4D23}
+.inapp-warning .inapp-steps{margin:6px 0 10px;color:var(--muted)}
+.inapp-copy-btn{
+  width:100%; padding:9px 10px; border:1px solid rgba(181,115,58,.3);
+  border-radius:6px; background:white; color:var(--brown); cursor:pointer;
+  font:inherit; font-weight:600;
+}
+
 
 /* ADMIN UI */
 #admin-ui { display:none; }
@@ -517,6 +537,14 @@ textarea.hatch-gene-input {
       </svg>
       使用 Google 登入
     </button>
+    <div class="inapp-warning" id="inapp-warning">
+      <strong>⚠️ 請改用 Chrome / Safari 開啟</strong>
+      LINE 內建瀏覽器可能無法完成 Firebase 的 Google 登入流程。
+      <div class="inapp-steps">
+        請點 LINE 右上角「⋯」或分享選單 → 選擇「使用瀏覽器開啟」，再重新登入。
+      </div>
+      <button class="inapp-copy-btn" type="button" onclick="copyAdminUrl()">📋 複製後台網址</button>
+    </div>
     <div class="access-denied" id="access-denied">⚠️ 此帳號無管理員權限</div>
   </div>
 </div>
@@ -1960,15 +1988,61 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-window.doLogin = async () => {
-  try { await signInWithPopup(auth, provider); }
-  catch(e) { console.error(e); }
+function isLineInAppBrowser() {
+  const ua = navigator.userAgent || '';
+  return /Line\//i.test(ua) || /\bLIFF\b/i.test(ua);
+}
+
+function updateLoginBrowserWarning() {
+  const warning = document.getElementById('inapp-warning');
+  const loginBtn = document.querySelector('#login-screen .google-btn');
+  if (!warning || !loginBtn) return;
+
+  if (isLineInAppBrowser()) {
+    warning.style.display = 'block';
+    loginBtn.style.display = 'none';
+    const denied = document.getElementById('access-denied');
+    if (denied) denied.style.display = 'none';
+  } else {
+    warning.style.display = 'none';
+    loginBtn.style.display = 'flex';
+  }
+}
+
+window.copyAdminUrl = async () => {
+  const url = 'https://hmpython.netlify.app/admin.html';
+  try {
+    await navigator.clipboard.writeText(url);
+    window.showToast?.('✅ 後台網址已複製');
+  } catch (_) {
+    window.prompt('請複製後台網址：', url);
+  }
 };
+
+window.doLogin = async () => {
+  if (isLineInAppBrowser()) {
+    updateLoginBrowserWarning();
+    return;
+  }
+  try {
+    await signInWithPopup(auth, provider);
+  } catch(e) {
+    console.error(e);
+    const denied = document.getElementById('access-denied');
+    if (denied) {
+      denied.textContent = '⚠️ 登入失敗，請重新整理後再試';
+      denied.style.display = 'block';
+    }
+  }
+};
+
+document.addEventListener('DOMContentLoaded', updateLoginBrowserWarning);
 
 window.doLogout = async () => {
   await signOut(auth);
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('admin-ui').style.display = 'none';
+  updateLoginBrowserWarning();
 };
 
 // Load snakes
