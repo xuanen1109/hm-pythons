@@ -1343,8 +1343,13 @@ textarea.hatch-gene-input {
           #page-im-trade .grade-btn{border:1px solid rgba(181,115,58,.24);background:#fff;color:var(--muted);border-radius:4px;padding:5px 7px;cursor:pointer;font-size:10px;font-weight:700}
           #page-im-trade .grade-btn.active{background:var(--copper);color:white;border-color:var(--copper)}
           #page-im-trade .ledger-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:16px;margin-top:20px;align-items:start}
-          #page-im-trade .expense-row{display:grid;grid-template-columns:1.5fr .8fr .65fr .7fr 36px;gap:7px;align-items:center;margin-bottom:7px}
+          #page-im-trade .expense-row{display:grid;grid-template-columns:1.5fr .8fr 36px;gap:7px;align-items:center;margin-bottom:7px}
           #page-im-trade .trade-badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#f6efe6;color:#8a4d23;font-size:10px;font-weight:700}
+          #page-im-trade .grade-settings{display:grid;grid-template-columns:auto repeat(3,minmax(120px,1fr)) auto;gap:10px;align-items:end;margin:0 0 14px;padding:12px 14px;background:#faf7f2;border:1px solid rgba(181,115,58,.16);border-radius:8px}
+          #page-im-trade .grade-settings-title{align-self:center;font-size:12px;font-weight:800;color:var(--brown);white-space:nowrap}
+          #page-im-trade .grade-settings-note{grid-column:1/-1;font-size:10px;color:var(--muted);line-height:1.55}
+          @media(max-width:900px){#page-im-trade .grade-settings{grid-template-columns:1fr 1fr}.grade-settings-title{grid-column:1/-1}}
+
           @media(max-width:1000px){#page-im-trade .trade-summary{grid-template-columns:repeat(2,minmax(0,1fr))}#page-im-trade .ledger-grid{grid-template-columns:1fr}}
         </style>
 
@@ -1354,12 +1359,32 @@ textarea.hatch-gene-input {
         <div class="trade-summary">
           <div class="trade-card"><small>清單總數</small><strong id="trade-sum-count">145</strong></div>
           <div class="trade-card"><small>已分級</small><strong id="trade-sum-graded">0</strong></div>
-          <div class="trade-card"><small>個體成本合計</small><strong id="trade-sum-cost">NT$0</strong></div>
-          <div class="trade-card"><small>零售價合計</small><strong id="trade-sum-retail">NT$0</strong></div>
+          <div class="trade-card"><small>市場價合計</small><strong id="trade-sum-cost">NT$0</strong></div>
+          <div class="trade-card"><small>目標價合計</small><strong id="trade-sum-retail">NT$0</strong></div>
           <div class="trade-card"><small>批次總成本</small><strong id="trade-sum-batch">NT$0</strong></div>
         </div>
 
         <div class="form-card" style="max-width:none;padding:14px 16px">
+          <div class="grade-settings">
+            <div class="grade-settings-title">🏷️ 自動分級參數</div>
+            <div>
+              <label class="form-label">S 級最低目標價（NT$）</label>
+              <input class="form-input" id="trade-grade-s-min" type="number" min="0" step="1" placeholder="例如 50000" onchange="imTradeGradeSettingsChanged()">
+            </div>
+            <div>
+              <label class="form-label">A 級最低目標價（NT$）</label>
+              <input class="form-input" id="trade-grade-a-min" type="number" min="0" step="1" placeholder="例如 30000" onchange="imTradeGradeSettingsChanged()">
+            </div>
+            <div>
+              <label class="form-label">B 級最低目標價（NT$）</label>
+              <input class="form-input" id="trade-grade-b-min" type="number" min="0" step="1" placeholder="例如 15000" onchange="imTradeGradeSettingsChanged()">
+            </div>
+            <button class="btn-small" onclick="imTradeAutoGradeAll()">⚡ 重新自動分級</button>
+            <div class="grade-settings-note">
+              規則：目標價 ≥ S 門檻 → S 級；未達 S 但 ≥ A → A 級；未達 A 但 ≥ B → B 級；低於 B → C 級。<br>
+              輸入門檻後會自動依「目標價」重新分類；之後市場價或額外成本變動時，也會同步更新等級。
+            </div>
+          </div>
           <div class="trade-toolbar">
             <input class="form-input" id="trade-search" style="max-width:320px" placeholder="搜尋編號 / Morph" oninput="imTradeRenderTable()">
             <select class="form-select" id="trade-sex-filter" style="width:120px" onchange="imTradeRenderTable()">
@@ -1380,10 +1405,11 @@ textarea.hatch-gene-input {
                   <th style="width:55px">性別</th>
                   <th>Morph</th>
                   <th style="width:170px">等級</th>
-                  <th style="width:120px">成本價<br><span style="font-weight:400;color:var(--muted)">NT$</span></th>
-                  <th style="width:120px">零售價<br><span style="font-weight:400;color:var(--muted)">NT$</span></th>
+                  <th style="width:120px">市場價<br><span style="font-weight:400;color:var(--muted)">NT$</span></th>
+                  <th style="width:120px">目標價<br><span style="font-weight:400;color:var(--muted)">NT$ · 自動攤提</span></th>
                   <th style="width:120px">日本批發價<br><span style="font-weight:400;color:var(--muted)">JPY ¥</span></th>
                   <th style="width:120px">MorphMarket<br><span style="font-weight:400;color:var(--muted)">USD $</span></th>
+                  <th style="width:120px">ScaleSwap<br><span style="font-weight:400;color:var(--muted)">NT$</span></th>
                   <th style="width:180px">備註</th>
                 </tr>
               </thead>
@@ -1409,8 +1435,8 @@ textarea.hatch-gene-input {
             </div>
 
             <div style="font-size:11px;font-weight:700;color:var(--copper);margin-bottom:8px">額外支出</div>
-            <div style="display:grid;grid-template-columns:1.5fr .8fr .65fr .7fr 36px;gap:7px;margin-bottom:5px;font-size:9px;color:var(--muted)">
-              <div>項目</div><div>金額</div><div>幣別</div><div>換算匯率</div><div></div>
+            <div style="display:grid;grid-template-columns:1.5fr .8fr 36px;gap:7px;margin-bottom:5px;font-size:9px;color:var(--muted)">
+              <div>項目</div><div>金額（NT$）</div><div></div>
             </div>
             <div id="trade-expenses"></div>
 
@@ -1424,8 +1450,9 @@ textarea.hatch-gene-input {
             <div style="font-size:15px;font-weight:700;color:var(--brown);margin-bottom:12px">帳務摘要</div>
             <div id="trade-ledger-summary"></div>
             <div style="margin-top:12px;font-size:10px;color:var(--muted);line-height:1.6">
-              ※ 個體「成本價」與批次帳務分開記錄。<br>
-              ※ 批次總成本 = 基礎貨款 + 所有額外支出換算後金額。
+              ※ 個體「市場價」與批次帳務分開記錄。<br>
+              ※ 目標價 = 市場價 + 額外支出 ×（該個體市場價 ÷ 145 隻市場價總和）。<br>
+              ※ 市場價越高，分攤到的額外費用越高。
             </div>
           </div>
         </div>
@@ -7915,6 +7942,7 @@ let _tradeItems = [];
 let _tradeExpenses = [];
 let _tradeSaveTimer = null;
 let _tradeLoaded = false;
+let _tradeGradeParams = {sMin:0,aMin:0,bMin:0};
 
 function imTradeMoney(n, currency='TWD') {
   const v = Number(n)||0;
@@ -7927,7 +7955,7 @@ function imTradeEsc(s) {
   return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function imTradeSeedItems() {
-  return TRADE_SEED.map(s => ({...s, grade:'', cost:0, retail:0, japanWholesale:0, morphMarket:0, note:''}));
+  return TRADE_SEED.map(s => ({...s, grade:'', cost:0, retail:0, japanWholesale:0, morphMarket:0, scaleSwap:0, note:''}));
 }
 function imTradeExpenseId() {
   return 'te_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -7951,6 +7979,7 @@ function imTradeMergeSavedItems(saved) {
       retail:Number(old.retail)||0,
       japanWholesale:Number(old.japanWholesale)||0,
       morphMarket:Number(old.morphMarket)||0,
+      scaleSwap:Number(old.scaleSwap)||0,
       note:String(old.note||'')
     };
   });
@@ -7960,15 +7989,31 @@ async function imTradeLoadData() {
     const snap = await getDoc(doc(db2,'im_cost_params',TRADE_DOC_ID));
     const d = snap.exists() ? (snap.data()||{}) : {};
     _tradeItems = imTradeMergeSavedItems(d.items);
-    _tradeExpenses = Array.isArray(d.expenses) && d.expenses.length ? d.expenses.map(x=>({
-      id:String(x.id||imTradeExpenseId()), name:String(x.name||''), amount:Number(x.amount)||0,
-      currency:String(x.currency||'TWD'), rate:Number(x.rate)||1
-    })) : imTradeDefaultExpenses();
+    _tradeExpenses = Array.isArray(d.expenses) && d.expenses.length ? d.expenses.map(x=>{
+      const amount = Number(x.amount)||0;
+      const currency = String(x.currency||'TWD');
+      const rate = Number(x.rate)||1;
+      return {
+        id:String(x.id||imTradeExpenseId()),
+        name:String(x.name||''),
+        amount: currency === 'TWD' ? amount : Math.round(amount * rate),
+        currency:'TWD',
+        rate:1
+      };
+    }) : imTradeDefaultExpenses();
     _tradeLoaded = true;
     const n=document.getElementById('trade-batch-name'); if(n) n.value=d.batchName||'2026-09-29 球蟒批次';
     const r=document.getElementById('trade-route'); if(r) r.value=d.route||'';
     const b=document.getElementById('trade-base-cost'); if(b) b.value=Number(d.baseCost)||0;
     const note=document.getElementById('trade-batch-note'); if(note) note.value=d.batchNote||'';
+    _tradeGradeParams = {
+      sMin:Number(d.gradeParams?.sMin)||0,
+      aMin:Number(d.gradeParams?.aMin)||0,
+      bMin:Number(d.gradeParams?.bMin)||0
+    };
+    const gs=document.getElementById('trade-grade-s-min'); if(gs) gs.value=_tradeGradeParams.sMin||'';
+    const ga=document.getElementById('trade-grade-a-min'); if(ga) ga.value=_tradeGradeParams.aMin||'';
+    const gb=document.getElementById('trade-grade-b-min'); if(gb) gb.value=_tradeGradeParams.bMin||'';
   } catch(e) {
     console.error('進出口管理載入失敗',e);
     _tradeItems = imTradeSeedItems();
@@ -7983,6 +8028,7 @@ function imTradePayload() {
       code:x.code, sex:x.sex, morph:x.morph, grade:x.grade||'',
       cost:Number(x.cost)||0, retail:Number(x.retail)||0,
       japanWholesale:Number(x.japanWholesale)||0, morphMarket:Number(x.morphMarket)||0,
+      scaleSwap:Number(x.scaleSwap)||0,
       note:String(x.note||'')
     })),
     expenses:_tradeExpenses,
@@ -7990,6 +8036,11 @@ function imTradePayload() {
     route:document.getElementById('trade-route')?.value?.trim() || '',
     baseCost:Number(document.getElementById('trade-base-cost')?.value)||0,
     batchNote:document.getElementById('trade-batch-note')?.value || '',
+    gradeParams:{
+      sMin:Number(_tradeGradeParams.sMin)||0,
+      aMin:Number(_tradeGradeParams.aMin)||0,
+      bMin:Number(_tradeGradeParams.bMin)||0
+    },
     updatedAt:new Date().toISOString()
   };
 }
@@ -8011,6 +8062,61 @@ window.imTradeSaveNow = async function() {
   clearTimeout(_tradeSaveTimer);
   await imTradePersist(true);
 };
+function imTradeGradeParamsValid() {
+  const {sMin,aMin,bMin} = _tradeGradeParams;
+  return sMin>0 && aMin>0 && bMin>0 && sMin>aMin && aMin>bMin;
+}
+function imTradeGradeForTarget(target) {
+  target = Number(target)||0;
+  if(!imTradeGradeParamsValid() || target<=0) return '';
+  if(target >= _tradeGradeParams.sMin) return 'S';
+  if(target >= _tradeGradeParams.aMin) return 'A';
+  if(target >= _tradeGradeParams.bMin) return 'B';
+  return 'C';
+}
+function imTradeApplyAutoGrades() {
+  if(!imTradeGradeParamsValid()) return false;
+  _tradeItems.forEach(x => {
+    x.grade = imTradeGradeForTarget(imTradeTargetPrice(x));
+  });
+  return true;
+}
+window.imTradeGradeSettingsChanged = function() {
+  _tradeGradeParams = {
+    sMin:Number(document.getElementById('trade-grade-s-min')?.value)||0,
+    aMin:Number(document.getElementById('trade-grade-a-min')?.value)||0,
+    bMin:Number(document.getElementById('trade-grade-b-min')?.value)||0
+  };
+  if(_tradeGradeParams.sMin || _tradeGradeParams.aMin || _tradeGradeParams.bMin) {
+    if(!imTradeGradeParamsValid()) {
+      window.showToast?.('⚠️ 分級門檻需符合 S > A > B，且都大於 0');
+      imTradeScheduleSave();
+      return;
+    }
+    imTradeApplyAutoGrades();
+    imTradeRenderTable();
+    imTradeUpdateSummary();
+    window.showToast?.('✅ 已依目標價自動分級');
+  }
+  imTradeScheduleSave();
+};
+window.imTradeAutoGradeAll = function() {
+  _tradeGradeParams = {
+    sMin:Number(document.getElementById('trade-grade-s-min')?.value)||0,
+    aMin:Number(document.getElementById('trade-grade-a-min')?.value)||0,
+    bMin:Number(document.getElementById('trade-grade-b-min')?.value)||0
+  };
+  if(!imTradeGradeParamsValid()) {
+    window.showToast?.('⚠️ 請先設定有效門檻：S > A > B > 0');
+    return;
+  }
+  imTradeApplyAutoGrades();
+  imTradeRenderTable();
+  imTradeUpdateSummary();
+  imTradeScheduleSave();
+  window.showToast?.('✅ 145 隻已依目標價重新分級');
+};
+
 window.imTradeSetGrade = function(code, grade) {
   const row=_tradeItems.find(x=>x.code===code); if(!row)return;
   row.grade = row.grade===grade ? '' : grade;
@@ -8020,10 +8126,37 @@ window.imTradeSetGrade = function(code, grade) {
 };
 window.imTradeUpdateField = function(code,key,value) {
   const row=_tradeItems.find(x=>x.code===code); if(!row)return;
-  row[key] = ['cost','retail','japanWholesale','morphMarket'].includes(key) ? (Number(value)||0) : value;
+  row[key] = ['cost','japanWholesale','morphMarket','scaleSwap'].includes(key) ? (Number(value)||0) : value;
+  if(key==='cost') {
+    imTradeRecalculateTargets();
+    imTradeRenderTable();
+  }
   imTradeUpdateSummary();
   imTradeScheduleSave();
 };
+function imTradeExtraTotal() {
+  return _tradeExpenses.reduce((sum,x)=>sum+(Number(x.amount)||0),0);
+}
+function imTradeMarketTotal() {
+  return _tradeItems.reduce((sum,x)=>sum+(Number(x.cost)||0),0);
+}
+function imTradeAllocatedExtra(item) {
+  const market = Number(item?.cost)||0;
+  const totalMarket = imTradeMarketTotal();
+  const extra = imTradeExtraTotal();
+  if(market <= 0 || totalMarket <= 0 || extra <= 0) return 0;
+  return extra * (market / totalMarket);
+}
+function imTradeTargetPrice(item) {
+  const market = Number(item?.cost)||0;
+  if(market <= 0) return 0;
+  return Math.round(market + imTradeAllocatedExtra(item));
+}
+function imTradeRecalculateTargets() {
+  _tradeItems.forEach(x => { x.retail = imTradeTargetPrice(x); });
+  imTradeApplyAutoGrades();
+}
+
 window.imTradeRenderTable = function() {
   const body=document.getElementById('trade-table-body'); if(!body)return;
   const q=(document.getElementById('trade-search')?.value||'').trim().toLowerCase();
@@ -8041,54 +8174,53 @@ window.imTradeRenderTable = function() {
     <td>${x.sex==='F'?'♀ 母':'♂ 公'}</td>
     <td class="trade-morph">${imTradeEsc(x.morph)}</td>
     <td><div class="grade-group">${['S','A','B','C'].map(g=>`<button class="grade-btn ${x.grade===g?'active':''}" onclick="imTradeSetGrade('${x.code}','${g}')">${g}</button>`).join('')}</div></td>
-    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.cost)||''}" placeholder="0" oninput="imTradeUpdateField('${x.code}','cost',this.value)"></td>
-    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.retail)||''}" placeholder="0" oninput="imTradeUpdateField('${x.code}','retail',this.value)"></td>
-    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.japanWholesale)||''}" placeholder="0" oninput="imTradeUpdateField('${x.code}','japanWholesale',this.value)"></td>
-    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.morphMarket)||''}" placeholder="0" oninput="imTradeUpdateField('${x.code}','morphMarket',this.value)"></td>
+    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.cost)||''}" placeholder="0" title="市場價（NT$）" onchange="imTradeUpdateField('${x.code}','cost',this.value)"></td>
+    <td><input class="trade-input" type="number" min="0" step="1" value="${imTradeTargetPrice(x)||''}" placeholder="自動" readonly title="目標價 = 市場價 + 額外費用按市場價占比攤提"></td>
+    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.japanWholesale)||''}" placeholder="0" title="日本批發價（JPY）" oninput="imTradeUpdateField('${x.code}','japanWholesale',this.value)"></td>
+    <td><input class="trade-input" type="number" min="0" step="0.01" value="${Number(x.morphMarket)||''}" placeholder="0" title="MorphMarket 市場價（USD）" oninput="imTradeUpdateField('${x.code}','morphMarket',this.value)"></td>
+    <td><input class="trade-input" type="number" min="0" step="1" value="${Number(x.scaleSwap)||''}" placeholder="0" title="ScaleSwap 價格（NT$）" oninput="imTradeUpdateField('${x.code}','scaleSwap',this.value)"></td>
     <td><input class="trade-input" value="${imTradeEsc(x.note)}" placeholder="備註" oninput="imTradeUpdateField('${x.code}','note',this.value)"></td>
   </tr>`).join('');
 };
 function imTradeExpenseTwd(x) {
-  const amt=Number(x.amount)||0;
-  const cur=String(x.currency||'TWD');
-  if(cur==='TWD') return amt;
-  return amt*(Number(x.rate)||0);
+  return Number(x.amount)||0;
 }
 window.imTradeRenderExpenses = function() {
   const el=document.getElementById('trade-expenses'); if(!el)return;
   el.innerHTML=_tradeExpenses.map((x,i)=>`<div class="expense-row">
     <input class="form-input" style="padding:8px" value="${imTradeEsc(x.name)}" placeholder="費用名稱" oninput="imTradeUpdateExpense(${i},'name',this.value)">
-    <input class="form-input" style="padding:8px" type="number" min="0" step="0.01" value="${Number(x.amount)||''}" placeholder="0" oninput="imTradeUpdateExpense(${i},'amount',this.value)">
-    <select class="form-select" style="padding:8px" onchange="imTradeUpdateExpense(${i},'currency',this.value)">
-      ${['TWD','JPY','USD','KRW'].map(c=>`<option value="${c}" ${x.currency===c?'selected':''}>${c}</option>`).join('')}
-    </select>
-    <input class="form-input" style="padding:8px" type="number" min="0" step="0.0001" value="${Number(x.rate)||1}" ${x.currency==='TWD'?'disabled':''} title="1 外幣 = 幾元台幣" oninput="imTradeUpdateExpense(${i},'rate',this.value)">
+    <input class="form-input" style="padding:8px" type="number" min="0" step="1" value="${Number(x.amount)||''}" placeholder="0" title="金額一律以新台幣記錄" oninput="imTradeUpdateExpense(${i},'amount',this.value)">
     <button class="btn-small" style="color:#a11;padding:7px" onclick="imTradeRemoveExpense(${i})">×</button>
   </div>`).join('') || '<div style="font-size:11px;color:var(--muted);padding:8px 0">尚無額外支出。</div>';
 };
 window.imTradeAddExpense = function() {
   _tradeExpenses.push({id:imTradeExpenseId(),name:'',amount:0,currency:'TWD',rate:1});
-  imTradeRenderExpenses(); imTradeUpdateSummary(); imTradeScheduleSave();
+  imTradeRecalculateTargets();
+  imTradeRenderExpenses(); imTradeRenderTable(); imTradeUpdateSummary(); imTradeScheduleSave();
 };
 window.imTradeRemoveExpense = function(i) {
-  _tradeExpenses.splice(i,1); imTradeRenderExpenses(); imTradeUpdateSummary(); imTradeScheduleSave();
+  _tradeExpenses.splice(i,1);
+  imTradeRecalculateTargets();
+  imTradeRenderExpenses(); imTradeRenderTable(); imTradeUpdateSummary(); imTradeScheduleSave();
 };
 window.imTradeUpdateExpense = function(i,key,value) {
   if(!_tradeExpenses[i])return;
-  _tradeExpenses[i][key]=['amount','rate'].includes(key)?(Number(value)||0):value;
-  if(key==='currency' && value==='TWD') _tradeExpenses[i].rate=1;
-  if(key==='currency') imTradeRenderExpenses();
-  imTradeUpdateSummary(); imTradeScheduleSave();
+  _tradeExpenses[i][key]= key==='amount' ? (Number(value)||0) : value;
+  _tradeExpenses[i].currency='TWD';
+  _tradeExpenses[i].rate=1;
+  imTradeRecalculateTargets();
+  imTradeRenderTable(); imTradeUpdateSummary(); imTradeScheduleSave();
 };
 window.imTradeLedgerChanged = function() {
   imTradeUpdateSummary(); imTradeScheduleSave();
 };
 window.imTradeUpdateSummary = function() {
-  const totalCost=_tradeItems.reduce((s,x)=>s+(Number(x.cost)||0),0);
-  const totalRetail=_tradeItems.reduce((s,x)=>s+(Number(x.retail)||0),0);
+  const totalCost=imTradeMarketTotal();
+  const extra=imTradeExtraTotal();
+  imTradeRecalculateTargets();
+  const totalRetail=_tradeItems.reduce((s,x)=>s+imTradeTargetPrice(x),0);
   const graded=_tradeItems.filter(x=>x.grade).length;
   const base=Number(document.getElementById('trade-base-cost')?.value)||0;
-  const extra=_tradeExpenses.reduce((s,x)=>s+imTradeExpenseTwd(x),0);
   const batch=base+extra;
 
   const byGrade={S:0,A:0,B:0,C:0};
@@ -8110,12 +8242,16 @@ window.imTradeUpdateSummary = function() {
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:4px">
         ${['S','A','B','C'].map(g=>`<div style="text-align:center;background:#faf7f2;border-radius:6px;padding:8px 4px"><div style="font-size:10px;color:var(--muted)">${g}級</div><strong>${byGrade[g]}</strong></div>`).join('')}
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px"><span>個體成本合計</span><span>${imTradeMoney(totalCost)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>零售價合計</span><span>${imTradeMoney(totalRetail)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px"><span>市場價合計</span><span>${imTradeMoney(totalCost)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>目標價合計</span><span>${imTradeMoney(totalRetail)}</span></div>
     </div>`;
 };
 window.imTradeLoadPage = async function() {
   if(!_tradeLoaded) await imTradeLoadData();
+  const gs=document.getElementById('trade-grade-s-min'); if(gs && !gs.value) gs.value=_tradeGradeParams.sMin||'';
+  const ga=document.getElementById('trade-grade-a-min'); if(ga && !ga.value) ga.value=_tradeGradeParams.aMin||'';
+  const gb=document.getElementById('trade-grade-b-min'); if(gb && !gb.value) gb.value=_tradeGradeParams.bMin||'';
+  imTradeRecalculateTargets();
   imTradeRenderTable();
   imTradeRenderExpenses();
   imTradeUpdateSummary();
