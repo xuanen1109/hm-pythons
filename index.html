@@ -736,6 +736,8 @@ body {
 }
 .auction-card:hover .auction-cta-btn { background: var(--copper-light, #D4A06A); transform: translateY(-1px); }
 .auction-placeholder-card {
+  position: relative !important;
+  overflow: hidden !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -2477,11 +2479,8 @@ function renderSaleGrid(snakes, speciesFilter) {
 
   const startIndex = (window._salePage - 1) * SALE_PAGE_SIZE;
   const pageItems = visible.slice(startIndex, startIndex + SALE_PAGE_SIZE);
-  const padCount = padToMultipleOf3(pageItems.length);
-
   grid.innerHTML =
-    pageItems.map((s, i) => makeCard(s, startIndex + i + 1)).join('') +
-    PLACEHOLDER_LIGHT.repeat(padCount);
+    pageItems.map((s, i) => makeCard(s, startIndex + i + 1)).join('');
 
   renderSalePagination(totalPages);
 }

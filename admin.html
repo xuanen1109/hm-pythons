@@ -3066,6 +3066,23 @@ function buildSaleExportEntries() {
     return m ? Number(m[0]) : null;
   };
   const getSpecies = s => speciesMap[s?.species] || s?.speciesRaw || s?.species || '物種未填';
+  const getPriceNumber = (s, key='price') => {
+    const raw = String(s?.[key] ?? '').trim();
+    if (!raw) return null;
+    const digits = raw.replace(/[^0-9]/g, '');
+    return digits ? Number(digits) : null;
+  };
+  const getExportPriceText = s => {
+    const base = getPriceNumber(s, 'price');
+    const special = getPriceNumber(s, 'specialPrice');
+
+    if (base === null && special === null) return '價格未填';
+    if (base === null) return `特價 NT$${special.toLocaleString('en-US')}`;
+    if (special !== null && special < base) {
+      return `原價 NT$${base.toLocaleString('en-US')} → 特價 NT$${special.toLocaleString('en-US')}`;
+    }
+    return `NT$${base.toLocaleString('en-US')}`;
+  };
   // 待售文字匯出：名稱以後台「中文名稱 nameZh」為準，不再優先讀色型標籤 morph。
   // 因匯出格式後方會另外附上性別，這裡只去除中文名稱末尾重複的（公）／（母）。
   const getGene = s => {
@@ -3093,7 +3110,20 @@ function buildSaleExportEntries() {
     if (!male?.id || !female?.id || male.status !== 'sale' || female.status !== 'sale') return null;
     const maleYear = getYear(male);
     const femaleYear = getYear(female);
-    const total = bgGroupPriceNumber(g);
+    const maleBase = getPriceNumber(male, 'price');
+    const femaleBase = getPriceNumber(female, 'price');
+    const maleSpecial = getPriceNumber(male, 'specialPrice');
+    const femaleSpecial = getPriceNumber(female, 'specialPrice');
+    const total = (maleBase === null || femaleBase === null) ? null : maleBase + femaleBase;
+    const currentTotal =
+      (maleBase === null || femaleBase === null) ? null :
+      (maleSpecial !== null && maleSpecial < maleBase ? maleSpecial : maleBase) +
+      (femaleSpecial !== null && femaleSpecial < femaleBase ? femaleSpecial : femaleBase);
+    const groupPriceText =
+      total === null ? '價格未填' :
+      (currentTotal !== null && currentTotal < total
+        ? `原價 NT$${total.toLocaleString('en-US')} → 特價 NT$${currentTotal.toLocaleString('en-US')}`
+        : `NT$${total.toLocaleString('en-US')}`);
     return {
       kind: 'group',
       group: g,
@@ -3102,8 +3132,8 @@ function buildSaleExportEntries() {
       species: getSpecies(male),
       year: Math.max(maleYear || 0, femaleYear || 0) || null,
       sortName: `${getGene(male)} ${getGene(female)}`,
-      priceNumber: total,
-      pricedLine: `繁殖組｜${maleYear ? maleYear + ' ' : ''}${getGene(male)}（公） × ${femaleYear ? femaleYear + ' ' : ''}${getGene(female)}（母）｜${total === null ? '價格未填' : `NT$${total.toLocaleString('en-US')}`}`,
+      priceNumber: currentTotal ?? total,
+      pricedLine: `繁殖組｜${maleYear ? maleYear + ' ' : ''}${getGene(male)}（公） × ${femaleYear ? femaleYear + ' ' : ''}${getGene(female)}（母）｜${groupPriceText}`,
       noPriceLine: `繁殖組｜${maleYear ? maleYear + ' ' : ''}${getGene(male)}（公） × ${femaleYear ? femaleYear + ' ' : ''}${getGene(female)}（母）`
     };
   }).filter(Boolean);
@@ -3118,12 +3148,7 @@ function buildSaleExportEntries() {
     .filter(s => s.status === 'sale' && !groupedIds.has(String(s.id)))
     .map(s => {
       const year = getYear(s);
-      const rawPrice = String(s.price ?? '').trim();
-      let priceText = '價格未填';
-      if (rawPrice) {
-        const digits = rawPrice.replace(/[^0-9]/g, '');
-        priceText = digits ? `NT$${Number(digits).toLocaleString('en-US')}` : rawPrice;
-      }
+      const priceText = getExportPriceText(s);
       return {
         kind: 'snake',
         species: getSpecies(s),
@@ -3165,7 +3190,7 @@ window.exportSaleText = async () => {
   const sections = makeSaleExportSections(entries, false);
   const now = new Date();
   const updatedAt = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const text = `待售清單   照片參照官網   社群內9折優惠（限26年小蛇）\n更新時間：${updatedAt}\n\n${sections.join('\n\n')}`;
+  const text = `待售清單   照片參照官網   社群內9折優惠（限26年小蛇）\n更新時間：${updatedAt}\n\n${sections.join('\n\n')}\n\n社群:\nhttps://reurl.cc/YmDWga\n\n官網:\nhttps://hmpython.netlify.app/#auction`;
 
   try {
     await navigator.clipboard.writeText(text);
@@ -3174,7 +3199,7 @@ window.exportSaleText = async () => {
     ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
   }
-  showToast(`✅ 已複製 ${entries.length} 個待售品項${groupCount ? `（含 ${groupCount} 組繁殖組）` : ''}`);
+  showToast(`✅ 已複製 ${entries.length} 個待售品項，已套用目前特價${groupCount ? `（含 ${groupCount} 組繁殖組）` : ''}`);
 };
 
 window.exportSaleTextNoPrice = async () => {
