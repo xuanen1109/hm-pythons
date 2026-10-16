@@ -5208,7 +5208,6 @@ window.fabulousExportCustomerPDF=function(){
   const rows=fabulousSelectedExportRows();
   if(!rows.length){window.showToast?.('目前沒有勾選任何品項');return;}
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const customPriced=rows.filter(r=>r.marketUsd>0).length;
   const tableRows=rows.map((r,i)=>`<tr>
     <td>${i+1}</td>
     <td class="code">${esc(r.code)}</td>
@@ -5254,7 +5253,7 @@ window.fabulousExportCustomerPDF=function(){
         <div class="brand">FABULOUS PARK × HM.PYTHONS × SOTA REPTILE</div>
         <div class="sub">球蟒客戶售價表 / Ball Python Customer Price List</div>
       </div>
-      <div class="count">Selected: ${rows.length}<br>Custom price: ${customPriced} / Original fallback: ${rows.length-customPriced}</div>
+      <div class="count">Selected: ${rows.length}</div>
     </div>
 
     <table>
