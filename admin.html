@@ -518,6 +518,637 @@ textarea.hatch-gene-input {
 .consign-status{padding:5px 7px;border:1px solid rgba(181,115,58,.25);border-radius:4px;background:#fff;color:var(--brown);font:inherit;font-size:11px}
 @media(max-width:800px){#im-consignment-summary{grid-template-columns:1fr 1fr !important}.consign-basic-grid{grid-template-columns:1fr !important}}
 
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN UX REFRESH v35 — visual polish + mobile-first controls
+   僅調整介面與操作動線，不變更 Firestore / 業務資料邏輯
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --ui-bg:#f6f2eb;
+  --ui-surface:#ffffff;
+  --ui-surface-soft:#fbf8f3;
+  --ui-border:rgba(91,55,35,.11);
+  --ui-border-strong:rgba(181,115,58,.28);
+  --ui-shadow:0 8px 28px rgba(59,26,16,.07);
+  --ui-shadow-soft:0 3px 14px rgba(59,26,16,.05);
+  --ui-radius:14px;
+  --ui-radius-sm:10px;
+  --ui-nav-h:64px;
+}
+
+html{scroll-behavior:smooth;background:var(--ui-bg)}
+body{
+  background:var(--ui-bg);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+button,input,select,textarea{font:inherit}
+button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid rgba(181,115,58,.22);
+  outline-offset:2px;
+}
+
+/* Top bar */
+.navbar{
+  height:var(--ui-nav-h);
+  padding:0 28px;
+  background:linear-gradient(135deg,#32140c 0%,#4a2014 58%,#5a2a19 100%);
+  box-shadow:0 4px 18px rgba(42,18,10,.16);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  backdrop-filter:saturate(1.15) blur(8px);
+}
+.nav-brand{
+  font-size:19px;
+  letter-spacing:.2px;
+  font-weight:700;
+  text-shadow:0 1px 12px rgba(0,0,0,.16);
+}
+.nav-right{gap:12px}
+.user-name{font-size:12px;color:rgba(255,255,255,.72)}
+.logout-btn{
+  min-height:36px;
+  padding:7px 13px;
+  border-radius:9px;
+  background:rgba(255,255,255,.055);
+  border-color:rgba(255,255,255,.16);
+  color:rgba(255,255,255,.82);
+}
+.logout-btn:hover{background:rgba(255,255,255,.10)}
+
+/* Main shell */
+.main{grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - var(--ui-nav-h))}
+.sidebar{
+  position:sticky;
+  top:var(--ui-nav-h);
+  height:calc(100vh - var(--ui-nav-h));
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:20px 12px 28px;
+  background:rgba(255,255,255,.92);
+  border-right:1px solid var(--ui-border);
+  box-shadow:4px 0 18px rgba(59,26,16,.025);
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(181,115,58,.20);border-radius:999px}
+.sidebar-section{margin-bottom:18px}
+.sidebar-section + .sidebar-section{padding-top:4px;border-top:1px solid rgba(91,55,35,.055)}
+.sidebar-label{
+  padding:0 11px;
+  margin:4px 0 7px;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:2.2px;
+  color:#9a8877;
+}
+.sidebar-btn{
+  min-height:42px;
+  margin:2px 0;
+  padding:9px 11px;
+  gap:10px;
+  border-left:none;
+  border-radius:10px;
+  font-size:12.5px;
+  font-weight:500;
+  color:#563528;
+  transition:background .15s ease,color .15s ease,transform .15s ease,box-shadow .15s ease;
+}
+.sidebar-btn:hover{background:#f8f2e9;transform:translateX(1px)}
+.sidebar-btn.active{
+  background:linear-gradient(135deg,#f7eee2,#fdf9f4);
+  color:#9b5728;
+  box-shadow:inset 0 0 0 1px rgba(181,115,58,.18),0 2px 8px rgba(181,115,58,.07);
+  font-weight:700;
+}
+.sidebar-icon{
+  width:25px;
+  height:25px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 25px;
+  border-radius:7px;
+  background:rgba(181,115,58,.075);
+  font-size:14px;
+}
+.sidebar-btn.active .sidebar-icon{background:rgba(181,115,58,.14)}
+
+.content{
+  min-width:0;
+  padding:32px clamp(22px,3vw,48px) 52px;
+  background:
+    radial-gradient(circle at 88% -10%,rgba(181,115,58,.055),transparent 28%),
+    var(--ui-bg);
+}
+.page.active{animation:uiPageIn .18s ease-out}
+@keyframes uiPageIn{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:none}}
+.page-title{
+  font-size:28px;
+  line-height:1.22;
+  margin-bottom:7px;
+  letter-spacing:-.35px;
+}
+.page-sub{
+  margin-bottom:24px;
+  font-size:12px;
+  line-height:1.7;
+  color:#887768;
+  max-width:900px;
+}
+
+/* Cards / panels */
+.snake-grid{
+  grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
+  gap:18px;
+  margin-top:18px;
+}
+.snake-card{
+  border:1px solid var(--ui-border);
+  border-radius:var(--ui-radius);
+  box-shadow:var(--ui-shadow-soft);
+  background:rgba(255,255,255,.98);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+@media (hover:hover){
+  .snake-card:hover{transform:translateY(-2px);box-shadow:var(--ui-shadow);border-color:rgba(181,115,58,.22)}
+}
+.snake-card-img{background:#eeeae4}
+.snake-card-body{padding:15px 15px 16px}
+.snake-card-name{font-size:15px;line-height:1.45;margin-bottom:3px}
+.snake-card-code{font-size:10px;letter-spacing:.8px;margin-bottom:9px;color:#917f70}
+.snake-card-tags{gap:5px;margin-bottom:11px}
+.tag{border-radius:999px;padding:3px 8px;background:#f7eee3;border:1px solid rgba(181,115,58,.10)}
+.status-badge{
+  top:11px;right:11px;
+  border-radius:7px;
+  padding:5px 9px;
+  letter-spacing:1px;
+  box-shadow:0 3px 10px rgba(0,0,0,.12);
+  backdrop-filter:blur(5px);
+}
+.card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+
+.form-card,.im-kpi,.stat-card,.im-food-block,.consign-batch-card{
+  border-color:var(--ui-border) !important;
+  border-radius:var(--ui-radius) !important;
+  box-shadow:var(--ui-shadow-soft);
+}
+.form-card{padding:26px;background:rgba(255,255,255,.98)}
+.stat-card{
+  background:#fff;
+  border:1px solid var(--ui-border);
+  border-radius:var(--ui-radius);
+  padding:16px 17px;
+  min-width:0;
+}
+.stat-label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.stat-value{font-size:24px;font-weight:800;color:var(--brown);margin-top:5px;line-height:1.2}
+.im-kpi{padding:15px 16px;background:#fff}
+.im-kpi-label{font-weight:700;color:#938171}
+.im-kpi-value{font-size:23px;letter-spacing:-.3px}
+
+/* Form controls */
+.form-label{font-weight:700;color:#624335;margin-bottom:7px}
+.form-input,.form-select,.form-textarea,.consign-price-input,.consign-note-input,.consign-status{
+  border-radius:9px;
+  border-color:rgba(91,55,35,.18);
+  background:#fff;
+  min-height:42px;
+  transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
+}
+.form-input:hover,.form-select:hover,.form-textarea:hover{border-color:rgba(181,115,58,.42)}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  border-color:var(--copper);
+  box-shadow:0 0 0 3px rgba(181,115,58,.10);
+  background:#fffdf9;
+}
+.form-textarea{min-height:96px}
+.upload-area{border-radius:12px;background:#fbf7f1}
+
+/* Buttons */
+.submit-btn{
+  min-height:40px;
+  border-radius:9px;
+  font-weight:700;
+  letter-spacing:.2px;
+  box-shadow:0 3px 10px rgba(59,26,16,.10);
+  transition:transform .14s ease,box-shadow .14s ease,background .14s ease;
+}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(59,26,16,.14)}
+.submit-btn:active{transform:translateY(0)}
+.action-btn,.im-btn-cancel,.modal-option{
+  min-height:38px;
+  border-radius:8px;
+  font-weight:600;
+  background:#fff;
+  border-color:rgba(181,115,58,.22);
+}
+.action-btn:hover,.im-btn-cancel:hover{background:#faf5ee;border-color:rgba(181,115,58,.36)}
+.action-btn.danger{background:#fffafa}
+
+/* Tables */
+.im-table{font-size:12px}
+.im-table th{
+  padding:11px 12px;
+  background:#f8f4ed;
+  color:#7e6d5f;
+  font-weight:700;
+  border-bottom-color:rgba(91,55,35,.10);
+}
+.im-table td{padding:11px 12px;border-bottom-color:rgba(91,55,35,.065)}
+.im-table tbody tr{transition:background .12s ease}
+.im-table tr:hover td{background:#fcf9f5}
+.im-tag,.im-owner{border-radius:999px;padding:3px 7px}
+
+/* Any table/panel scroll should feel native on touch */
+.page [style*="overflow:auto"],.im-modal [style*="overflow:auto"]{
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+}
+
+/* Modals */
+.modal-overlay,.im-modal-overlay{backdrop-filter:blur(4px);background:rgba(30,18,12,.48)}
+.modal,.im-modal{
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 24px 70px rgba(36,17,10,.24);
+}
+.modal-title,.im-modal-title{font-size:20px;font-weight:700;letter-spacing:-.2px}
+.im-form-actions{gap:10px}
+
+/* Toast */
+.toast{
+  border-radius:11px;
+  box-shadow:0 12px 34px rgba(33,15,8,.20);
+  padding:13px 17px;
+  font-weight:600;
+}
+
+/* Desktop width tuning */
+@media (min-width:1400px){
+  .content{padding-left:42px;padding-right:42px}
+  .snake-grid{grid-template-columns:repeat(auto-fill,minmax(285px,1fr))}
+}
+
+/* Mobile-only quick controls; hidden on desktop */
+.mobile-bottom-nav,.mobile-snake-filters{display:none}
+
+
+/* ── DESKTOP LAYOUT STABILITY v37 ───────────────────────────
+   桌機維持側欄 + 主內容兩欄；表格寬度不足時改成水平捲動，
+   不再把欄位硬壓窄。手機版仍只由 768px breakpoint 控制。
+   ─────────────────────────────────────────────────────────── */
+@media (min-width:769px){
+  .main{
+    grid-template-columns:clamp(220px,17vw,260px) minmax(0,1fr);
+    width:100%;
+    max-width:100%;
+  }
+  .sidebar{min-width:0}
+  .content{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+  #page-im-sales,#page-im-data-center{min-width:0;max-width:100%}
+
+  /* KPI 自動換列，不用為了硬塞四欄把卡片壓得很窄 */
+  #im-sales-kpi{
+    grid-template-columns:repeat(auto-fit,minmax(185px,1fr))!important;
+  }
+
+  /* 銷售與資料中心都是寬表格：不足時由外層橫向捲動 */
+  #page-im-sales > div[style*="overflow:auto"],
+  #page-im-data-center > div[style*="overflow:auto"]{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto!important;
+    overflow-y:hidden;
+    scrollbar-gutter:stable;
+  }
+  #im-table-sales{min-width:1180px;width:100%}
+  #im-data-center-table{min-width:1120px;width:100%}
+  #im-table-sales th,#im-table-sales td,
+  #im-data-center-table th,#im-data-center-table td{
+    white-space:nowrap;
+  }
+  #im-table-sales td[data-label="基因"],
+  #im-data-center-table td:nth-child(2){
+    white-space:normal;
+    min-width:190px;
+  }
+  #im-table-sales td[data-label="操作"]{min-width:300px}
+}
+
+/* 介於平板與大桌機之間的瀏覽器寬度：側欄稍微縮小，優先留空間給資料 */
+@media (min-width:769px) and (max-width:1180px){
+  .main{grid-template-columns:196px minmax(0,1fr)}
+  .sidebar{padding:16px 8px 24px}
+  .sidebar-btn{padding:8px 9px;font-size:11.5px;gap:7px}
+  .sidebar-label{padding:0 9px}
+  .sidebar-icon{width:22px;height:22px;flex:0 0 22px;font-size:12px}
+  .content{padding:24px 18px 44px}
+  .page-title{font-size:25px}
+  #im-sales-kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+
+/* ── MOBILE / TABLET UX ───────────────────────────────────── */
+@media (max-width: 768px) {
+  :root{--ui-nav-h:56px}
+  html{scroll-padding-top:66px}
+  body{padding-bottom:calc(70px + env(safe-area-inset-bottom));background:#f7f3ed}
+
+  .navbar{
+    height:var(--ui-nav-h);
+    padding:0 10px;
+    gap:7px;
+    position:sticky;
+    z-index:350;
+  }
+  .hamburger-btn{
+    display:flex;
+    width:40px;height:40px;
+    padding:0;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    border-radius:10px;
+    background:rgba(255,255,255,.06);
+    flex:0 0 40px;
+    margin-right:2px;
+  }
+  .hamburger-btn span{width:19px;margin:2.5px 0}
+  .nav-brand{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  .nav-right{gap:6px;flex:0 0 auto}
+  .nav-right > span[title="繁殖組修正版"]{display:none}
+  .logout-btn{min-height:36px;padding:6px 10px;font-size:10px}
+
+  .main{grid-template-columns:1fr;min-height:calc(100dvh - var(--ui-nav-h))}
+  .content{padding:15px 12px calc(26px + env(safe-area-inset-bottom));min-width:0}
+  .page-title{font-size:22px;line-height:1.25;margin-bottom:5px}
+  .page-sub{font-size:11.5px;line-height:1.65;margin-bottom:16px}
+
+  /* Drawer */
+  .sidebar-overlay{z-index:480;background:rgba(28,17,11,.48);backdrop-filter:blur(2px)}
+  .sidebar{
+    position:fixed;
+    top:0;
+    left:min(-88vw,-320px);
+    width:min(88vw,320px);
+    height:100dvh;
+    z-index:500;
+    padding:68px 10px calc(28px + env(safe-area-inset-bottom));
+    border-right:none;
+    box-shadow:12px 0 36px rgba(35,18,10,.20);
+    background:#fffdf9;
+    transition:left .24s ease;
+  }
+  .sidebar.open{left:0}
+  .sidebar-section{margin-bottom:14px}
+  .sidebar-label{font-size:10px;padding:0 12px;margin-bottom:6px}
+  .sidebar-btn{min-height:47px;padding:10px 12px;font-size:14px;border-radius:11px}
+  .sidebar-icon{width:28px;height:28px;flex-basis:28px;font-size:15px}
+
+  /* Permanent quick dock */
+  .mobile-bottom-nav{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    position:fixed;
+    left:0;right:0;bottom:0;
+    z-index:300;
+    min-height:64px;
+    padding:6px 5px calc(6px + env(safe-area-inset-bottom));
+    background:rgba(255,253,249,.96);
+    border-top:1px solid rgba(91,55,35,.11);
+    box-shadow:0 -8px 26px rgba(47,25,14,.09);
+    backdrop-filter:blur(14px) saturate(1.2);
+  }
+  .mobile-bottom-nav button{
+    appearance:none;border:0;background:none;color:#806e60;
+    min-width:0;min-height:50px;padding:4px 2px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    border-radius:10px;font-family:inherit;font-size:9px;font-weight:700;cursor:pointer;
+  }
+  .mobile-bottom-nav .mb-icon{font-size:19px;line-height:1.1}
+  .mobile-bottom-nav button.active{color:#8c4c24;background:#f7ede1}
+
+  /* Quick status filters for all-individual page */
+  .mobile-snake-filters{
+    display:flex;
+    gap:7px;
+    overflow-x:auto;
+    margin:4px -12px 10px;
+    padding:2px 12px 8px;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .mobile-snake-filters::-webkit-scrollbar{display:none}
+  .mobile-snake-filters button{
+    flex:0 0 auto;
+    min-height:37px;
+    padding:7px 12px;
+    border-radius:999px;
+    border:1px solid rgba(181,115,58,.19);
+    background:#fff;
+    color:#765e4f;
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .mobile-snake-filters button.active{background:#4a2014;color:#f7e8d4;border-color:#4a2014;box-shadow:0 3px 9px rgba(59,26,16,.14)}
+
+  /* Page headers + toolbars */
+  #page-list > div:first-child{gap:10px!important}
+  #page-list > div:first-child > div:first-child{width:100%}
+  #page-list > div:first-child > div:last-child{
+    width:100%;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px!important;
+  }
+  #page-list > div:first-child > div:last-child .submit-btn{width:100%!important;min-height:44px;padding:8px 7px!important;font-size:11px;white-space:normal!important;line-height:1.35}
+
+  #page-im-data-center > div:first-child > div:last-child{
+    width:100%;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important;
+  }
+  #page-im-data-center > div:first-child > div:last-child > button{width:100%!important;min-height:44px;padding:8px 7px!important;line-height:1.3}
+
+  /* Main cards */
+  .snake-grid{grid-template-columns:1fr;gap:14px;margin-top:12px}
+  .snake-card{border-radius:14px;box-shadow:0 5px 18px rgba(59,26,16,.07)}
+  .snake-card-img{aspect-ratio:4/3}
+  .snake-card-body{padding:14px}
+  .snake-card-name{font-size:16px}
+  .snake-card-code{font-size:10.5px}
+  .card-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .action-btn{min-height:43px;padding:8px 9px!important;font-size:12px;line-height:1.25}
+  .submit-btn{min-height:44px;font-size:13px}
+
+  /* Forms: no iOS zoom, full-width, better finger targets */
+  .form-card{padding:16px;border-radius:14px}
+  .form-row,.im-form-grid{grid-template-columns:1fr!important;gap:11px}
+  .form-input,.form-select,.form-textarea{
+    min-height:46px;
+    font-size:16px!important;
+    padding:11px 12px!important;
+    border-radius:10px;
+  }
+  .form-textarea{min-height:110px}
+  input[type="checkbox"],input[type="radio"]{min-width:18px;min-height:18px}
+
+  /* Common inline grids that were desktop-only */
+  #im-data-center-kpi,#im-kpi-row,#im-sales-kpi,#im-fund-balance-summary,#im-consignment-summary{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+  }
+  #page-im-dashboard > div[style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr!important;
+    gap:12px!important;
+  }
+  #page-specials > div[style*="grid-template-columns:repeat(3"],
+  #page-specials .form-card > div[style*="grid-template-columns:repeat(2"],
+  #home-crop-overlay [style*="grid-template-columns:minmax(0,1fr) 220px"]{
+    grid-template-columns:1fr!important;
+  }
+
+  /* Filters */
+  #page-im-sales > div[style*="display:flex"][style*="flex-wrap:wrap"],
+  #page-im-males > div[style*="display:flex"][style*="flex-wrap:wrap"],
+  #page-im-females > div[style*="display:flex"][style*="flex-wrap:wrap"],
+  #page-im-breeding > div[style*="display:flex"][style*="flex-wrap:wrap"],
+  #page-im-data-center > div[style*="background:white"] > div[style*="display:flex"]{
+    gap:8px!important;
+  }
+  .form-input[style*="width:200px"],.form-input[style*="min-width:280px"],.form-select[style*="width:"]{width:100%!important;min-width:0!important}
+
+  /* Tables become readable stacked cards */
+  .im-table{display:block;width:100%}
+  .im-table thead{display:none}
+  .im-table tbody{display:block;width:100%}
+  .im-table tr{
+    display:block;
+    width:100%;
+    margin:0 0 11px;
+    padding:13px 13px 12px;
+    border:1px solid rgba(91,55,35,.10);
+    border-radius:13px;
+    background:#fff;
+    box-shadow:0 3px 12px rgba(59,26,16,.045);
+  }
+  .im-table td{
+    display:flex;
+    align-items:flex-start;
+    width:100%;
+    gap:10px;
+    padding:7px 0;
+    border:0;
+    border-bottom:1px solid rgba(91,55,35,.06);
+    font-size:12.5px;
+    line-height:1.5;
+    overflow-wrap:anywhere;
+  }
+  .im-table td:last-child{border-bottom:0}
+  .im-table td::before{
+    content:attr(data-label);
+    min-width:72px;
+    flex:0 0 72px;
+    padding-top:1px;
+    font-size:9.5px;
+    font-weight:800;
+    letter-spacing:.05em;
+    color:#9a8878;
+    text-transform:none;
+  }
+  .im-table td[data-label="操作"]{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    padding-top:11px;
+  }
+  .im-table td[data-label="操作"]::before{grid-column:1/-1;min-width:0;padding:0 0 1px}
+  .im-table td[data-label="操作"] .action-btn,
+  .im-table td[data-label="操作"] .submit-btn{width:100%!important;min-width:0;white-space:normal}
+
+  /* Header rows with a single Add button */
+  .page > div[style*="justify-content:space-between"][style*="margin-bottom:6px"]{gap:10px!important;flex-wrap:wrap!important}
+  .page > div[style*="justify-content:space-between"][style*="margin-bottom:6px"] > .submit-btn{width:auto!important;min-height:42px}
+
+  /* Bottom-sheet modals */
+  .modal-overlay,.im-modal-overlay{align-items:flex-end;padding:0;z-index:1000}
+  .modal,.im-modal{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:92dvh!important;
+    margin:0;
+    padding:18px 15px calc(18px + env(safe-area-inset-bottom));
+    border-radius:18px 18px 0 0;
+    overflow-y:auto;
+  }
+  .modal-title,.im-modal-title{font-size:19px}
+  .modal-sub{font-size:12px;margin-bottom:16px}
+  .im-form-actions{
+    position:sticky;
+    bottom:calc(-18px - env(safe-area-inset-bottom));
+    z-index:2;
+    margin:18px -15px calc(-18px - env(safe-area-inset-bottom));
+    padding:12px 15px calc(12px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(10px);
+    box-shadow:0 -5px 18px rgba(59,26,16,.06);
+  }
+  .im-form-actions > *{min-height:44px}
+
+  /* Toast stays above mobile dock */
+  .toast{
+    left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));
+    text-align:center;
+    width:auto;
+    font-size:12px;
+  }
+}
+
+@media (max-width:390px){
+  #page-list > div:first-child > div:last-child{grid-template-columns:1fr 1fr}
+  .mobile-bottom-nav button{font-size:8.5px}
+  .mobile-bottom-nav .mb-icon{font-size:18px}
+  .im-table td::before{min-width:64px;flex-basis:64px}
+}
+
+/* Hatch / newborn disposition */
+.hatch-row-grid{display:grid;grid-template-columns:112px minmax(180px,1fr) 92px 126px 92px;gap:8px;align-items:center;margin-bottom:8px}
+.hatch-row-head{margin-bottom:6px}
+.hatch-row-head>div{font-size:11px;color:var(--muted);padding:0 4px}
+.hatch-dest-select{font-weight:600}
+.hatch-dest-select[data-dest="sales"]{color:#7a4a18;background:#fffaf4}
+.hatch-dest-select[data-dest="breeder"]{color:#3f6f9f;background:#f4f8fc;border-color:rgba(74,127,181,.30)}
+
+@media (max-width:768px){
+  .hatch-row-head{display:none}
+  .hatch-row-grid.hatch-animal-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:9px!important;
+    padding:12px;
+    margin-bottom:11px;
+    border:1px solid rgba(181,115,58,.14);
+    border-radius:12px;
+    background:#fff;
+    box-shadow:0 3px 12px rgba(59,26,16,.04);
+  }
+  .hatch-code-cell,.hatch-gene-cell,.hatch-note-cell{grid-column:1/-1}
+  .hatch-code-cell{font-size:12px!important;padding:9px 10px!important}
+  .hatch-destination-summary{align-items:stretch!important}
+  .hatch-destination-summary>div:last-child{width:100%;display:grid!important;grid-template-columns:1fr 1fr}
+  .hatch-destination-summary .action-btn{width:100%!important;min-height:42px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+
 </style>
 </head>
 <body>
@@ -565,11 +1196,21 @@ textarea.hatch-gene-input {
 
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
+
+  <!-- 手機快速操作列：只在 768px 以下顯示 -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="手機快速導覽">
+    <button type="button" data-mobile-page="list" class="active" onclick="mobileAdminGo('list')"><span class="mb-icon">🐍</span><span>個體</span></button>
+    <button type="button" data-mobile-page="im-data-center" onclick="mobileAdminGo('im-data-center')"><span class="mb-icon">🗄️</span><span>資料中心</span></button>
+    <button type="button" data-mobile-page="im-sales" onclick="mobileAdminGo('im-sales')"><span class="mb-icon">💰</span><span>銷售</span></button>
+    <button type="button" data-mobile-page="add" onclick="mobileAdminGo('add')"><span class="mb-icon">＋</span><span>新增</span></button>
+    <button type="button" data-mobile-page="menu" onclick="toggleSidebar()"><span class="mb-icon">☰</span><span>選單</span></button>
+  </nav>
+
   <div class="main">
     <div class="sidebar" id="sidebar">
       <div class="sidebar-section">
         <div class="sidebar-label">管理</div>
-        <button class="sidebar-btn active" onclick="showPage('list', this)">
+        <button class="sidebar-btn active" onclick="showPage('list', this); window.imRefreshAllIndividuals({showAll:true}).catch(e=>console.warn('[snakes] list refresh failed',e))">
           <span class="sidebar-icon">🐍</span> 所有個體
         </button>
         <button class="sidebar-btn" onclick="showPage('add', this)">
@@ -584,26 +1225,29 @@ textarea.hatch-gene-input {
       </div>
       <div class="sidebar-section" style="margin-top:16px;">
         <div class="sidebar-label">快速篩選</div>
-        <button class="sidebar-btn" data-snake-filter="all" onclick="filterSnakes('all'); showPage('list', this)">
+        <button class="sidebar-btn" data-snake-filter="all" onclick="filterSnakes('all'); showPage('list', this); window.imRefreshAllIndividuals().catch(e=>console.warn('[snakes] filter refresh failed',e))">
           <span class="sidebar-icon">📋</span> 全部
         </button>
-        <button class="sidebar-btn" data-snake-filter="ready" onclick="filterSnakes('ready'); showPage('list', this)">
+        <button class="sidebar-btn" data-snake-filter="ready" onclick="filterSnakes('ready'); showPage('list', this); window.imRefreshAllIndividuals().catch(e=>console.warn('[snakes] filter refresh failed',e))">
           <span class="sidebar-icon">⏳</span> 準備上架
         </button>
-        <button class="sidebar-btn" data-snake-filter="sale" onclick="filterSnakes('sale'); showPage('list', this)">
+        <button class="sidebar-btn" data-snake-filter="sale" onclick="filterSnakes('sale'); showPage('list', this); window.imRefreshAllIndividuals().catch(e=>console.warn('[snakes] filter refresh failed',e))">
           <span class="sidebar-icon">✅</span> 待售中
         </button>
-        <button class="sidebar-btn" data-snake-filter="auction" onclick="filterSnakes('auction'); showPage('list', this)">
+        <button class="sidebar-btn" data-snake-filter="auction" onclick="filterSnakes('auction'); showPage('list', this); window.imRefreshAllIndividuals().catch(e=>console.warn('[snakes] filter refresh failed',e))">
           <span class="sidebar-icon">🔨</span> 競標中
         </button>
-        <button class="sidebar-btn" data-snake-filter="sold" onclick="filterSnakes('sold'); showPage('list', this)">
+        <button class="sidebar-btn" data-snake-filter="sold" onclick="filterSnakes('sold'); showPage('list', this); window.imRefreshAllIndividuals().catch(e=>console.warn('[snakes] filter refresh failed',e))">
           <span class="sidebar-icon">📦</span> 已售出
         </button>
       </div>
 
       <div class="sidebar-section" style="margin-top:16px;">
         <div class="sidebar-label">內部管理</div>
-        <button class="sidebar-btn" onclick="showPage('im-dashboard', this)">
+        <button class="sidebar-btn" onclick="showPage('im-data-center', this); imLoadDataCenterPage()">
+          <span class="sidebar-icon">🗄️</span> 資料中心
+        </button>
+        <button class="sidebar-btn" onclick="showPage('im-dashboard', this); imLoadAll().then(()=>imRenderDashboard())">
           <span class="sidebar-icon">📊</span> 總覽
         </button>
         <button class="sidebar-btn" onclick="showPage('im-traffic', this); loadWebsiteTraffic()">
@@ -685,6 +1329,15 @@ textarea.hatch-gene-input {
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleTextNoPrice()">📋 匯出無售價</button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="openAuctionPromoModal()">🔨 競標宣傳</button>
           </div>
+        </div>
+
+
+        <div class="mobile-snake-filters" id="mobile-snake-filters" aria-label="個體狀態篩選">
+          <button type="button" data-mobile-filter="all" class="active" onclick="mobileFilterSnakes('all')">📋 全部</button>
+          <button type="button" data-mobile-filter="ready" onclick="mobileFilterSnakes('ready')">⏳ 準備上架</button>
+          <button type="button" data-mobile-filter="sale" onclick="mobileFilterSnakes('sale')">✅ 待售</button>
+          <button type="button" data-mobile-filter="auction" onclick="mobileFilterSnakes('auction')">🔨 競標</button>
+          <button type="button" data-mobile-filter="sold" onclick="mobileFilterSnakes('sold')">📦 已售出</button>
         </div>
 
         <div id="bg-selection-bar" style="display:none;margin:14px 0 4px;background:#fff;border:1px solid rgba(181,115,58,.25);border-radius:8px;padding:11px 13px;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1114,6 +1767,50 @@ textarea.hatch-gene-input {
       </div>
 
 
+      <!-- IM: DATA CENTER (COMPATIBILITY MODE) -->
+      <div class="page" id="page-im-data-center">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+          <div>
+            <div class="page-title">🗄️ 蛇隻資料中心</div>
+            <div class="page-sub">相容模式：直接讀取現有 Firestore 資料，不新增 collection、不需要修改權限。</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="submit-btn" style="width:auto;padding:9px 16px" onclick="imLoadDataCenterPage(true)">↻ 重新整理</button>
+            <button class="action-btn" style="padding:9px 14px" onclick="imSetDataCenterArchiveMode(false)" id="im-dc-active-btn">現役個體</button>
+            <button class="action-btn" style="padding:9px 14px" onclick="imSetDataCenterArchiveMode(true)" id="im-dc-archive-btn">🗃️ 封存庫</button>
+            <button class="action-btn" style="padding:9px 14px;color:#7a4a18;border-color:rgba(181,115,58,.35)" onclick="imArchiveHistoricalSold()">📦 整理歷史已售出</button>
+            <button class="action-btn" style="padding:9px 14px;color:#2a6b3a;border-color:rgba(42,107,58,.3)" onclick="imSyncAllWebsiteMirrors()">🌐 同步官網鏡像</button>
+          </div>
+        </div>
+
+        <div id="im-data-center-status" style="padding:11px 13px;border:1px solid rgba(181,115,58,.18);border-radius:7px;background:#fffaf5;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:14px"></div>
+        <div id="im-data-center-kpi" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px"></div>
+
+        <div style="background:white;border:1px solid rgba(181,115,58,.12);border-radius:8px;padding:12px 14px;margin-bottom:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input class="form-input" id="im-dc-q" style="min-width:280px;flex:1;padding:8px 10px" placeholder="搜尋編號、基因、來源、所有人…" oninput="imRenderDataCenter()">
+            <select class="form-select" id="im-dc-sex" style="width:120px;padding:8px 10px" onchange="imRenderDataCenter()">
+              <option value="">全部性別</option><option value="M">♂ 公</option><option value="F">♀ 母</option><option value="U">未知</option>
+            </select>
+            <select class="form-select" id="im-dc-kind" style="width:150px;padding:8px 10px" onchange="imRenderDataCenter()">
+              <option value="">全部資料</option><option value="breeder">種蛇主檔</option><option value="sale">有銷售紀錄</option><option value="saleOnly">僅銷售資料</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="background:white;border:1px solid rgba(181,115,58,.12);border-radius:8px;overflow:auto">
+          <table class="im-table" id="im-data-center-table"></table>
+        </div>
+
+        <div style="margin-top:12px;font-size:10px;color:var(--muted);line-height:1.8">
+          現在的資料中心是「同步層」：會把既有 <b>im_males、im_females、im_sales</b> 即時整理成一份統一個體資料；進入頁面時會自動讀取，右上「重新整理」只是手動刷新。<br>
+          一般移除個體請使用 <b>封存</b>，保留親代、後代與歷史交易關聯。<br>
+          <b>已售出的個體會進入封存庫，不再出現在公／母現役清單，但親代、後代與歷史交易仍可引用。</b><br>
+          銷售案件則分開管理：到貨結案後個體可封存；公基金已繳（或免繳）後，交易本身才會進入「已歸檔」。若是建立錯誤、測試資料或確定不要保留，可從銷售紀錄或資料中心按 <b>永久刪除案件</b>，會刪除銷售紀錄並同步移除官網／所有個體鏡像。<br>
+          官網 <b>snakes</b> 是公開鏡像：個體資料與售價由資料中心／銷售紀錄同步，官網本身不再提供永久刪除入口。
+        </div>
+      </div>
+
       <!-- IM: DASHBOARD -->
       <div class="page" id="page-im-dashboard">
         <div class="page-title">內部管理總覽</div>
@@ -1170,7 +1867,7 @@ textarea.hatch-gene-input {
 
       <div class="page" id="page-im-males">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="page-title">公蛇</div>
+          <div class="page-title">公蛇 <span style="font-size:9px;color:var(--copper)">← 資料中心同步</span></div>
           <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenForm('males',null)">＋ 新增公蛇</button>
         </div>
         <div class="page-sub" id="im-males-sub"></div>
@@ -1188,7 +1885,7 @@ textarea.hatch-gene-input {
       <!-- IM: FEMALES -->
       <div class="page" id="page-im-females">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="page-title">母蛇</div>
+          <div class="page-title">母蛇 <span style="font-size:9px;color:var(--copper)">← 資料中心同步</span></div>
           <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenForm('females',null)">＋ 新增母蛇</button>
         </div>
         <div class="page-sub" id="im-females-sub"></div>
@@ -1205,7 +1902,7 @@ textarea.hatch-gene-input {
       <!-- IM: SALES -->
       <div class="page" id="page-im-sales">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="page-title">銷售記錄</div>
+          <div class="page-title">銷售記錄 <span style="font-size:9px;color:var(--copper)">← 資料中心同步</span></div>
           <button class="submit-btn" style="width:auto;padding:8px 20px" onclick="imOpenForm('sales',null)">＋ 新增</button>
         </div>
         <div class="page-sub" id="im-sales-sub"></div>
@@ -1213,6 +1910,7 @@ textarea.hatch-gene-input {
         <div id="im-sales-fund-summary" style="margin-bottom:16px"></div>
         <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
           <input class="form-input" style="width:200px;padding:7px 10px" placeholder="搜尋編號、基因、買家…" id="im-q-sales" oninput="imRenderTable('sales')">
+          <select class="form-select" style="width:150px;padding:7px 10px" id="im-f-sales-archive" onchange="imRenderTable('sales')"><option value="active">待處理／進行中</option><option value="archived">📁 已歸檔</option><option value="all">全部案件</option></select>
           <select class="form-select" style="width:160px;padding:7px 10px" id="im-f-sales-status" onchange="imRenderTable('sales')"><option value="">全部狀態</option><option>待售</option><option>到貨、結案</option><option>出貨中、面交 (已收款)</option></select>
           <select class="form-select" style="width:120px;padding:7px 10px" id="im-f-sales-owner" onchange="imRenderTable('sales')"><option value="">全部所有人</option><option>有剛</option><option>宣恩</option><option>Neil</option></select>
           <select class="form-select" style="width:100px;padding:7px 10px" id="im-f-sales-year" onchange="imRenderTable('sales')"><option value="">全部年份</option></select>
@@ -1430,15 +2128,20 @@ textarea.hatch-gene-input {
           <div id="hatch-rows" style="margin-bottom:20px"></div>
 
           <!-- STEP 3: 存入系統 -->
-          <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Step 3 — 存入系統</div>
-          <div style="background:rgba(181,115,58,0.06);border:1px solid rgba(181,115,58,0.15);border-radius:6px;padding:12px 16px;font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.8">
-            · 存入「銷售記錄」：狀態設為「待售」，之後可從銷售頁面推上官網<br>
-            · 存入「公蛇/母蛇清單」：依性別分類，加入種蛇管理
+          <div style="font-size:12px;font-weight:600;color:var(--copper);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Step 3 — 確認去向並存入系統</div>
+          <div style="background:rgba(181,115,58,0.06);border:1px solid rgba(181,115,58,0.15);border-radius:8px;padding:13px 16px;font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">
+            每一隻小蛇都可以在上方「去向」個別選擇：<br>
+            · <b style="color:#7a4a18">💰 銷售／出清</b> → 建立到「銷售記錄」，狀態為「待售」<br>
+            · <b style="color:#3f6f9f">🐍 自留種蛇</b> → 依性別建立到「公蛇／母蛇」清單
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <button class="submit-btn" style="flex:1;min-width:140px" onclick="hatchSave('sales')">💰 存入銷售記錄</button>
-            <button class="submit-btn" style="flex:1;min-width:140px;background:#4a7fb5;border:none" onclick="hatchSave('snakes')">🐍 存入種蛇清單</button>
+          <div class="hatch-destination-summary" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+            <div id="hatch-dest-summary" style="font-size:12px;color:var(--muted)">—</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <button type="button" class="action-btn" style="flex:none;padding:7px 11px" onclick="hatchSetAllDestinations('sales')">全部設為銷售</button>
+              <button type="button" class="action-btn" style="flex:none;padding:7px 11px;color:#3f6f9f;border-color:rgba(74,127,181,.35)" onclick="hatchSetAllDestinations('breeder')">全部設為自留</button>
+            </div>
           </div>
+          <button id="hatch-save-mixed-btn" class="submit-btn" onclick="hatchSave()">💾 依各隻去向存入系統</button>
           <div id="hatch-result" style="margin-top:16px;display:none"></div>
         </div>
       </div>
@@ -2823,6 +3526,36 @@ async function bgSyncLocalPairsToCloud(localRows, cloudGroups) {
   }
 }
 
+
+function snakeLocalUpsert(id, patch={}, options={}) {
+  const sid=String(id||'');
+  if(!sid) return;
+  const idx=allSnakes.findIndex(s=>String(s.id)===sid);
+  const next={id:sid,_docId:sid,...(idx>=0?allSnakes[idx]:{}),...patch};
+  if(idx>=0) allSnakes.splice(idx,1,next);
+  else if(options.prepend===false) allSnakes.push(next);
+  else allSnakes.unshift(next);
+  window.allSnakes=allSnakes;
+  renderSnakes();
+}
+
+function snakeLocalPatch(id, patch={}) {
+  const sid=String(id||'');
+  const idx=allSnakes.findIndex(s=>String(s.id)===sid);
+  if(idx<0) return;
+  allSnakes[idx]={...allSnakes[idx],...patch};
+  window.allSnakes=allSnakes;
+  renderSnakes();
+}
+
+function snakeShowAllListNow(){
+  currentFilter='all';
+  document.querySelectorAll('[data-snake-filter]').forEach(b=>b.classList.remove('active'));
+  const allBtn=document.querySelector('[data-snake-filter="all"]');
+  if(allBtn) allBtn.classList.add('active');
+  renderSnakes();
+}
+
 async function loadSnakes() {
   const snakeSnap = await getDocs(query(collection(db, 'snakes'), orderBy('createdAt', 'desc')));
   const rawItems = snakeSnap.docs.map(d => ({ id: d.id, _docId: d.id, ...d.data() }));
@@ -2887,6 +3620,18 @@ async function loadSnakes() {
 
   renderSnakes();
 }
+
+// 給側欄／其他模組使用：進入「所有個體」時一定重新向 Firestore 抓最新官網鏡像。
+window.imRefreshAllIndividuals = async ({showAll=false}={}) => {
+  if(showAll){
+    currentFilter='all';
+    document.querySelectorAll('[data-snake-filter]').forEach(b=>b.classList.remove('active'));
+    document.querySelector('[data-snake-filter="all"]')?.classList.add('active');
+  }
+  await loadSnakes();
+};
+window.loadSnakes = loadSnakes;
+
 function renderSnakes() {
   const grid = document.getElementById('snake-grid');
   const listTitle = document.getElementById('list-title');
@@ -2901,8 +3646,12 @@ function renderSnakes() {
     listTitle.textContent = titleMap[currentFilter] || '所有個體';
   }
   const statusOrder = { ready: 0, auction: 1, sale: 2, sold: 3 };
-  const filtered = (currentFilter === 'all' ? [...allSnakes] : allSnakes.filter(s => s.status === currentFilter))
-    .sort((a, b) => (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99));
+  // 「所有個體」直接依銷售紀錄／官網鏡像同步，不再另外維護「已隱藏」狀態。
+  const filtered = (
+    currentFilter === 'all'
+      ? [...allSnakes]
+      : allSnakes.filter(s => s.status === currentFilter)
+  ).sort((a, b) => (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99));
 
   const groups = (currentFilter === 'all' && !bgSelectionMode) ? breedingGroups : [];
 
@@ -3041,7 +3790,6 @@ function renderSnakes() {
           <button class="action-btn" onclick="openEditModal('${s.id}')">編輯</button>
           <button class="action-btn" onclick="openStatusModal('${s.id}', '${(s.nameZh||'').replace(/'/g,'&apos;')}', '${s.status}')">狀態</button>
           <button class="action-btn" onclick="openPostModal('${s.id}')" style="color:var(--copper);border-color:rgba(181,115,58,0.4)">📢 貼文</button>
-          <button class="action-btn danger" onclick="deleteSnake('${s.id}')">刪除</button>
         </div>
       </div>
     </div>`;
@@ -3644,15 +4392,25 @@ window.submitSnake = async () => {
   btn.disabled = true; btn.textContent = '儲存中...';
 
   try {
-    await addDoc(collection(db, 'snakes'), {
+    const payload = {
       imgUrl, code, morph, nameZh, nameEn,
-      tags: currentTags, status, auctionUrl, auctionEnd, price, specialPrice, species,
+      tags: [...currentTags], status, auctionUrl, auctionEnd, price, specialPrice, species,
       birth, frozen, sire, dam, nature, sex, weight,
       showOnSota, sotaDescription,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    });
-    showToast('✅ 新增成功！');
+    };
+    const ref = await addDoc(collection(db, 'snakes'), payload);
+
+    // Firestore 寫入成功後直接更新目前畫面，不需要使用者再手動重新整理。
+    snakeLocalUpsert(ref.id, {
+      ...payload,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }, {prepend:true});
+    snakeShowAllListNow();
+
+    showToast('✅ 新增成功！已立即顯示於所有個體');
     // Reset form
     document.getElementById('img-url').value = '';
     document.getElementById('upload-preview').style.display = 'none';
@@ -3666,8 +4424,9 @@ window.submitSnake = async () => {
     document.getElementById('f-sota-description').value = '';
     currentTags = [];
     renderTags();
-    await loadSnakes();
     showPage('list', document.querySelector('.sidebar-btn'));
+    // 背景再與 Firestore 對一次；畫面已先更新，不需要等待。
+    loadSnakes().catch(e=>console.warn('[snakes] background reconcile failed',e));
   } catch(e) {
     showToast('❌ 儲存失敗：' + e.message);
     console.error(e);
@@ -3700,9 +4459,10 @@ window.selectStatus = (s, btn) => {
 window.saveStatus = async () => {
   if (!editingId || !newStatus) return;
   await updateDoc(doc(db, 'snakes', editingId), { status: newStatus, updatedAt: serverTimestamp() });
+  snakeLocalPatch(editingId,{status:newStatus,updatedAt:new Date()});
   closeModal();
-  showToast('✅ 狀態已更新');
-  await loadSnakes();
+  showToast('✅ 狀態已更新，畫面已同步');
+  loadSnakes().catch(e=>console.warn('[snakes] status reconcile failed',e));
 };
 
 // SOTA quick toggles
@@ -3758,12 +4518,14 @@ window.toggleSotaBreedingGroup = async (groupId, checked) => {
 window.closeModal = () => { document.getElementById('modal-overlay').classList.remove('show'); };
 
   let editingSnakeId = null;
+  let editingSnakeManaged = false;
   let editTags = [];
 
   window.openEditModal = async (id) => {
     const snake = allSnakes.find(s => s.id === id);
     if (!snake) return;
     editingSnakeId = id;
+    editingSnakeManaged = snake.fromIM === true || snake.dataCenterManaged === true;
     editTags = [...(snake.tags || [])];
 
     document.getElementById('edit-code').value = snake.code || '';
@@ -3787,6 +4549,16 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-show-sota').checked = snake.showOnSota === true;
     document.getElementById('edit-sota-description').value = snake.sotaDescription || '';
 
+    const dcNote=document.getElementById('edit-data-center-note');
+    if(dcNote)dcNote.style.display=editingSnakeManaged?'block':'none';
+    const lockInputIds=['edit-code','edit-morph','edit-name-zh','edit-name-en','edit-price','edit-birth','edit-weight','edit-sire','edit-dam'];
+    const lockSelectIds=['edit-species','edit-frozen','edit-sex','edit-nature'];
+    lockInputIds.forEach(fid=>{const el=document.getElementById(fid);if(el){el.readOnly=editingSnakeManaged;el.style.background=editingSnakeManaged?'#f2f0ec':'';el.style.color=editingSnakeManaged?'#80766d':'';}});
+    lockSelectIds.forEach(fid=>{const el=document.getElementById(fid);if(el){el.disabled=editingSnakeManaged;el.style.background=editingSnakeManaged?'#f2f0ec':'';el.style.color=editingSnakeManaged?'#80766d':'';}});
+    const tagWrap=document.getElementById('edit-tags-wrap'), tagInput=document.getElementById('edit-tags-input');
+    if(tagWrap){tagWrap.style.pointerEvents=editingSnakeManaged?'none':'';tagWrap.style.opacity=editingSnakeManaged?'.55':'1';}
+    if(tagInput)tagInput.disabled=editingSnakeManaged;
+
     const preview = document.getElementById('edit-upload-preview');
     const placeholder = document.getElementById('edit-upload-placeholder');
     if (snake.imgUrl) {
@@ -3805,6 +4577,7 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
   window.closeEditModal = () => {
     document.getElementById('edit-modal-overlay').classList.remove('show');
     editingSnakeId = null;
+    editingSnakeManaged = false;
   };
 
   window.handleEditImageUpload = async (input) => {
@@ -3837,7 +4610,18 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     const btn = document.getElementById('edit-save-btn');
     btn.disabled = true; btn.textContent = '儲存中...';
     try {
-      await updateDoc(doc(db, 'snakes', editingSnakeId), {
+      const updatePayload = editingSnakeManaged ? {
+        specialPrice: document.getElementById('edit-special-price').value.trim() || document.getElementById('edit-price').value.trim(),
+        status: document.getElementById('edit-status').value,
+        publicVisible: document.getElementById('edit-status').value !== 'ready',
+        publicStatus: document.getElementById('edit-status').value === 'ready' ? 'sale' : document.getElementById('edit-status').value,
+        auctionUrl: document.getElementById('edit-auction-url').value.trim(),
+        auctionEnd: document.getElementById('edit-auction-end').value || '',
+        imgUrl: document.getElementById('edit-img-url').value,
+        showOnSota: document.getElementById('edit-species').value === 'ball_python' && document.getElementById('edit-show-sota').checked,
+        sotaDescription: document.getElementById('edit-sota-description').value.trim(),
+        updatedAt: serverTimestamp(),
+      } : {
         code: document.getElementById('edit-code').value.trim(),
         morph: document.getElementById('edit-morph').value.trim(),
         species: document.getElementById('edit-species').value,
@@ -3860,10 +4644,12 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         showOnSota: document.getElementById('edit-species').value === 'ball_python' && document.getElementById('edit-show-sota').checked,
         sotaDescription: document.getElementById('edit-sota-description').value.trim(),
         updatedAt: serverTimestamp(),
-      });
-      showToast('✅ 儲存成功！');
+      };
+      await updateDoc(doc(db, 'snakes', editingSnakeId), updatePayload);
+      snakeLocalPatch(editingSnakeId, {...updatePayload, updatedAt:new Date()});
+      showToast('✅ 儲存成功！畫面已同步');
       closeEditModal();
-      await loadSnakes();
+      loadSnakes().catch(e=>console.warn('[snakes] edit reconcile failed',e));
     } catch(e) {
       showToast('❌ 儲存失敗：' + e.message);
     }
@@ -3871,12 +4657,79 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
   };
 
 
-// Delete
-window.deleteSnake = async (id) => {
-  if (!confirm('確定要刪除這隻個體嗎？')) return;
-  await deleteDoc(doc(db, 'snakes', id));
-  showToast('🗑️ 已刪除');
-  await loadSnakes();
+// 「所有個體」不再提供獨立隱藏／還原；顯示狀態由銷售紀錄與官網設定統一管理。
+
+window.goToSaleRecordFromSnake = async (saleDocId, searchText='') => {
+  closeModal();
+  const salesBtn=[...document.querySelectorAll('.sidebar-btn')].find(b=>(b.getAttribute('onclick')||'').includes("showPage('im-sales'"));
+  showPage('im-sales', salesBtn || null);
+  const archiveSel=document.getElementById('im-f-sales-archive');
+  if(archiveSel) archiveSel.value='all';
+  const q=document.getElementById('im-q-sales');
+  if(q) q.value=searchText||'';
+  await imLoadAndRender('sales');
+  if(q && !q.value){
+    const r=(IM.sales||[]).find(x=>String(x._id)===String(saleDocId));
+    if(r){
+      q.value=r.saleId||r.gene||'';
+      imRenderTable('sales');
+    }
+  }
+};
+
+window.confirmPermanentSnakeDelete = (id) => {
+  const s=allSnakes.find(x=>String(x.id)===String(id));
+  if(!s)return;
+  const linked=!!(s.fromIM===true && s.imSaleId);
+  const safeName=(s.nameZh||s.morph||s.code||'這筆個體').replace(/</g,'&lt;');
+  if(linked){
+    document.getElementById('modal-body').innerHTML=`
+      <div class="modal-title" style="color:#8b0000">請從銷售紀錄刪除</div>
+      <p style="font-size:13px;line-height:1.8;color:var(--text)">
+        <b>${safeName}</b> 是由「銷售紀錄」同步建立的個體資料。<br>
+        要把這筆資料完整拿掉，必須從銷售紀錄永久刪除；刪除後，「所有個體」中的同步資料也會一起移除。
+      </p>
+      <div style="padding:10px 12px;background:#fff5ef;border:1px solid #e9c7b5;border-radius:6px;font-size:11px;line-height:1.7;color:#7b3a20;margin-bottom:14px">
+        ⚠️ 這裡不再提供直接刪除同步鏡像，避免銷售紀錄仍存在時資料被重新建立。
+      </div>
+      <div class="modal-actions" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="cancel-btn" onclick="closeModal()">取消</button>
+        <button class="confirm-btn" onclick="goToSaleRecordFromSnake('${String(s.imSaleId).replace(/'/g,"\\'")}','${String(s.code||'').replace(/'/g,"\\'")}')">前往銷售紀錄</button>
+      </div>`;
+    document.getElementById('modal-overlay').classList.add('show');
+    return;
+  }
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-title" style="color:#8b0000">永久刪除</div>
+    <p style="font-size:13px;line-height:1.8;color:var(--text)">
+      確定永久刪除 <b>${safeName}</b> 嗎？<br>
+      此操作無法復原。
+    </p>
+    <div class="modal-actions" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="cancel-btn" onclick="closeModal()">取消</button>
+      <button class="confirm-btn" style="background:#8b0000" onclick="permanentDeleteSnake('${id}')">永久刪除</button>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('show');
+};
+
+window.permanentDeleteSnake = async (id) => {
+  const s=allSnakes.find(x=>String(x.id)===String(id));
+  if(!s)return;
+  if(s.fromIM===true && s.imSaleId){
+    showToast('⚠️ 同步個體請從「銷售紀錄」永久刪除');
+    return;
+  }
+  try{
+    await deleteDoc(doc(db,'snakes',id));
+    allSnakes=allSnakes.filter(x=>String(x.id)!==String(id));
+    window.allSnakes=allSnakes;
+    closeModal();
+    renderSnakes();
+    showToast('🗑️ 已永久刪除這筆所有個體資料');
+  }catch(e){
+    console.error(e);
+    showToast('❌ 永久刪除失敗：'+e.message);
+  }
 };
 
 // ── POST MODAL ─────────────────────────────────────
@@ -5592,6 +6445,7 @@ window.showToast = function showToast(msg) {
 <div class="modal-overlay" id="edit-modal-overlay">
   <div class="modal" style="width:520px;max-height:90vh;overflow-y:auto;">
     <div class="modal-title">編輯個體</div>
+    <div id="edit-data-center-note" style="display:none;margin-bottom:12px;padding:9px 11px;background:#f7f2e9;border:1px solid rgba(181,115,58,.22);border-radius:7px;font-size:10px;line-height:1.6;color:var(--muted)">🔒 這筆由資料中心管理。個體主資料與原價不可在官網編輯器修改；請回資料中心／銷售紀錄修改。這裡只保留照片、特價、公開狀態、競標與 SOTA 展示設定。</div>
     <div style="margin-bottom:16px;">
       <!-- Image upload -->
       <label class="form-label">照片</label>
@@ -5761,24 +6615,236 @@ const COL = {
   breeding: 'im_breeding',
   foodRows: 'im_food_rows',
   foodParams:'im_food_params',
+  site:     'snakes',
 };
 
-let IM = { males:[], females:[], sales:[], breeding:[], foodRows:[], foodParams:{} };
+let IM = { animals:[], males:[], females:[], sales:[], breeding:[], foodRows:[], foodParams:{}, siteSnakes:[], dataCenterMode:'compat' };
+let IM_DC_ARCHIVE_MODE = false;
 
-// ── LOAD ALL ─────────────────────────────────────
+// ── DATA CENTER COMPATIBILITY LAYER / LOAD ALL ─────────────
+function imDcCodeOf(r){ return String(r?.code || r?.saleId || r?.selfBreedId || '').trim(); }
+function imDcMergeMissing(master, src){
+  const keys=['owner','species','gene','sex','birth','year','arrivalDate','cost','source','status','sireA','damB','sireId','damId','sireOwner','damOwner','frozen','nature','weight','note','photos','imgUrl','labelImageUrl','labelUpdatedAt','eggRecords','totalEggs','deadFetus','pairPri','pairAlt','pairCount'];
+  keys.forEach(k=>{
+    const empty = master[k]===undefined || master[k]===null || master[k]==='' || (Array.isArray(master[k])&&master[k].length===0);
+    if(empty && src[k]!==undefined && src[k]!==null && src[k]!=='') master[k]=src[k];
+  });
+  return master;
+}
+function imBuildVirtualDataCenter(males=[],females=[],sales=[]){
+  const animals=[];
+  const byCode=new Map();
+  const addBreeder=(r,type,sex)=>{
+    const code=imDcCodeOf(r);
+    const a={...r,sex:sex||r.sex||'U',_sourceType:type,_sourceId:r._id,_saleIds:[],inBreederList:true,_dcKey:`${type}:${r._id}`};
+    animals.push(a);
+    if(code) byCode.set(code.toLowerCase(),a);
+  };
+  males.forEach(r=>addBreeder(r,'males','M'));
+  females.forEach(r=>addBreeder(r,'females','F'));
+
+  sales.forEach(s=>{
+    const code=imDcCodeOf(s);
+    let a=code?byCode.get(code.toLowerCase()):null;
+    if(a){
+      a._saleIds.push(s._id);
+      imDcMergeMissing(a,s);
+    }else{
+      a={...s,archived:s.individualArchived===true,archiveReason:s.individualArchiveReason||'',archiveDate:s.individualArchivedAt||'',_sourceType:'sales',_sourceId:s._id,_saleIds:[s._id],inBreederList:false,_dcKey:`sales:${s._id}`};
+      animals.push(a);
+      if(code) byCode.set(code.toLowerCase(),a);
+    }
+  });
+  return animals;
+}
+function imDcIndex(){
+  const byCode=new Map();
+  (IM.animals||[]).forEach(a=>{const c=imDcCodeOf(a);if(c)byCode.set(c.toLowerCase(),a);});
+  return {byCode};
+}
+function imDcMasterByCode(code=''){
+  const key=String(code||'').trim().toLowerCase();
+  if(!key)return null;
+  return (IM.animals||[]).find(a=>a.inBreederList===true&&imDcCodeOf(a).toLowerCase()===key)||null;
+}
+function imSiteProjectionBySaleId(id=''){
+  return (IM.siteSnakes||[]).find(s=>String(s.imSaleId||'')===String(id))||null;
+}
+function imSiteStatusInfo(r){
+  const s=imSiteProjectionBySaleId(r?._id);
+  if(!s || s.publicVisible===false || s.status==='ready') return {label:'🌐 官網：隱藏',visible:false,status:'ready'};
+  const map={sale:'待售',auction:'競標',sold:'售出'};
+  return {label:`🌐 官網：${map[s.status]||'顯示'}`,visible:true,status:s.status||'sale'};
+}
+window.imOpenMasterRecord=(type,id)=>{
+  imCloseModal();
+  setTimeout(()=>imOpenForm(type,id),0);
+};
+
+function imDcHydrateSale(s,idx){
+  const a=s.saleId?idx.byCode.get(String(s.saleId).toLowerCase()):null;
+  if(!a || a._sourceType==='sales') return s;
+  return {...s,
+    owner:a.owner||s.owner, species:a.species||s.species, gene:a.gene||s.gene, sex:a.sex||s.sex,
+    birth:a.birth||s.birth, source:a.source||s.source, sireA:a.sireA||s.sireA, damB:a.damB||s.damB,
+    sireId:a.sireId||s.sireId, damId:a.damId||s.damId, frozen:a.frozen||s.frozen, nature:a.nature||s.nature,
+    weight:a.weight||s.weight, _dcKey:a._dcKey
+  };
+}
+
+function imArchiveDateText(v){
+  if(!v) return '—';
+  try{
+    if(typeof v?.toDate==='function') return v.toDate().toLocaleDateString('zh-TW');
+    const d=new Date(v); return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString('zh-TW');
+  }catch(_){return String(v||'—');}
+}
+function imArchiveReasonText(v){
+  return ({sold:'已售出',transferred:'已轉讓',retired:'退役',deceased:'死亡',duplicate:'重複資料',other:'其他'}[v]||v||'封存');
+}
+async function imArchiveMasterByCode(code='', when=''){
+  const master=imDcMasterByCode(code);
+  if(!master || !['males','females'].includes(master._sourceType)) return false;
+  await updateDoc(doc(db2,COL[master._sourceType],master._sourceId),{
+    archived:true, archiveReason:'sold', archiveDate:when||new Date().toISOString(), updatedAt:new Date().toISOString()
+  });
+  return true;
+}
+async function imMarkIndividualSoldArchive(sale, when=''){
+  if(!sale?._id) return;
+  const at=when||new Date().toISOString();
+  await updateDoc(doc(db2,COL.sales,sale._id),{
+    individualArchived:true, individualArchiveReason:'sold', individualArchivedAt:at
+  });
+  await imArchiveMasterByCode(sale.saleId||'',at);
+}
+async function imArchiveSaleCaseIfSettled(sale, when=''){
+  if(!sale?._id || sale.status!=='到貨、結案') return false;
+  const fund=Number(sale.fund)||0;
+  const settled=fund<=0 || sale.fundPaid===true;
+  if(!settled) return false;
+  const at=when||new Date().toISOString();
+  await updateDoc(doc(db2,COL.sales,sale._id),{
+    archived:true, archiveReason:'sold', archivedAt:at
+  });
+  return true;
+}
+window.imSetDataCenterArchiveMode=(flag)=>{
+  IM_DC_ARCHIVE_MODE=!!flag;
+  imRenderDataCenter();
+};
+window.imArchiveHistoricalSold=async()=>{
+  try{
+    await imLoadAll();
+    const sold=(IM.sales||[]).filter(r=>r.status==='到貨、結案');
+    if(!sold.length){window.showToast('沒有需要整理的歷史已售出資料');return;}
+    const unsettled=sold.filter(r=>(Number(r.fund)||0)>0 && r.fundPaid!==true).length;
+    if(!confirm(`找到 ${sold.length} 筆「到貨、結案」紀錄。\n\n將會：\n1. 把對應個體移到資料中心封存庫（不刪除任何原始資料）\n2. 公基金已繳或免繳的交易移到「已歸檔」\n3. 尚未繳公基金的 ${unsettled} 筆仍留在銷售工作區\n\n確定整理？`)) return;
+    const now=new Date().toISOString();
+    let individuals=0,cases=0;
+    for(const s of sold){
+      if(s.individualArchived!==true){await imMarkIndividualSoldArchive(s,now); individuals++;}
+      if(s.archived!==true && await imArchiveSaleCaseIfSettled(s,now)) cases++;
+    }
+    await imLoadAll();
+    IM_DC_ARCHIVE_MODE=true;
+    imRenderDataCenter();
+    window.showToast(`✅ 已整理：${individuals} 隻已售出個體進封存庫；${cases} 筆交易完成歸檔`);
+  }catch(e){console.error('[archive historical sold]',e);window.showToast('❌ 整理失敗：'+e.message);}
+};
+
+window.imOpenArchiveAnimal=(type,id)=>{
+  const a=(IM.animals||[]).find(x=>x._sourceType===type&&x._sourceId===id);
+  if(!a)return;
+  document.getElementById('im-modal-body').innerHTML=`<div class="im-modal-title">🗃️ 封存個體</div>
+    <div style="padding:10px 12px;background:#f7f2e9;border:1px solid rgba(181,115,58,.2);border-radius:7px;margin-bottom:14px;font-size:11px;color:var(--muted);line-height:1.7">
+      封存不是刪除。個體會離開現役清單與配種選單，但親代、後代、銷售與歷史資料仍保留。
+    </div>
+    <div class="form-group"><label class="form-label">個體</label><div class="form-input" style="background:#f3f1ed">${esc(imDcCodeOf(a)||'—')}｜${esc(a.gene||'—')}</div></div>
+    <div class="form-group"><label class="form-label">封存原因</label><select class="form-select" id="dc-archive-reason">
+      <option value="sold">已售出</option><option value="transferred">已轉讓</option><option value="retired">退役</option><option value="deceased">死亡</option><option value="duplicate">重複資料</option><option value="other">其他</option>
+    </select></div>
+    <div class="im-form-actions"><button class="im-btn-cancel" onclick="imCloseModal()">取消</button><button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imArchiveAnimal('${type}','${id}')">確認封存</button></div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+window.imArchiveAnimal=async(type,id)=>{
+  try{
+    const reason=document.getElementById('dc-archive-reason')?.value||'other';
+    const at=new Date().toISOString();
+    if(type==='males'||type==='females'){
+      await updateDoc(doc(db2,COL[type],id),{archived:true,archiveReason:reason,archiveDate:at,updatedAt:at});
+    }else if(type==='sales'){
+      await updateDoc(doc(db2,COL.sales,id),{individualArchived:true,individualArchiveReason:reason,individualArchivedAt:at,updatedAt:at});
+    }
+    await imLoadAll();
+    imCloseModal();
+    imRenderDataCenter();
+    window.showToast('🗃️ 已封存，資料仍完整保留');
+  }catch(e){window.showToast('❌ 封存失敗：'+e.message);}
+};
+
+window.imRestoreArchivedAnimal=async(type,id)=>{
+  try{
+    if(!confirm('確定把這隻個體還原到現役資料？歷史銷售案件仍會保留在歸檔中。')) return;
+    if(type==='males'||type==='females'){
+      await updateDoc(doc(db2,COL[type],id),{archived:false,archiveReason:'',archiveDate:'',restoredAt:new Date().toISOString()});
+    }else if(type==='sales'){
+      await updateDoc(doc(db2,COL.sales,id),{individualArchived:false,individualArchiveReason:'',individualArchivedAt:'',restoredAt:new Date().toISOString()});
+    }
+    await imLoadAll(); imRenderDataCenter(); window.showToast('✅ 個體已還原到現役資料');
+  }catch(e){window.showToast('❌ 還原失敗：'+e.message);}
+};
+window.imRestoreArchivedSale=async(id)=>{
+  try{
+    if(!confirm('確定把這筆交易移回銷售工作區？這不會自動把已售出個體還原成現役種蛇。')) return;
+    await updateDoc(doc(db2,COL.sales,id),{archived:false,archiveReason:'',archivedAt:'',restoredAt:new Date().toISOString()});
+    await imLoadAll(); imRenderTable('sales'); window.showToast('✅ 交易已移回工作區');
+  }catch(e){window.showToast('❌ 還原失敗：'+e.message);}
+};
+window.imOpenArchivedAnimal=(type,id)=>{
+  const a=(IM.animals||[]).find(x=>x._sourceType===type&&x._sourceId===id);
+  if(!a)return;
+  const code=imDcCodeOf(a).toLowerCase();
+  const sales=(IM.sales||[]).filter(s=>imDcCodeOf(s).toLowerCase()===code);
+  document.getElementById('im-modal-body').innerHTML=`<div class="im-modal-title">🗃️ 封存個體</div>
+    <div style="padding:10px 12px;background:#f7f2e9;border:1px solid rgba(181,115,58,.2);border-radius:7px;margin-bottom:14px;font-size:11px;color:var(--muted);line-height:1.7">封存資料預設唯讀。個體不會出現在現役公／母與配種選單，但後代、親代與歷史交易仍可正常引用。</div>
+    <div class="im-form-grid">
+      <div class="form-group"><label class="form-label">產品編號</label><div class="form-input" style="background:#f3f1ed">${esc(imDcCodeOf(a)||'—')}</div></div>
+      <div class="form-group"><label class="form-label">性別</label><div class="form-input" style="background:#f3f1ed">${a.sex==='M'?'♂ 公':a.sex==='F'?'♀ 母':'未知'}</div></div>
+      <div class="form-group im-form-full"><label class="form-label">基因／品系</label><div class="form-input" style="background:#f3f1ed">${esc(a.gene||'—')}</div></div>
+      <div class="form-group"><label class="form-label">所有人</label><div class="form-input" style="background:#f3f1ed">${esc(a.owner||'—')}</div></div>
+      <div class="form-group"><label class="form-label">來源</label><div class="form-input" style="background:#f3f1ed">${esc(a.source||'—')}</div></div>
+      <div class="form-group"><label class="form-label">封存原因</label><div class="form-input" style="background:#f3f1ed">${esc(imArchiveReasonText(a.archiveReason||a.individualArchiveReason))}</div></div>
+      <div class="form-group"><label class="form-label">封存日期</label><div class="form-input" style="background:#f3f1ed">${esc(imArchiveDateText(a.archiveDate||a.individualArchivedAt))}</div></div>
+      <div class="form-group im-form-full"><label class="form-label">親代</label><div class="form-input" style="background:#f3f1ed">A：${esc(a.sireA||'—')}　／　B：${esc(a.damB||'—')}</div></div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:var(--muted)">歷史銷售：${sales.length? sales.map(s=>`${esc(s.status||'')} · ${fmtMoney(s.price)} · ${esc(s.buyer||'—')}`).join('<br>'):'無'}</div>
+    <div class="im-form-actions"><button class="im-btn-cancel" onclick="imCloseModal()">關閉</button><button class="action-btn" onclick="imRestoreArchivedAnimal('${type}','${id}')">↩ 還原為現役</button></div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
 async function imLoadAll() {
   const load = async (col) => {
     const snap = await getDocs(collection(db2, col));
     return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
   };
-  [IM.males, IM.females, IM.sales, IM.breeding, IM.foodRows] = await Promise.all([
-    load(COL.males), load(COL.females), load(COL.sales), load(COL.breeding), load(COL.foodRows)
+  const [rawMales,rawFemales,rawSales,breeding,foodRows,siteRows] = await Promise.all([
+    load(COL.males), load(COL.females), load(COL.sales), load(COL.breeding), load(COL.foodRows), load(COL.site).catch(()=>[])
   ]);
-  // food params
+
+  // 先把現有資料整理成統一資料中心，再由資料中心分流回各頁。
+  IM.animals=imBuildVirtualDataCenter(rawMales,rawFemales,rawSales);
+  IM.males=IM.animals.filter(a=>a._sourceType==='males'&&a.archived!==true).map(a=>({...a,_id:a._sourceId}));
+  IM.females=IM.animals.filter(a=>a._sourceType==='females'&&a.archived!==true).map(a=>({...a,_id:a._sourceId}));
+  const idx=imDcIndex();
+  IM.sales=rawSales.map(s=>imDcHydrateSale(s,idx));
+  IM.breeding=breeding;
+  IM.foodRows=foodRows;
+  IM.siteSnakes=(siteRows||[]).filter(s=>s.fromIM===true || s.imSaleId);
+
   const pSnap = await getDocs(collection(db2, COL.foodParams));
   IM.foodParams = {};
   pSnap.docs.forEach(d => { IM.foodParams[d.id] = d.data(); });
-  // defaults
   ['宣恩','有剛','Neil'].forEach(o => {
     if (!IM.foodParams[o]) IM.foodParams[o] = {保險庫存週:4, 多叫數量週:3, 冰箱容量:30, 盤點日期:''};
   });
@@ -5790,6 +6856,88 @@ window.imLoadAndRender = async (section) => {
   else if (section === 'females') imRenderTable('females');
   else if (section === 'sales') imRenderTable('sales');
   else if (section === 'breeding') imRenderTable('breeding');
+};
+
+window.imLoadDataCenterPage=async(showToastMsg=false)=>{
+  const status=document.getElementById('im-data-center-status');
+  try{
+    if(status) status.textContent='正在重新讀取現有資料…';
+    await imLoadAll();
+    imRenderDataCenter();
+    if(showToastMsg && typeof window.showToast==='function') window.showToast('✅ 資料中心已重新整理');
+  }catch(e){
+    console.error('[data-center compat]',e);
+    if(status) status.textContent='❌ 同步失敗：'+e.message;
+  }
+};
+window.imRenderDataCenter=()=>{
+  const status=document.getElementById('im-data-center-status');
+  const table=document.getElementById('im-data-center-table');
+  const kpi=document.getElementById('im-data-center-kpi');
+  if(!table||!kpi)return;
+
+  const saleMap=new Map();
+  (IM.sales||[]).forEach(s=>{const code=imDcCodeOf(s).toLowerCase();if(code){const arr=saleMap.get(code)||[];arr.push(s);saleMap.set(code,arr);}});
+  const activeAnimals=(IM.animals||[]).filter(a=>a.archived!==true);
+  const archivedAnimals=(IM.animals||[]).filter(a=>a.archived===true);
+  const cards=[
+    ['現役個體',activeAnimals.length],
+    ['公蛇',activeAnimals.filter(a=>a.sex==='M').length],
+    ['母蛇',activeAnimals.filter(a=>a.sex==='F').length],
+    ['種蛇主檔',activeAnimals.filter(a=>a.inBreederList).length],
+    ['🗃️ 封存庫',archivedAnimals.length]
+  ];
+  kpi.innerHTML=cards.map(([l,v])=>`<div class="im-kpi"><div class="im-kpi-label">${l}</div><div class="im-kpi-value">${v}</div></div>`).join('');
+  const actBtn=document.getElementById('im-dc-active-btn'), arcBtn=document.getElementById('im-dc-archive-btn');
+  if(actBtn){actBtn.style.background=IM_DC_ARCHIVE_MODE?'':'#fff4e9';actBtn.style.fontWeight=IM_DC_ARCHIVE_MODE?'':'700';}
+  if(arcBtn){arcBtn.style.background=IM_DC_ARCHIVE_MODE?'#fff4e9':'';arcBtn.style.fontWeight=IM_DC_ARCHIVE_MODE?'700':'';}
+  if(status) status.innerHTML=IM_DC_ARCHIVE_MODE
+    ?`🗃️ <b>封存庫</b>：共 <b>${archivedAnimals.length}</b> 隻。這些個體不會出現在現役公／母與配種選單，但血統與歷史紀錄仍保留。`
+    :`✅ <b>現役資料中心</b>：共 <b>${activeAnimals.length}</b> 隻。已售出個體會移到封存庫；交易則等公基金已繳／免繳後再歸檔。`;
+
+  const q=(document.getElementById('im-dc-q')?.value||'').toLowerCase();
+  const sex=document.getElementById('im-dc-sex')?.value||'';
+  const kind=document.getElementById('im-dc-kind')?.value||'';
+  const base=IM_DC_ARCHIVE_MODE?archivedAnimals:activeAnimals;
+  const rows=base.filter(a=>{
+    const code=imDcCodeOf(a).toLowerCase();
+    const hasSale=!!(code&&saleMap.has(code));
+    const txt=[imDcCodeOf(a),a.gene,a.owner,a.source,a.species,imArchiveReasonText(a.archiveReason||a.individualArchiveReason)].join(' ').toLowerCase();
+    if(q&&!txt.includes(q))return false;
+    if(sex&&(a.sex||'U')!==sex)return false;
+    if(kind==='breeder'&&!a.inBreederList)return false;
+    if(kind==='sale'&&!hasSale)return false;
+    if(kind==='saleOnly'&&a._sourceType!=='sales')return false;
+    return true;
+  }).sort((a,b)=>(imDcCodeOf(a)||a.gene||'').localeCompare(imDcCodeOf(b)||b.gene||''));
+
+  table.innerHTML=`<thead><tr>
+    <th>編號</th><th>基因／品系</th><th>性別</th><th>所有人</th><th>出生</th><th>來源</th><th>標籤圖</th><th>${IM_DC_ARCHIVE_MODE?'封存資訊':'資料來源'}</th><th>銷售紀錄</th><th>操作</th>
+  </tr></thead><tbody>${rows.map(a=>{
+    const code=imDcCodeOf(a).toLowerCase();
+    const sales=code?(saleMap.get(code)||[]):[];
+    const latest=sales[sales.length-1];
+    const srcLabel=a._sourceType==='males'?'公蛇':a._sourceType==='females'?'母蛇':'銷售';
+    const saleDeleteId=a._sourceType==='sales'?a._sourceId:(latest?latest._id:'');
+    const saleDeleteBtn=saleDeleteId
+      ?`<button class="action-btn danger" onclick="imConfirmDeleteSale('${saleDeleteId}')" title="永久刪除銷售案件，並同步移除所有個體鏡像">永久刪除案件</button>`
+      :'';
+    const ops=IM_DC_ARCHIVE_MODE
+      ?`<button class="action-btn" onclick="imOpenArchivedAnimal('${a._sourceType}','${a._sourceId}')">查看</button><button class="action-btn" onclick="imRestoreArchivedAnimal('${a._sourceType}','${a._sourceId}')">↩ 還原</button>${saleDeleteBtn}`
+      :`<button class="action-btn" onclick="imOpenForm('${a._sourceType}','${a._sourceId}')">編輯主資料</button>${latest&&a._sourceType!=='sales'?`<button class="action-btn" onclick="imOpenForm('sales','${latest._id}')">銷售</button>`:''}<button class="action-btn" style="color:#7a4a18;border-color:rgba(181,115,58,.35)" onclick="imOpenArchiveAnimal('${a._sourceType}','${a._sourceId}')">封存</button>${saleDeleteBtn}`;
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px">${esc(imDcCodeOf(a)||'—')}</td>
+      <td style="max-width:320px"><b>${esc(a.gene||'—')}</b><div style="font-size:9px;color:var(--muted)">${esc(a.species||'')}</div></td>
+      <td>${a.sex?sexSpan(a.sex):'—'}</td>
+      <td>${a.owner?ownerSpan(a.owner):'—'}</td>
+      <td>${esc(a.birth||a.year||'—')}</td>
+      <td style="font-size:10px;color:var(--muted)">${esc(a.source||'—')}</td>
+      <td>${a.labelImageUrl?`<a href="${esc(a.labelImageUrl)}" target="_blank" title="查看已存標籤圖"><img src="${esc(a.labelImageUrl)}" style="width:46px;height:46px;object-fit:cover;border-radius:5px;border:1px solid rgba(181,115,58,.18)"></a>`:'<span style="font-size:10px;color:var(--muted)">—</span>'}</td>
+      <td>${IM_DC_ARCHIVE_MODE?`<span class="im-tag im-tag-sold">${esc(imArchiveReasonText(a.archiveReason||a.individualArchiveReason))}</span><div style="font-size:9px;color:var(--muted);margin-top:3px">${esc(imArchiveDateText(a.archiveDate||a.individualArchivedAt))}</div>`:`<span class="im-tag ${a.inBreederList?'im-tag-safe':'im-tag-avail'}">${srcLabel}</span>`}</td>
+      <td>${sales.length?`${sales.length} 筆 · ${latest?saleStatusSpan(latest.status):''}`:'—'}</td>
+      <td style="white-space:nowrap">${ops}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="10" style="padding:26px;text-align:center;color:var(--muted)">沒有符合條件的個體</td></tr>'}</tbody>`;
 };
 
 // ── HELPERS ──────────────────────────────────────
@@ -5958,6 +7106,7 @@ window.imRenderTable = (section) => {
   }
   else if (section === 'sales') {
     const q = (document.getElementById('im-q-sales')||{}).value?.toLowerCase()||'';
+    const archiveMode = (document.getElementById('im-f-sales-archive')||{}).value||'active';
     const st = (document.getElementById('im-f-sales-status')||{}).value||'';
     const ow = (document.getElementById('im-f-sales-owner')||{}).value||'';
     const yr = (document.getElementById('im-f-sales-year')||{}).value||'';
@@ -5981,13 +7130,14 @@ window.imRenderTable = (section) => {
     const rows = IM.sales.filter(r => {
       const txt = ((r.saleId||'')+r.gene+r.owner+(r.buyer||'')+'').toLowerCase();
       const rowYear = getSalesRowYear(r);
-      return (!q||txt.includes(q))&&(!st||r.status===st)&&(!ow||r.owner===ow)&&(!yr||rowYear===yr);
+      const archiveOk=archiveMode==='all' || (archiveMode==='archived'?r.archived===true:r.archived!==true);
+      return archiveOk&&(!q||txt.includes(q))&&(!st||r.status===st)&&(!ow||r.owner===ow)&&(!yr||rowYear===yr);
     }).sort((a,b) => {
       const sd = (STATUS_ORDER[a.status]??1) - (STATUS_ORDER[b.status]??1);
       if (sd !== 0) return sd;
       return (OWNER_ORDER_S[a.owner]??9) - (OWNER_ORDER_S[b.owner]??9);
     });
-    document.getElementById('im-sales-sub').textContent = `共 ${rows.length} 筆`;
+    document.getElementById('im-sales-sub').textContent = `${archiveMode==='archived'?'📁 已歸檔':archiveMode==='all'?'全部案件':'待處理／進行中'} · 共 ${rows.length} 筆`;
     const total = rows.reduce((s,r)=>s+(r.price||0),0);
     const profit = rows.reduce((s,r)=>s+(r.price||0)-(r.cost||0),0);
     const funds = rows.reduce((s,r)=>s+(r.fund||0),0);
@@ -6018,9 +7168,10 @@ window.imRenderTable = (section) => {
       <td data-label="買家" style="font-size:11px">${r.buyer||'—'}</td>
       <td data-label="出貨日" style="font-size:11px;color:var(--muted)">${r.ship||'—'}</td>
       <td data-label="操作" style="white-space:nowrap">
-        <button class="action-btn" onclick="imOpenForm('sales','${r._id}')">編輯</button>
-        <button class="action-btn danger" onclick="imConfirmDelete('sales','${r._id}','${esc(r.gene)}')">刪除</button>
-        <button class="action-btn" style="color:#2a6b3a;border-color:rgba(42,107,58,0.3)" onclick="imPushToSite('${r._id}')" title="推送到官網展示">🌐 推官網</button>
+        <button class="action-btn" onclick="imOpenForm('sales','${r._id}')">${r.archived===true?'查看／更正':'編輯'}</button>
+        ${r.archived===true?`<button class="action-btn" onclick="imRestoreArchivedSale('${r._id}')">↩ 還原案件</button>`:''}
+        <button class="action-btn danger" onclick="imConfirmDeleteSale('${r._id}')" title="永久刪除銷售紀錄，並同步移除所有個體鏡像">永久刪除</button>
+        ${r.archived===true?'':`<button class="action-btn" style="color:#2a6b3a;border-color:rgba(42,107,58,0.3)" onclick="imPushToSite('${r._id}')" title="官網只管理顯示狀態，個體資料會自動同步">${imSiteStatusInfo(r).label}</button>`}
         <button class="action-btn" style="color:#8b4ab5;border-color:rgba(139,74,181,0.3)" onclick="imOpenPhotoLabel('${r._id}')" title="生成標籤圖">🎨 標籤圖</button>
         <button class="action-btn" style="color:#7a4a18;border-color:rgba(181,115,58,0.35)" onclick="imPrintPurchaseCertificates(['${r._id}'])" title="列印購買證明">🧾 證明</button>
       </td>
@@ -6481,8 +7632,16 @@ window.imToggleFundPaid=async(id)=>{
   const r=(IM.sales||[]).find(x=>x._id===id); if(!r||r.status!=='到貨、結案')return;
   const next=r.fundPaid!==true;
   try{
-    await updateDoc(doc(db2,COL.sales,id),{fundPaid:next,fundPaidAt:next?new Date().toISOString():''});
-    r.fundPaid=next; r.fundPaidAt=next?new Date().toISOString():'';
+    const now=new Date().toISOString();
+    await updateDoc(doc(db2,COL.sales,id),{fundPaid:next,fundPaidAt:next?now:'',...(next?{}:{archived:false,archiveReason:'',archivedAt:''})});
+    if(next){
+      await imMarkIndividualSoldArchive({...r,fundPaid:true});
+      await imArchiveSaleCaseIfSettled({...r,fundPaid:true});
+      window.showToast('✅ 公基金已繳，交易已自動歸檔');
+    }else{
+      window.showToast('↩ 已改為未繳，交易回到銷售工作區');
+    }
+    await imLoadAll();
     imRenderTable('sales');
     if(document.getElementById('page-im-fund')?.classList.contains('active')) imRenderFundPage();
   }catch(e){window.showToast('❌ 更新失敗：'+e.message);}
@@ -6999,13 +8158,20 @@ window.imRenderDashboard = async () => {
 // ── PHOTO UPLOADER (個體照片 + 親代照片建檔) ──────────
 // 個體照片：陣列（可單張可多張）。親代照片：單張 sireAImg / damBImg
 window._imPhotos = [];      // 個體照片陣列
+window._imLabelImageUrl = ''; // 已存的標籤圖，可直接當個體主圖
 window._imParentImg = { sireAImg:'', damBImg:'' };
 
 // 個體照片：產生 HTML
 function imPhotosHtml() {
+  const labelUrl=window._imLabelImageUrl||'';
   return `
   <div class="form-group im-form-full">
     <label class="form-label">個體照片（可上傳多張，拖曳可排序，第一張為主圖）</label>
+    ${labelUrl?`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:8px;background:#faf7f2;border:1px solid rgba(181,115,58,.18);border-radius:7px">
+      <img src="${esc(labelUrl)}" style="width:54px;height:54px;object-fit:cover;border-radius:6px;border:1px solid rgba(181,115,58,.22)">
+      <div style="flex:1"><div style="font-size:11px;font-weight:700;color:var(--brown)">🎨 已有標籤圖</div><div style="font-size:10px;color:var(--muted);margin-top:2px">可直接拿這張當個體主圖，不用再下載後重新上傳。</div></div>
+      <button type="button" class="action-btn" onclick="imUseLabelAsPhoto()">設為主圖</button>
+    </div>`:''}
     <div id="im-photos-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
     <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:1px dashed var(--copper);border-radius:8px;font-size:13px;color:var(--copper)">
       ＋ 新增照片
@@ -7014,6 +8180,15 @@ function imPhotosHtml() {
     <span id="im-photos-status" style="font-size:12px;color:var(--copper);margin-left:10px"></span>
   </div>`;
 }
+
+window.imUseLabelAsPhoto=()=>{
+  const url=window._imLabelImageUrl||'';
+  if(!url){ window.showToast('目前沒有已儲存的標籤圖'); return; }
+  window._imPhotos=(window._imPhotos||[]).filter(x=>x!==url);
+  window._imPhotos.unshift(url);
+  imRenderPhotos();
+  window.showToast('✅ 已將標籤圖設為個體主圖，儲存主檔後生效');
+};
 
 // 親代照片：產生 HTML
 function imParentImgHtml() {
@@ -7139,7 +8314,10 @@ window.imOpenForm = async (section, id) => {
 
   // 初始化照片狀態（公/母蛇用）
   if (section === 'males' || section === 'females') {
+    window._imLabelImageUrl = r.labelImageUrl || '';
     window._imPhotos = Array.isArray(r.photos) ? [...r.photos] : (r.imgUrl ? [r.imgUrl] : []);
+    // 尚未另外上傳個體照片時，直接沿用已存的標籤圖作為主圖。
+    if (!window._imPhotos.length && window._imLabelImageUrl) window._imPhotos = [window._imLabelImageUrl];
     window._imParentImg = { sireAImg: r.sireAImg || '', damBImg: r.damBImg || '' };
   }
 
@@ -7327,13 +8505,19 @@ window.imOpenForm = async (section, id) => {
     const pre = window._imClearOutPrefill || {};
     window._imClearOutPrefill = null;
     if (!isNew) {} else { Object.assign(r, pre); }
+    const saleMaster=imDcMasterByCode(r.saleId||'');
+    const dcLocked=!!saleMaster;
+    const dcRO=dcLocked?'readonly style="background:#f2f0ec;color:#80766d"':'';
+    const dcDIS=dcLocked?'disabled style="background:#f2f0ec;color:#80766d"':'';
     html = `<div class="im-modal-title">${isNew?'新增銷售':'編輯銷售'}</div>
+    ${r.archived===true?`<div style="margin-bottom:13px;padding:10px 12px;background:#f2f0ec;border:1px solid rgba(120,110,100,.2);border-radius:7px;font-size:11px;line-height:1.65;color:var(--muted)">📁 <b>此交易已歸檔</b>。仍可更正交易資料；若要重新回到工作區，請在「已歸檔」列表按還原。</div>`:''}
+    ${dcLocked?`<div style="margin-bottom:13px;padding:10px 12px;background:#f7f2e9;border:1px solid rgba(181,115,58,.25);border-radius:7px;font-size:11px;line-height:1.65;color:var(--muted)">🔒 <b style="color:var(--brown)">個體主資料由資料中心控制</b>。灰色欄位不能在銷售紀錄修改，避免與公／母主檔衝突。<button type="button" class="action-btn" style="margin-left:8px;padding:4px 8px" onclick="imOpenMasterRecord('${saleMaster._sourceType}','${saleMaster._sourceId}')">前往主檔修改</button></div>`:''}
     <div class="im-form-grid">
       <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">產品編號</label><input class="form-input" id="im-f-saleId" value="${esc(r.saleId||'')}"></div>
-      <div class="form-group"><label class="form-label">物種</label><select class="form-select" id="im-f-species">${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="im-f-sex"><option value="M" ${(r.sex||'M')==='M'?'selected':''}>♂ 公</option><option value="F" ${r.sex==='F'?'selected':''}>♀ 母</option><option value="U" ${r.sex==='U'?'selected':''}>？ 未知</option></select></div>
-      <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}"></div>
+      <div class="form-group"><label class="form-label">產品編號</label><input class="form-input" id="im-f-saleId" value="${esc(r.saleId||'')}" ${dcRO}></div>
+      <div class="form-group"><label class="form-label">物種</label><select class="form-select" id="im-f-species" ${dcDIS}>${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="im-f-sex" ${dcDIS}><option value="M" ${(r.sex||'M')==='M'?'selected':''}>♂ 公</option><option value="F" ${r.sex==='F'?'selected':''}>♀ 母</option><option value="U" ${r.sex==='U'?'selected':''}>？ 未知</option></select></div>
+      <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}" ${dcRO}></div>
       <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}" oninput="imAutoFund()"></div>
       <div class="form-group"><label class="form-label">售價 (NT$) *</label><input class="form-input" id="im-f-price" type="number" value="${r.price||''}" oninput="imAutoFund()"></div>
       <div class="form-group"><label class="form-label">公基金10% (NT$)</label><input class="form-input" id="im-f-fund" type="number" value="${r.fund||0}"></div>
@@ -7345,12 +8529,12 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group im-form-full"><label class="form-label">買家資訊</label><input class="form-input" id="im-f-buyer" value="${esc(r.buyer||'')}"></div>
       <div class="form-group"><label class="form-label">購買日期</label><input class="form-input" id="im-f-purchaseDate" type="date" value="${esc((r.purchaseDate||'').toString().replace(/\//g,'-'))}"></div>
       <div class="form-group"><label class="form-label">出貨日期</label><input class="form-input" id="im-f-ship" value="${esc(r.ship||'')}"></div>
-      <div class="form-group"><label class="form-label">出生/進貨日期</label><input class="form-input" id="im-f-birth" value="${esc(r.birth||'')}"></div>
-      <div class="form-group"><label class="form-label">體重 (g)</label><input class="form-input" id="im-f-weight" type="number" min="0" placeholder="例：120" value="${r.weight||''}"></div>
-      <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}"></div>
-      <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}"></div>
+      <div class="form-group"><label class="form-label">出生/進貨日期</label><input class="form-input" id="im-f-birth" value="${esc(r.birth||'')}" ${dcRO}></div>
+      <div class="form-group"><label class="form-label">體重 (g)</label><input class="form-input" id="im-f-weight" type="number" min="0" placeholder="例：120" value="${r.weight||''}" ${dcRO}></div>
+      <div class="form-group im-form-full"><label class="form-label">親代A</label><input class="form-input" id="im-f-sireA" value="${esc(r.sireA||'')}" ${dcRO}></div>
+      <div class="form-group im-form-full"><label class="form-label">親代B</label><input class="form-input" id="im-f-damB" value="${esc(r.damB||'')}" ${dcRO}></div>
       <div class="form-group im-form-full"><label class="form-label">是否接受冷凍</label>
-        <select class="form-select" id="im-f-frozen">
+        <select class="form-select" id="im-f-frozen" ${dcDIS}>
           <option value="" ${!r.frozen?'selected':''}>未填寫</option>
           <option value="是" ${r.frozen==='是'?'selected':''}>✅ 接受冷凍</option>
           <option value="否" ${r.frozen==='否'?'selected':''}>❌ 不接受冷凍</option>
@@ -7358,7 +8542,7 @@ window.imOpenForm = async (section, id) => {
         </select>
       </div>
             <div class="form-group im-form-full"><label class="form-label">個性 🎮</label>
-        <select class="form-select" id="im-f-nature">
+        <select class="form-select" id="im-f-nature" ${dcDIS}>
           <option value="">未填寫</option>
           <optgroup label="── 不影響能力值 ──">
             <option ${(r.nature||'')==='勤奮'?'selected':''}>勤奮</option>
@@ -7629,17 +8813,42 @@ window.imSave = async (section, id) => {
   try {
     const col = COL[section];
     console.log('[imSave] section:', section, 'id:', id, 'col:', col, 'data:', data);
+    let savedId=id||'';
     if (id) {
       await updateDoc(doc(db2, col, id), data);
-      const idx = IM[section].findIndex(x=>x._id===id);
-      if (idx>-1) IM[section][idx] = {...IM[section][idx], ...data};
     } else {
       const ref = await addDoc(collection(db2, col), {...data, createdAt: serverTimestamp()});
-      IM[section].push({_id: ref.id, ...data});
+      savedId=ref.id;
     }
-    window.showToast('✅ 儲存成功！');
+
+    // 銷售結案：個體立即進資料中心封存庫；交易案件則等公基金已繳／免繳後歸檔。
+    if(section==='sales' && data.status==='到貨、結案'){
+      const saleForArchive={...data,_id:savedId};
+      await imMarkIndividualSoldArchive(saleForArchive);
+      await imArchiveSaleCaseIfSettled(saleForArchive);
+    }
+
+    // 公／母主檔是個體資料的唯一編輯來源：改完同步到同編號銷售快照與官網鏡像。
+    if(section==='males'||section==='females'){
+      await imDcSyncSalesFromMaster({...data,_id:savedId,_sourceType:section,_sourceId:savedId,inBreederList:true});
+    }
+
+    await imLoadAll();
+
+    // 銷售紀錄永遠有一份「隱藏中的官網鏡像」；是否顯示只是狀態，不再是另外新增一筆資料的工作流程。
+    if(section==='sales'){
+      const saved=IM.sales.find(x=>x._id===savedId);
+      if(saved) await imSyncWebsiteProjectionForSale(saved,{createIfMissing:true});
+      await imLoadAll();
+      // 銷售新增／編輯後直接刷新「所有個體」使用的 snakes 快取，
+      // 不需要等使用者重新整理整個網頁。
+      await loadSnakes();
+    }
+
+    window.showToast('✅ 儲存成功！資料中心、官網鏡像與所有個體已同步');
     imCloseModal();
     imRenderTable(section);
+    if(typeof imRenderDataCenter==='function') imRenderDataCenter();
     imRenderDashboard();
   } catch(e) {
     console.error('[imSave] error:', e);
@@ -7773,9 +8982,15 @@ window.imOpenPhotoLabel = (id) => {
   if (!r) return;
   document.getElementById('im-modal-body').innerHTML = `
     <div class="im-modal-title">🎨 生成標籤圖</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
-      上傳蛇的原始照片，系統自動取色並合成編號、基因標籤
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      上傳蛇的原始照片，系統自動取色並合成編號、基因標籤。完成後可直接存進資料中心，不必先下載再上傳。
     </p>
+    ${(imDcMasterByCode(r.saleId||'')?.labelImageUrl || r.labelImageUrl)?`
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:#f8f5f0;border:1px solid rgba(181,115,58,.18);border-radius:7px;margin-bottom:12px">
+        <img src="${esc(imDcMasterByCode(r.saleId||'')?.labelImageUrl || r.labelImageUrl)}" style="width:58px;height:58px;object-fit:cover;border-radius:5px">
+        <div style="flex:1"><div style="font-size:11px;font-weight:700;color:var(--brown)">✅ 資料中心已有標籤圖</div><div style="font-size:10px;color:var(--muted);margin-top:3px">重新產生後按「覆蓋資料中心」即可更新；官網鏡像也會自動使用最新版。</div></div>
+        <a class="action-btn" href="${esc(imDcMasterByCode(r.saleId||'')?.labelImageUrl || r.labelImageUrl)}" target="_blank" style="text-decoration:none">查看</a>
+      </div>`:''}
     <div style="background:var(--cream);border:2px dashed rgba(181,115,58,0.3);border-radius:8px;padding:24px;text-align:center;cursor:pointer;margin-bottom:14px" onclick="document.getElementById('label-img-input').click()">
       <div id="label-upload-placeholder">
         <div style="font-size:28px;margin-bottom:6px">📷</div>
@@ -7846,9 +9061,10 @@ window.imOpenPhotoLabel = (id) => {
       <div id="label-canvas-placeholder" style="background:#f5f5f5;border-radius:6px;padding:32px;text-align:center;color:#bbb;font-size:12px">上傳照片後顯示預覽</div>
     </div>
 
-    <div class="im-form-actions">
+    <div class="im-form-actions" style="flex-wrap:wrap">
       <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
-      <button class="submit-btn" style="width:auto;padding:8px 24px;background:#8b4ab5;border:none" id="label-download-btn" onclick="labelDownload('${esc(r.saleId||'')}')">⬇ 下載標籤圖</button>
+      <button class="action-btn" style="padding:8px 16px" id="label-download-btn" onclick="labelDownload('${esc(r.saleId||'')}')">⬇ 下載</button>
+      <button class="submit-btn" style="width:auto;padding:8px 18px;background:#8b4ab5;border:none" id="label-save-center-btn" onclick="labelSaveToDataCenter('${r._id}','${esc(r.saleId||'')}')">${(imDcMasterByCode(r.saleId||'')?.labelImageUrl || r.labelImageUrl)?'♻️ 覆蓋資料中心':'💾 存到資料中心'}</button>
     </div>`;
   document.getElementById('im-modal-overlay').classList.add('show');
   // 填入三個 logo 圖片
@@ -8094,197 +9310,221 @@ window.labelDownload = (code) => {
   link.click();
 };
 
+window.labelSaveToDataCenter = async (saleDocId, code) => {
+  const canvas = document.getElementById('label-canvas');
+  if (!canvas || canvas.style.display === 'none') {
+    window.showToast('❌ 請先上傳照片並產生標籤圖');
+    return;
+  }
+  const btn=document.getElementById('label-save-center-btn');
+  const oldText=btn?.textContent||'';
+  try {
+    if(btn){btn.disabled=true;btn.textContent='上傳中…';}
+    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('無法產生圖片')),'image/jpeg',0.92));
+    const safeCode=String(code||'hm_pythons').replace(/[^0-9A-Za-z_-]+/g,'_');
+    const file=new File([blob],`${safeCode}_labeled.jpg`,{type:'image/jpeg'});
+    const url=await imUploadToCloudinary(file);
+    if(!url) throw new Error('Cloudinary 上傳失敗');
+
+    const stamp=serverTimestamp();
+    // 銷售事件保存一份 URL，確保即使沒有公／母主檔也能留在資料中心。
+    await updateDoc(doc(db2,COL.sales,saleDocId),{labelImageUrl:url,labelUpdatedAt:stamp});
+
+    // 若此個體已有公／母權威主檔，同一張標籤圖也寫回主檔。
+    const master=imDcMasterByCode(code||'');
+    if(master && (master._sourceType==='males'||master._sourceType==='females')){
+      await updateDoc(doc(db2,COL[master._sourceType],master._sourceId),{labelImageUrl:url,labelUpdatedAt:serverTimestamp()});
+    }
+
+    // 已存在的官網鏡像立即更新；尚未上架的不會因此公開。
+    const sale=(IM.sales||[]).find(x=>x._id===saleDocId);
+    if(sale){
+      const merged={...sale,labelImageUrl:url};
+      await imSyncWebsiteProjectionForSale(merged,{createIfMissing:false});
+    }
+
+    await imLoadAll();
+    if(typeof imRenderDataCenter==='function') imRenderDataCenter();
+    if(document.getElementById('page-im-sales')?.classList.contains('active')) imRenderTable('sales');
+    window._imLabelImageUrl=url;
+    window.showToast('✅ 標籤圖已存到資料中心；個體照片也可直接使用這張圖');
+    imCloseModal();
+  } catch(e) {
+    console.error('[labelSaveToDataCenter]',e);
+    window.showToast('❌ 儲存標籤圖失敗：'+(e.message||e));
+    if(btn){btn.disabled=false;btn.textContent=oldText||'💾 存到資料中心';}
+  }
+};
+
+
+// ── DATA CENTER DEPENDENT SYNC ───────────────────
+function imDcIdentityPatch(master){
+  return {
+    species:master.species||'', gene:master.gene||'', sex:master.sex||'U', birth:master.birth||'',
+    weight:master.weight||'', sireA:master.sireA||'', damB:master.damB||'',
+    frozen:master.frozen||'', nature:master.nature||''
+  };
+}
+async function imDcSyncSalesFromMaster(master){
+  const code=imDcCodeOf(master);
+  if(!code)return 0;
+  const snap=await getDocs(query(collection(db2,COL.sales),where('saleId','==',code)));
+  let count=0;
+  for(const d of snap.docs){
+    const patch=imDcIdentityPatch(master);
+    await updateDoc(doc(db2,COL.sales,d.id),patch);
+    const merged={_id:d.id,...d.data(),...patch};
+    await imSyncWebsiteProjectionForSale(merged,{createIfMissing:false});
+    count++;
+  }
+  return count;
+}
+function imPublicBasePrice(r){
+  const n=Number(r?.price)||0;
+  return n>0?`NT$${n.toLocaleString('en-US')}`:'洽詢';
+}
+async function imWebsiteDocsForSale(id){
+  const cached=(IM.siteSnakes||[]).filter(s=>String(s.imSaleId||'')===String(id));
+  if(cached.length)return cached;
+  const snap=await getDocs(query(collection(db2,COL.site),where('imSaleId','==',id)));
+  return snap.docs.map(d=>({_id:d.id,...d.data()}));
+}
+function imBuildWebsiteProjection(r,existing={},settings={}){
+  const speciesKey=(typeof SPECIES_MAP_PUSH!=='undefined'&&SPECIES_MAP_PUSH[r.species])||'ball_python';
+  const basePrice=imPublicBasePrice(r);
+  const oldBase=existing.price||'';
+  let special=settings.specialPrice!==undefined?settings.specialPrice:(existing.specialPrice||basePrice);
+  if(!existing.specialPrice || existing.specialPrice===oldBase) special=basePrice;
+  const visible=settings.visible!==undefined?settings.visible:(existing.publicVisible!==false&&existing.status!=='ready'&&!!existing.status);
+  const publicStatus=settings.status||existing.publicStatus||existing.status||'ready';
+  const sexEn=r.sex==='M'?' Male':r.sex==='F'?' Female':'';
+  const nameZh=(r.gene||'')+(r.sex==='M'?'（公）':r.sex==='F'?'（母）':'');
+  const master=imDcMasterByCode(r.saleId||'');
+  const img=(master?.labelImageUrl || r.labelImageUrl || master?.imgUrl || (Array.isArray(master?.photos)&&master.photos[0]) || existing.imgUrl || '');
+  return {
+    code:r.saleId||'', morph:r.gene||'', species:speciesKey,
+    nameZh, nameEn:(r.gene||'')+sexEn,
+    tags:(r.gene||'').split(' ').filter(t=>t.length>1&&t.length<30),
+    price:basePrice, specialPrice:special,
+    status:(publicStatus==='ready'||!visible)?'ready':publicStatus, publicVisible:publicStatus==='ready'?false:!!visible, publicStatus,
+    auctionUrl:settings.auctionUrl!==undefined?settings.auctionUrl:(existing.auctionUrl||''),
+    auctionEnd:settings.auctionEnd!==undefined?settings.auctionEnd:(existing.auctionEnd||''),
+    imgUrl:img,
+    year:String(r.birth||'').match(/(?:19|20)\d{2}/)?.[0]||'', birth:r.birth||'',
+    frozen:r.frozen||'', weight:r.weight||'', sire:r.sireA||'', dam:r.damB||'', nature:r.nature||'', sex:r.sex||'',
+    showOnSota:existing.showOnSota===true, sotaDescription:existing.sotaDescription||'',
+    fromIM:true, dataCenterManaged:true, imSaleId:r._id, updatedAt:serverTimestamp()
+  };
+}
+async function imSyncWebsiteProjectionForSale(r,{createIfMissing=false,settings={}}={}){
+  if(!r?._id)return null;
+  const docs=await imWebsiteDocsForSale(r._id);
+  // 使用者若從「所有個體」永久刪除鏡像，就不要在銷售儲存／批次同步時自動重建。
+  if(r.siteSuppressed===true && settings.forceRestore!==true){
+    for(const d of docs) await deleteDoc(doc(db2,COL.site,d._id));
+    return null;
+  }
+  if(!docs.length&&!createIfMissing)return null;
+  if(docs.length){
+    const main=docs[0];
+    const payload=imBuildWebsiteProjection(r,main,settings);
+    await updateDoc(doc(db2,COL.site,main._id),payload);
+    // 若舊流程曾重複推送，額外鏡像一律隱藏，避免前台重複顯示。
+    for(const extra of docs.slice(1)){
+      await updateDoc(doc(db2,COL.site,extra._id),{status:'ready',publicVisible:false,updatedAt:serverTimestamp()});
+    }
+    return main._id;
+  }
+  const stableId=`im_sale_${String(r._id).replace(/[^0-9A-Za-z_-]/g,'_')}`;
+  const payload=imBuildWebsiteProjection(r,{},settings);
+  await setDoc(doc(db2,COL.site,stableId),{...payload,createdAt:serverTimestamp()},{merge:true});
+  return stableId;
+}
+window.imSyncAllWebsiteMirrors=async()=>{
+  if(!confirm(`會把目前 ${IM.sales.length} 筆銷售紀錄建立／更新成官網鏡像。尚未公開的個體會保持「隱藏」，不會突然出現在前台。確定？`))return;
+  try{
+    await imLoadAll();
+    let done=0;
+    for(const r of IM.sales){
+      await imSyncWebsiteProjectionForSale(r,{createIfMissing:true});
+      done++;
+    }
+    await imLoadAll();
+    await loadSnakes();
+    imRenderTable('sales');
+    window.showToast(`✅ 已同步 ${done} 筆官網鏡像；所有個體已立即更新`);
+  }catch(e){console.error(e);window.showToast('❌ 官網鏡像同步失敗：'+e.message);}
+};
+
 // ── PUSH TO WEBSITE ──────────────────────────────
 const SPECIES_MAP_PUSH = {
   '球蟒':'ball_python', '紅尾蚺':'boa', '玉米蛇':'corn_snake',
   '王蛇':'king_snake', '豹紋守宮':'leopard_gecko'
 };
 
-window.imPushToSite = (id) => {
-  const r = IM.sales.find(x=>x._id===id);
-  if (!r) return;
-  document.getElementById('im-modal-body').innerHTML = `
-    <div class="im-modal-title">🌐 推送到官網</div>
-    <p class="im-confirm-msg" style="margin-bottom:16px">
-      將 <strong>${r.gene}</strong> 新增到官網展示。<br>
-      <span style="font-size:12px;color:var(--muted)">會在「所有個體」頁面顯示，狀態預設為「準備上架」，整理完成後再改成「待售中」即可正式顯示。</span>
-    </p>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">官網顯示狀態</label>
-      <select class="form-select" id="push-status">
-        <option value="ready" selected>準備上架</option>
-        <option value="sale">待售中</option>
-        <option value="auction">競標中</option>
-        <option value="sold">已售出</option>
-      </select>
+window.imPushToSite = async (id) => {
+  const r=IM.sales.find(x=>x._id===id);
+  if(!r)return;
+  const docs=await imWebsiteDocsForSale(id);
+  const existing=docs[0]||{};
+  const visible=!!(existing._id && existing.publicVisible!==false && existing.status!=='ready');
+  const pstatus=existing.publicStatus||existing.status||'ready';
+  const special=existing.specialPrice||imPublicBasePrice(r);
+  document.getElementById('im-modal-body').innerHTML=`
+    <div class="im-modal-title">🌐 官網顯示設定</div>
+    <div style="margin-bottom:14px;padding:10px 12px;background:#f7f2e9;border:1px solid rgba(181,115,58,.22);border-radius:7px;font-size:11px;line-height:1.7;color:var(--muted)">
+      🔒 <b style="color:var(--brown)">${esc(r.gene||'')}</b> 的編號、基因、公母、出生、親代、體重與售價會從資料中心／銷售紀錄自動同步。這裡只控制公開狀態與展示設定。
     </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">中文名稱（選填）</label>
-      <input class="form-input" id="push-name-zh" placeholder="例：沙漠幽靈（公）" value="${esc((r.gene||'')+(r.sex==='M'?'（公）':r.sex==='F'?'（母）':''))}">
+    <div class="im-form-grid">
+      <div class="form-group"><label class="form-label">公開狀態</label><select class="form-select" id="push-status" onchange="imPushStatusChanged()"><option value="ready" ${pstatus==='ready'?'selected':''}>⏳ 準備上架</option><option value="sale" ${pstatus==='sale'?'selected':''}>待售中</option><option value="auction" ${pstatus==='auction'?'selected':''}>競標中</option><option value="sold" ${pstatus==='sold'?'selected':''}>已售出</option></select><div style="font-size:9px;color:var(--muted);margin-top:5px">準備上架＝先存資料、不公開顯示。</div></div>
+      <div class="form-group"><label class="form-label">官網顯示</label><select class="form-select" id="push-visible" ${pstatus==='ready'?'disabled':''}><option value="hidden" ${(pstatus==='ready'||!visible)?'selected':''}>🔒 隱藏</option><option value="visible" ${(pstatus!=='ready'&&visible)?'selected':''}>🟢 顯示</option></select></div>
+      <div class="form-group"><label class="form-label">同步售價</label><input class="form-input" value="${esc(imPublicBasePrice(r))}" readonly style="background:#f2f0ec;color:#80766d"></div>
+      <div class="form-group"><label class="form-label">特價（展示專用）</label><input class="form-input" id="push-special-price" value="${esc(special)}" placeholder="例如 NT$1,800"></div>
+      <div class="form-group im-form-full"><label class="form-label">競標連結</label><input class="form-input" id="push-auction-url" value="${esc(existing.auctionUrl||'')}" placeholder="沒填會使用預設競標個人頁"></div>
+      <div class="form-group im-form-full"><label class="form-label">結標時間</label><input class="form-input" id="push-auction-end" type="datetime-local" value="${esc(existing.auctionEnd||'')}"></div>
     </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">個體年份</label>
-      <input class="form-input" id="push-year" type="number" placeholder="例：2025" value="${r.birth?(r.birth.split('/')[0]):''}">
-    </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">競標連結（競標中時填）</label>
-      <input class="form-input" id="push-auction-url" placeholder="https://...">
-    </div>
-    <div class="form-group" style="margin-bottom:16px">
-      <label class="form-label">結標時間（競標中時填）</label>
-      <input class="form-input" id="push-auction-end" type="datetime-local">
-    </div>
-    <div style="border-top:1px solid rgba(181,115,58,0.15);margin:4px 0 16px;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">出生日期</label>
-        <input class="form-input" id="push-birth" placeholder="例：2025/06/04" value="${r.birth?r.birth.replace(/\//g,'/').split(' ')[0]:''}">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">體重 (g)</label>
-        <input class="form-input" id="push-weight" type="number" min="0" placeholder="例：120" value="${r.weight||''}">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">是否接受冷凍</label>
-        <select class="form-select" id="push-frozen">
-          <option value="" ${!r.frozen?'selected':''}>未填寫</option>
-          <option value="是" ${r.frozen==='是'?'selected':''}>✅ 接受冷凍</option>
-          <option value="否" ${r.frozen==='否'?'selected':''}>❌ 不接受冷凍</option>
-          <option value="看心情" ${r.frozen==='看心情'?'selected':''}>😏 看心情</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">親代A（公）</label>
-      <input class="form-input" id="push-sire" value="${esc(r.sireA||'')}">
-    </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">親代B（母）</label>
-      <input class="form-input" id="push-dam" value="${esc(r.damB||'')}">
-    </div>
-    <div class="form-group" style="margin-bottom:16px">
-      <label class="form-label">個性 🎮</label>
-      <select class="form-select" id="push-nature">
-        <option value="" ${!r.nature?'selected':''}>未填寫</option>
-        <optgroup label="── 不影響能力值 ──">
-          <option ${r.nature==='勤奮'?'selected':''}>勤奮</option><option ${r.nature==='坦率'?'selected':''}>坦率</option><option ${r.nature==='認真'?'selected':''}>認真</option><option ${r.nature==='溫順'?'selected':''}>溫順</option><option ${r.nature==='慎重'?'selected':''}>慎重</option>
-        </optgroup>
-        <optgroup label="── 活潑系 ──">
-          <option ${r.nature==='活潑'?'selected':''}>活潑</option><option ${r.nature==='爽朗'?'selected':''}>爽朗</option><option ${r.nature==='天真'?'selected':''}>天真</option><option ${r.nature==='浮躁'?'selected':''}>浮躁</option><option ${r.nature==='頑皮'?'selected':''}>頑皮</option>
-        </optgroup>
-        <optgroup label="── 固執系 ──">
-          <option ${r.nature==='固執'?'selected':''}>固執</option><option ${r.nature==='勇敢'?'selected':''}>勇敢</option><option ${r.nature==='大膽'?'selected':''}>大膽</option><option ${r.nature==='樂天'?'selected':''}>樂天</option><option ${r.nature==='淘氣'?'selected':''}>淘氣</option>
-        </optgroup>
-        <optgroup label="── 內斂系 ──">
-          <option ${r.nature==='內斂'?'selected':''}>內斂</option><option ${r.nature==='冷靜'?'selected':''}>冷靜</option><option ${r.nature==='溫和'?'selected':''}>溫和</option><option ${r.nature==='悠閒'?'selected':''}>悠閒</option><option ${r.nature==='馬虎'?'selected':''}>馬虎</option>
-        </optgroup>
-        <optgroup label="── 害羞系 ──">
-          <option ${r.nature==='害羞'?'selected':''}>害羞</option><option ${r.nature==='慢吞吞'?'selected':''}>慢吞吞</option><option ${r.nature==='自大'?'selected':''}>自大</option><option ${r.nature==='急躁'?'selected':''}>急躁</option><option ${r.nature==='膽小'?'selected':''}>膽小</option>
-        </optgroup>
-        <optgroup label="── 怕寂寞系 ──">
-          <option ${r.nature==='怕寂寞'?'selected':''}>怕寂寞</option><option ${r.nature==='開朗'?'selected':''}>開朗</option>
-        </optgroup>
-      </select>
-    </div>
-    <div class="im-form-actions">
-      <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
-      <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imDoPush('${id}')">確認推送</button>
-    </div>`;
+    <div class="im-form-actions"><button class="im-btn-cancel" onclick="imCloseModal()">取消</button><button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imDoPush('${id}')">儲存官網設定</button></div>`;
   document.getElementById('im-modal-overlay').classList.add('show');
 };
 
-window.imDoPush = async (id) => {
-  const r = IM.sales.find(x=>x._id===id);
-  if (!r) return;
-  const status = document.getElementById('push-status').value;
-  const nameZh = document.getElementById('push-name-zh').value.trim();
-  const auctionUrl = document.getElementById('push-auction-url').value.trim();
-  const auctionEnd = document.getElementById('push-auction-end').value || '';
-  const year = document.getElementById('push-year').value.trim();
-  const pushBirth = document.getElementById('push-birth').value.trim();
-  const pushFrozen = document.getElementById('push-frozen').value;
-  const pushWeight = document.getElementById('push-weight').value.trim();
-  const pushSire = document.getElementById('push-sire').value.trim();
-  const pushDam = document.getElementById('push-dam').value.trim();
-  const pushNature = document.getElementById('push-nature').value;
-
-  const speciesKey = SPECIES_MAP_PUSH[r.species] || 'ball_python';
-  const tags = (r.gene||'').split(' ').filter(t=>t.length>1&&t.length<30);
-
-  // 性別英文標籤：M=Male, F=Female, 其他不加
-  const sexEnLabel = r.sex==='M' ? ' Male' : (r.sex==='F' ? ' Female' : '');
-
-  const snakeDoc = {
-    code: r.saleId || '',
-    morph: r.gene || '',
-    species: speciesKey,
-    nameZh: nameZh || r.gene,
-    nameEn: r.gene + sexEnLabel,
-    tags,
-    price: r.price ? 'NT$'+r.price.toLocaleString() : '洽詢',
-    status,
-    auctionUrl: auctionUrl || '',
-    auctionEnd: auctionEnd || '',
-    imgUrl: '',
-    year: year || '',
-    birth: pushBirth || '',
-    frozen: pushFrozen || '',
-    weight: pushWeight || '',
-    sire: pushSire || '',
-    dam: pushDam || '',
-    nature: pushNature || '',
-    sex: r.sex || '',  // ← 從銷售紀錄同步性別到官網
-    createdAt: serverTimestamp(),
-    fromIM: true,
-    imSaleId: id,
-  };
-
-  try {
-    // 檢查是否已推送過（同一個 imSaleId）
-    const existing = await getDocs(query(collection(db2, 'snakes'), where('imSaleId','==',id)));
-    if (!existing.empty) {
-      // 自動補性別（如果舊資料 sex 是空的且 IM.sales 有 sex，就同步過去）
-      let synced = false;
-      if (r.sex && (r.sex === 'M' || r.sex === 'F' || r.sex === 'U')) {
-        for (const docSnap of existing.docs) {
-          const existingSex = docSnap.data().sex || '';
-          if (existingSex !== r.sex) {
-            await updateDoc(doc(db2, 'snakes', docSnap.id), { sex: r.sex });
-            synced = true;
-          }
-        }
-        if (synced && typeof loadSnakes === 'function') await loadSnakes();
-      }
-
-      document.getElementById('im-modal-body').innerHTML = `
-        <div class="im-modal-title" style="color:#8b5e10">⚠️ 已推送過</div>
-        <p class="im-confirm-msg">這筆資料已經推送到官網了。${synced ? '<br><span style="color:#2a6b3a">✅ 已自動同步性別欄位</span>' : ''}<br>如需更新其他欄位，請到「所有個體」頁面直接編輯。</p>
-        <div class="im-form-actions">
-          <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imCloseModal()">了解</button>
-        </div>`;
-      return;
-    }
-    const ref = await addDoc(collection(db2, 'snakes'), snakeDoc);
-    const newId = ref.id;
-    if (typeof loadSnakes === 'function') await loadSnakes();
-
-    // 顯示成功 + 立即上傳照片按鈕
-    const pushedStatusLabel = status === 'ready' ? '準備上架' : status === 'sale' ? '待售中' : status === 'auction' ? '競標中' : '已售出';
-    document.getElementById('im-modal-body').innerHTML = `
-      <div class="im-modal-title" style="color:#2a6b3a">✅ 推送成功！</div>
-      <p class="im-confirm-msg" style="margin-bottom:20px">
-        <strong>${r.gene}</strong> 已送入「${pushedStatusLabel}」區。<br>
-        <span style="font-size:12px;color:var(--muted)">現在要補上照片嗎？</span>
-      </p>
-      <div class="im-form-actions">
-        <button class="im-btn-cancel" onclick="imCloseModal()">稍後再說</button>
-        <button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imCloseModal(); showPage('list', document.querySelector('.sidebar-btn')); openEditModal('${newId}')">📷 立即上傳照片</button>
-      </div>`;
-  } catch(e) {
-    window.showToast('❌ 推送失敗：'+e.message);
-    console.error(e);
+window.imPushStatusChanged=()=>{
+  const status=document.getElementById('push-status');
+  const visible=document.getElementById('push-visible');
+  if(!status||!visible)return;
+  if(status.value==='ready'){
+    visible.value='hidden';
+    visible.disabled=true;
+  }else{
+    visible.disabled=false;
+    // 從準備上架切到正式公開狀態時，預設直接顯示。
+    if(visible.value==='hidden') visible.value='visible';
   }
 };
+
+window.imDoPush = async (id) => {
+  const r=IM.sales.find(x=>x._id===id);
+  if(!r)return;
+  try{
+    const settings={
+      status:document.getElementById('push-status').value,
+      visible:document.getElementById('push-status').value==='ready'?false:document.getElementById('push-visible').value==='visible',
+      specialPrice:document.getElementById('push-special-price').value.trim()||imPublicBasePrice(r),
+      auctionUrl:document.getElementById('push-auction-url').value.trim(),
+      auctionEnd:document.getElementById('push-auction-end').value||''
+    };
+    if(r.siteSuppressed===true){
+      await updateDoc(doc(db2,COL.sales,id),{siteSuppressed:false,updatedAt:serverTimestamp()});
+      r.siteSuppressed=false;
+    }
+    await imSyncWebsiteProjectionForSale(r,{createIfMissing:true,settings:{...settings,forceRestore:true}});
+    if(typeof loadSnakes==='function')await loadSnakes();
+    await imLoadAll();
+    imRenderTable('sales');
+    imCloseModal();
+    window.showToast(settings.status==='ready'?'✅ 已設為準備上架：資料已保存，但不會出現在官網':settings.visible?'✅ 官網已顯示，個體資料會持續自動同步':'✅ 官網已隱藏，資料仍保留並持續同步');
+  }catch(e){console.error(e);window.showToast('❌ 官網設定儲存失敗：'+e.message);}
+};
+
 
 // ── DELETE ────────────────────────────────────────
 window.imConfirmDelete = (section, id, label) => {
@@ -8297,14 +9537,46 @@ window.imConfirmDelete = (section, id, label) => {
   document.getElementById('im-modal-overlay').classList.add('show');
 };
 
+window.imConfirmDeleteSale = (id) => {
+  const r=(IM.sales||[]).find(x=>String(x._id)===String(id));
+  if(!r)return;
+  const label=esc([r.saleId,r.gene].filter(Boolean).join('｜')||'這筆銷售紀錄');
+  document.getElementById('im-modal-body').innerHTML=`
+    <div class="im-modal-title" style="color:#8b0000">永久刪除銷售紀錄</div>
+    <p class="im-confirm-msg">
+      確定要永久刪除 <strong>${label}</strong> 嗎？<br>
+      這會刪除這筆銷售紀錄，並同步移除由它建立的「所有個體／官網鏡像」。<br>
+      <b style="color:#8b0000">此動作無法復原。</b>
+    </p>
+    <div style="padding:10px 12px;background:#fff5ef;border:1px solid #e9c7b5;border-radius:6px;font-size:11px;line-height:1.7;color:#7b3a20;margin-bottom:14px">
+      若這個編號另外存在公蛇／母蛇主檔，主檔不會因此刪除；只刪除這筆銷售交易與其同步鏡像。
+    </div>
+    <div class="im-form-actions">
+      <button class="im-btn-cancel" onclick="imCloseModal()">取消</button>
+      <button class="submit-btn" style="width:auto;padding:8px 24px;background:#8b0000" onclick="imDoDelete('sales','${id}')">永久刪除</button>
+    </div>`;
+  document.getElementById('im-modal-overlay').classList.add('show');
+};
+
 window.imDoDelete = async (section, id) => {
   try {
+    if(section==='sales'){
+      const siteDocs=await imWebsiteDocsForSale(id);
+      for(const s of siteDocs) await deleteDoc(doc(db2,COL.site,s._id));
+    }
     await deleteDoc(doc(db2, COL[section], id));
-    IM[section] = IM[section].filter(x=>x._id!==id);
-    window.showToast('🗑️ 已刪除');
+    if(section==='sales'){
+      if(window._purchaseCertSelected) window._purchaseCertSelected.delete(id);
+      if(typeof loadSnakes==='function') await loadSnakes();
+    }
+    await imLoadAll();
+    // 刪除後立即重繪所有可能受影響的畫面，避免資料中心要手動重新整理才消失。
+    if(typeof imRenderDataCenter==='function') imRenderDataCenter();
+    if(typeof imRenderTable==='function') imRenderTable(section);
+    if(typeof imRenderDashboard==='function') imRenderDashboard();
+    if(section==='sales' && typeof loadSnakes==='function') await loadSnakes();
+    window.showToast(section==='sales'?'🗑️ 已永久刪除銷售紀錄，資料中心與所有個體已立即同步':'🗑️ 已刪除，資料中心已立即同步');
     imCloseModal();
-    imRenderTable(section);
-    imRenderDashboard();
   } catch(e) { window.showToast('❌ 刪除失敗：'+e.message); }
 };
 
@@ -10331,36 +11603,88 @@ window.hatchGenRows = () => {
   const code = hatchGetCode();
   const container = document.getElementById('hatch-rows');
   if (!container) return;
-  if (!code) { container.innerHTML = '<div style="color:var(--muted);font-size:12px">請先填寫進貨日期和胎次</div>'; return; }
+
+  // 重新產生列之前先保留已輸入內容，避免調整蛋數／日期時全部被清空。
+  const previous = {};
+  container.querySelectorAll('[data-hatch-index]').forEach(row => {
+    const i = row.dataset.hatchIndex;
+    previous[i] = {
+      gene: document.getElementById(`hatch-gene-${i}`)?.value || '',
+      sex: document.getElementById(`hatch-sex-${i}`)?.value || '',
+      dest: document.getElementById(`hatch-dest-${i}`)?.value || 'sales',
+      note: document.getElementById(`hatch-note-${i}`)?.value || ''
+    };
+  });
+
+  if (!code) { container.innerHTML = '<div style="color:var(--muted);font-size:12px">請先填寫進貨日期和胎次</div>'; hatchUpdateDestSummary(); return; }
   if (count <= 0) {
     container.innerHTML = `<div style="background:rgba(139,0,0,.05);border:1px solid rgba(139,0,0,.15);border-radius:6px;padding:12px 14px;color:#8b0000;font-size:12px">總蛋 ${total} 顆，死胎 ${dead} 顆，沒有需要建立的小蛇資料。</div>`;
+    hatchUpdateDestSummary();
     return;
   }
 
   let html = `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">總蛋 ${total} 顆 · 死胎 ${dead} 顆 · 建立小蛇 ${count} 條</div>
-  <div style="display:grid;grid-template-columns:120px 1fr 100px 80px;gap:8px;margin-bottom:6px">
-    <div style="font-size:11px;color:var(--muted);padding:0 4px">編碼</div>
-    <div style="font-size:11px;color:var(--muted)">基因表現（可留空稍後填）</div>
-    <div style="font-size:11px;color:var(--muted)">性別</div>
-    <div style="font-size:11px;color:var(--muted)">備注</div>
+  <div class="hatch-row-grid hatch-row-head">
+    <div>編碼</div>
+    <div>基因表現（可留空稍後填）</div>
+    <div>性別</div>
+    <div>去向</div>
+    <div>備注</div>
   </div>`;
+
   for (let i = 1; i <= count; i++) {
     const id = String(i).padStart(2,'0');
-    html += `<div style="display:grid;grid-template-columns:120px 1fr 100px 80px;gap:8px;margin-bottom:8px;align-items:center">
-      <div style="font-family:monospace;font-size:12px;color:var(--copper);background:var(--cream);padding:8px;border-radius:4px">${code}-${id}</div>
-      <textarea class="form-input hatch-gene-input" id="hatch-gene-${i}" rows="1" placeholder="輸入這隻小蛇的基因" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" style="font-size:12px;resize:none;overflow:hidden;min-height:38px;line-height:20px;padding-top:8px;padding-bottom:8px"></textarea>
-      <select class="form-select" id="hatch-sex-${i}" style="font-size:12px">
-        <option value="">未知</option>
-        <option value="M">♂ 公</option>
-        <option value="F">♀ 母</option>
-      </select>
-      <input class="form-input" id="hatch-note-${i}" placeholder="備注" style="font-size:12px">
+    const prev = previous[String(i)] || {};
+    const sex = ['M','F'].includes(prev.sex) ? prev.sex : '';
+    const dest = prev.dest === 'breeder' ? 'breeder' : 'sales';
+    html += `<div class="hatch-row-grid hatch-animal-row" data-hatch-index="${i}">
+      <div class="hatch-code-cell" style="font-family:monospace;font-size:12px;color:var(--copper);background:var(--cream);padding:8px;border-radius:4px">${code}-${id}</div>
+      <div class="hatch-gene-cell"><textarea class="form-input hatch-gene-input" id="hatch-gene-${i}" rows="1" placeholder="輸入這隻小蛇的基因" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" style="font-size:12px;resize:none;overflow:hidden;min-height:38px;line-height:20px;padding-top:8px;padding-bottom:8px">${esc(prev.gene || '')}</textarea></div>
+      <div class="hatch-sex-cell"><select class="form-select" id="hatch-sex-${i}" style="font-size:12px" onchange="hatchUpdateDestSummary()">
+        <option value="" ${sex===''?'selected':''}>未知</option>
+        <option value="M" ${sex==='M'?'selected':''}>♂ 公</option>
+        <option value="F" ${sex==='F'?'selected':''}>♀ 母</option>
+      </select></div>
+      <div class="hatch-dest-cell"><select class="form-select hatch-dest-select" id="hatch-dest-${i}" data-dest="${dest}" style="font-size:12px" onchange="hatchDestinationChanged(${i})">
+        <option value="sales" ${dest==='sales'?'selected':''}>💰 銷售／出清</option>
+        <option value="breeder" ${dest==='breeder'?'selected':''}>🐍 自留種蛇</option>
+      </select></div>
+      <div class="hatch-note-cell"><input class="form-input" id="hatch-note-${i}" value="${esc(prev.note || '')}" placeholder="備注" style="font-size:12px"></div>
     </div>`;
   }
   container.innerHTML = html;
+  hatchUpdateDestSummary();
 };
 
-window.hatchSave = async (target) => {
+window.hatchDestinationChanged = (i) => {
+  const el = document.getElementById(`hatch-dest-${i}`);
+  if (el) el.dataset.dest = el.value;
+  hatchUpdateDestSummary();
+};
+
+window.hatchSetAllDestinations = (dest) => {
+  document.querySelectorAll('#hatch-rows .hatch-dest-select').forEach(el => {
+    el.value = dest === 'breeder' ? 'breeder' : 'sales';
+    el.dataset.dest = el.value;
+  });
+  hatchUpdateDestSummary();
+};
+
+window.hatchUpdateDestSummary = () => {
+  const rows = [...document.querySelectorAll('#hatch-rows [data-hatch-index]')];
+  const sales = rows.filter(row => document.getElementById(`hatch-dest-${row.dataset.hatchIndex}`)?.value !== 'breeder').length;
+  const breeder = rows.length - sales;
+  const unknownBreeder = rows.filter(row => {
+    const i = row.dataset.hatchIndex;
+    return document.getElementById(`hatch-dest-${i}`)?.value === 'breeder' && !document.getElementById(`hatch-sex-${i}`)?.value;
+  }).length;
+  const el = document.getElementById('hatch-dest-summary');
+  if (!el) return;
+  if (!rows.length) { el.textContent = '—'; return; }
+  el.innerHTML = `本胎去向：<b style="color:#7a4a18">💰 銷售 ${sales} 隻</b>　<b style="color:#3f6f9f">🐍 自留 ${breeder} 隻</b>${unknownBreeder?`　<span style="color:#8b0000">⚠ 自留有 ${unknownBreeder} 隻尚未選性別</span>`:''}`;
+};
+
+window.hatchSave = async (legacyTarget='') => {
   hatchNormalizeDeadFetus();
   const total = Math.max(0, parseInt(document.getElementById('hatch-count')?.value) || 0);
   const dead = Math.min(total, Math.max(0, parseInt(document.getElementById('hatch-dead-fetus')?.value) || 0));
@@ -10368,6 +11692,10 @@ window.hatchSave = async (target) => {
   const code = hatchGetCode();
   if (!code) { window.showToast('❌ 請填寫完整基本資訊'); return; }
   if (count <= 0) { window.showToast('❌ 沒有存活小蛇可以建立'); return; }
+
+  // 舊按鈕／舊呼叫仍相容；若傳入 sales/snakes，就視為整胎指定去向。
+  if (legacyTarget === 'sales') hatchSetAllDestinations('sales');
+  if (legacyTarget === 'snakes') hatchSetAllDestinations('breeder');
 
   const owner = document.getElementById('hatch-owner').value;
   const ownerName = OWNER_MAP[owner];
@@ -10388,61 +11716,83 @@ window.hatchSave = async (target) => {
   const sireSpecies = (sireOpt?.dataset?.species || '').trim();
   const damSpecies = (damOpt?.dataset?.species || '').trim();
 
+  // 先完整驗證，再開始寫入，避免寫到一半才發現自留個體沒有性別。
+  const items = [];
+  for (let i = 1; i <= count; i++) {
+    const id = String(i).padStart(2,'0');
+    const saleId = `${code}-${id}`;
+    const gene = document.getElementById(`hatch-gene-${i}`)?.value.trim()||'';
+    const sex = document.getElementById(`hatch-sex-${i}`)?.value||'';
+    const note = document.getElementById(`hatch-note-${i}`)?.value.trim()||'';
+    const dest = document.getElementById(`hatch-dest-${i}`)?.value === 'breeder' ? 'breeder' : 'sales';
+    if (dest === 'breeder' && !['M','F'].includes(sex)) {
+      window.showToast(`❌ ${saleId} 要自留種蛇，請先選擇公／母`);
+      document.getElementById(`hatch-sex-${i}`)?.focus();
+      return;
+    }
+    items.push({i,saleId,gene,sex,note,dest});
+  }
+
+  const salesCount = items.filter(x=>x.dest==='sales').length;
+  const breederCount = items.length - salesCount;
+  if (!confirm(`確定建立本胎 ${items.length} 隻小蛇？\n\n💰 銷售／出清：${salesCount} 隻\n🐍 自留種蛇：${breederCount} 隻\n\n建立後會分別進入對應清單。`)) return;
+
   const resultEl = document.getElementById('hatch-result');
+  const saveBtn = document.getElementById('hatch-save-mixed-btn');
   resultEl.style.display = 'block';
   resultEl.innerHTML = `<div style="color:var(--muted);font-size:12px">存入中...</div>`;
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '存入中…'; }
 
-  let saved = 0;
+  let saved = 0, savedSales = 0, savedBreeders = 0;
   try {
-    for (let i = 1; i <= count; i++) {
-      const id = String(i).padStart(2,'0');
-      const saleId = `${code}-${id}`;
-      const gene = document.getElementById(`hatch-gene-${i}`)?.value.trim()||'';
-      const sex = document.getElementById(`hatch-sex-${i}`)?.value||'';
-      const note = document.getElementById(`hatch-note-${i}`)?.value.trim()||'';
-
-      if (target === 'sales') {
-        const price = 0;
+    for (const item of items) {
+      const {saleId,gene,sex,note,dest} = item;
+      if (dest === 'sales') {
         const data = {
           owner: ownerName, saleId, species: speciesName,
           gene: gene||'(待確認)', sex, birth: dateVal, arrivalDate,
-          sireA: sire, damB: dam, sireId, damId, sireOwner, damOwner, sireSpecies, damSpecies, cost: 0, price, fund: 0,
+          sireA: sire, damB: dam, sireId, damId, sireOwner, damOwner, sireSpecies, damSpecies, cost: 0, price: 0, fund: 0,
           source: '品牌自繁', status: '待售',
           channel: '', buyer: '', ship: '', delivery: '',
           note, createdAt: serverTimestamp(),
         };
         await addDoc(collection(db2, COL.sales), data);
-        IM.sales.push({_id:'tmp'+i, ...data});
+        savedSales++;
       } else {
         const col = sex === 'F' ? COL.females : COL.males;
         const data = {
           owner: ownerName, gene: gene||'(待確認)', species: speciesName,
-          sex: sex||'M', year: new Date(dateVal).getFullYear(), birth: dateVal, arrivalDate,
+          sex, year: new Date(dateVal).getFullYear(), birth: dateVal, arrivalDate,
           cost: 0, source: '品牌自繁', status: '安全穩定',
           sireA: sire, damB: dam, sireId, damId, sireOwner, damOwner, sireSpecies, damSpecies, selfBreedId: saleId, note,
           createdAt: serverTimestamp(),
         };
         await addDoc(collection(db2, col), data);
+        savedBreeders++;
       }
       saved++;
     }
 
-    resultEl.innerHTML = `<div style="background:rgba(42,107,58,0.08);border:1px solid rgba(42,107,58,0.2);border-radius:6px;padding:14px 16px">
-      <div style="font-size:14px;font-weight:600;color:#2a6b3a;margin-bottom:4px">✅ 成功建立 ${saved} 筆！</div>
+    // 一次重新抓資料，讓銷售、種蛇、資料中心立即同步。
+    await imLoadAll();
+    if (typeof imRenderTable === 'function') imRenderTable('sales');
+    if (typeof imRenderDataCenter === 'function') imRenderDataCenter();
+    if (typeof imRenderDashboard === 'function') imRenderDashboard();
+
+    resultEl.innerHTML = `<div style="background:rgba(42,107,58,0.08);border:1px solid rgba(42,107,58,0.2);border-radius:8px;padding:14px 16px">
+      <div style="font-size:14px;font-weight:700;color:#2a6b3a;margin-bottom:5px">✅ 成功建立 ${saved} 筆</div>
       <div style="font-size:12px;color:var(--muted);line-height:1.8">
-        本胎總蛋 ${total} 顆，死胎 ${dead} 顆，實際建立 ${saved} 條小蛇。<br>
-        ${target==='sales'?'已存入「銷售記錄」，狀態為待售。可從銷售頁面逐筆編輯補齊資訊或推上官網。':'已存入種蛇清單，可到公蛇/母蛇頁面查看。'}
+        本胎總蛋 ${total} 顆，死胎 ${dead} 顆，存活 ${saved} 隻。<br>
+        💰 ${savedSales} 隻已進入「銷售記錄」；🐍 ${savedBreeders} 隻已進入「公蛇／母蛇」種蛇清單。
       </div>
     </div>`;
-    window.showToast(`✅ 已建立 ${saved} 條小蛇 ${code}`);
-
-    if (target === 'sales') imRenderTable('sales');
-    else { await imLoadAll(); }
-
+    window.showToast(`✅ 已建立 ${saved} 隻：銷售 ${savedSales}／自留 ${savedBreeders}`);
   } catch(e) {
-    resultEl.innerHTML = `<div style="color:#8b0000;font-size:12px">❌ 儲存失敗：${e.message}</div>`;
+    resultEl.innerHTML = `<div style="color:#8b0000;font-size:12px">❌ 儲存失敗：已成功 ${saved} 筆後發生錯誤。${e.message}</div>`;
     window.showToast('❌ 儲存失敗：'+e.message);
     console.error(e);
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 依各隻去向存入系統'; }
   }
 };
 
@@ -10485,6 +11835,7 @@ const origShowPage = window.showPage;
 window.showPage = (page, btn) => {
   origShowPage(page, btn);
   if (window.innerWidth <= 768) closeSidebar();
+  if (page === 'im-data-center') imLoadDataCenterPage();
   if (page === 'im-dashboard') imRenderDashboard();
 };
 
@@ -10977,6 +12328,73 @@ window.loadWebsiteTraffic=async function(){
   rank(data.pages,'traffic-pages-list','尚無頁面資料');rank(data.clicks,'traffic-clicks-list','尚無點擊資料');status.textContent='更新時間：'+new Date().toLocaleString('zh-TW')+'｜Firebase 直接統計';
  }catch(e){console.error('[traffic]',e);status.textContent='流量資料載入失敗：'+e.message;if(typeof showToast==='function')showToast('❌ 官網流量載入失敗')}
 };
+</script>
+
+
+
+<script>
+// ── v35 手機 UX：不改資料邏輯，只代理既有 sidebar / filter 操作 ───────────
+window.addEventListener('DOMContentLoaded', () => {
+  const findSidebarButton = (page) => {
+    const buttons = Array.from(document.querySelectorAll('#sidebar .sidebar-btn'));
+    return buttons.find(btn => (btn.getAttribute('onclick') || '').includes(`showPage('${page}'`));
+  };
+
+  window.mobileAdminGo = (page) => {
+    const btn = findSidebarButton(page);
+    if (btn) {
+      btn.click(); // 走原本完整載入流程，避免手機版另做一套資料邏輯
+    } else if (typeof window.showPage === 'function') {
+      window.showPage(page, null);
+    }
+    syncMobileDock(page);
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+
+  window.mobileFilterSnakes = (filter) => {
+    const btn = document.querySelector(`#sidebar [data-snake-filter="${filter}"]`);
+    if (btn) btn.click();
+    else if (typeof window.filterSnakes === 'function') window.filterSnakes(filter);
+    syncMobileFilter(filter);
+  };
+
+  const syncMobileDock = (page) => {
+    const groups = {
+      'list':'list', 'add':'add', 'im-data-center':'im-data-center', 'im-sales':'im-sales'
+    };
+    const active = groups[page] || '';
+    document.querySelectorAll('#mobile-bottom-nav [data-mobile-page]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mobilePage === active);
+    });
+  };
+  window.syncMobileDock = syncMobileDock;
+
+  const syncMobileFilter = (filter) => {
+    document.querySelectorAll('#mobile-snake-filters [data-mobile-filter]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mobileFilter === filter);
+    });
+  };
+  window.syncMobileFilter = syncMobileFilter;
+
+  // 監看既有頁面切換，讓底部列永遠跟 sidebar 同步。
+  const content = document.querySelector('.content');
+  if (content) {
+    const observer = new MutationObserver(() => {
+      const activePage = document.querySelector('.page.active');
+      if (activePage?.id?.startsWith('page-')) syncMobileDock(activePage.id.slice(5));
+    });
+    observer.observe(content, {subtree:true, attributes:true, attributeFilter:['class']});
+  }
+
+  // 監看 sidebar 的快速篩選 active 狀態。
+  document.querySelectorAll('#sidebar [data-snake-filter]').forEach(btn => {
+    btn.addEventListener('click', () => syncMobileFilter(btn.dataset.snakeFilter || 'all'));
+  });
+
+  const activePage = document.querySelector('.page.active');
+  if (activePage?.id?.startsWith('page-')) syncMobileDock(activePage.id.slice(5));
+  syncMobileFilter(typeof currentFilter !== 'undefined' ? currentFilter : 'all');
+});
 </script>
 
 </body>
