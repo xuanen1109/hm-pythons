@@ -2697,6 +2697,257 @@ body{background:#fff !important;}
 .species-card:hover .species-art img{opacity:1 !important;}
 </style>
 
+
+<style id="hm-mobile-header-fix-v18">
+/* v18: hard reset for the public mobile header/navigation.  Earlier theme layers
+   had conflicting mobile rules that made the navigation row permanently visible
+   and stretched the header. */
+@media (max-width: 900px){
+  html,body{width:100% !important;max-width:100% !important;overflow-x:hidden !important;}
+
+  .navbar{
+    position:sticky !important;
+    top:0 !important;
+    z-index:5000 !important;
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    height:72px !important;
+    min-height:72px !important;
+    padding:0 max(14px,env(safe-area-inset-right)) 0 max(14px,env(safe-area-inset-left)) !important;
+    display:grid !important;
+    grid-template-columns:52px minmax(0,1fr) 52px !important;
+    grid-template-rows:72px !important;
+    align-items:center !important;
+    background:#fff !important;
+    border-bottom:1px solid #ece7e2 !important;
+    box-shadow:none !important;
+    overflow:visible !important;
+  }
+
+  .nav-logo{
+    position:static !important;
+    grid-column:2 !important;
+    grid-row:1 !important;
+    justify-self:center !important;
+    align-self:center !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    gap:0 !important;
+    width:auto !important;
+    min-width:0 !important;
+    margin:0 !important;
+    transform:none !important;
+    z-index:2 !important;
+  }
+  .nav-logo .logo-mark{
+    width:42px !important;
+    height:42px !important;
+    max-width:42px !important;
+    max-height:42px !important;
+    margin:0 !important;
+  }
+  .nav-logo .logo-text{display:none !important;}
+
+  .nav-hamburger{
+    position:static !important;
+    grid-column:1 !important;
+    grid-row:1 !important;
+    justify-self:start !important;
+    align-self:center !important;
+    display:flex !important;
+    width:44px !important;
+    height:44px !important;
+    padding:10px !important;
+    margin:0 !important;
+    border:1px solid #e5ded8 !important;
+    border-radius:10px !important;
+    background:#fff !important;
+    box-shadow:none !important;
+    z-index:5002 !important;
+    touch-action:manipulation !important;
+  }
+  .nav-hamburger span{
+    display:block !important;
+    width:22px !important;
+    height:2px !important;
+    margin:0 auto !important;
+    background:#171513 !important;
+    border-radius:2px !important;
+    pointer-events:none !important;
+  }
+
+  .nav-right{
+    position:static !important;
+    grid-column:3 !important;
+    grid-row:1 !important;
+    justify-self:end !important;
+    align-self:center !important;
+    margin:0 !important;
+    min-width:0 !important;
+    z-index:5002 !important;
+  }
+  .nav-right #auth-btn{
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    padding:0 !important;
+    margin:0 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    border:1px solid #e5ded8 !important;
+    border-radius:10px !important;
+    background:#fff !important;
+    box-shadow:none !important;
+  }
+  .nav-right #auth-btn > span{display:flex !important;align-items:center !important;justify-content:center !important;gap:0 !important;}
+  .nav-right #auth-btn svg{width:20px !important;height:20px !important;}
+  .nav-right #auth-btn .btn-label{display:none !important;}
+  #user-info{gap:5px !important;}
+  #user-info #user-avatar{width:34px !important;height:34px !important;}
+  #user-info #user-name{display:none !important;}
+  #user-info button{display:none !important;}
+
+  .nav-links{
+    position:absolute !important;
+    top:72px !important;
+    left:12px !important;
+    right:12px !important;
+    bottom:auto !important;
+    width:auto !important;
+    height:auto !important;
+    max-height:calc(100dvh - 88px) !important;
+    margin:0 !important;
+    padding:7px !important;
+    display:none !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    justify-content:flex-start !important;
+    gap:2px !important;
+    overflow:auto !important;
+    white-space:normal !important;
+    list-style:none !important;
+    background:#fff !important;
+    border:1px solid #e6dfd9 !important;
+    border-radius:12px !important;
+    box-shadow:0 14px 34px rgba(35,25,20,.13) !important;
+    z-index:5001 !important;
+  }
+  .nav-links.open{display:flex !important;}
+  .nav-links li{
+    width:100% !important;
+    min-width:0 !important;
+    flex:0 0 auto !important;
+    margin:0 !important;
+    text-align:left !important;
+  }
+  .nav-links a{
+    display:block !important;
+    width:100% !important;
+    box-sizing:border-box !important;
+    padding:13px 14px !important;
+    color:#211c19 !important;
+    font-size:14px !important;
+    font-weight:600 !important;
+    line-height:1.35 !important;
+    text-align:left !important;
+    border:0 !important;
+    border-radius:8px !important;
+    background:transparent !important;
+  }
+  .nav-links a:active{background:#f6f1ec !important;}
+
+  /* The old decorative hero is intentionally disabled on this catalog-first home. */
+  .hero,.products-section,.hm-home-intro{display:none !important;}
+
+  .species-section{
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:28px 16px 54px !important;
+    background:#fff !important;
+  }
+  .species-section .section-header{margin:0 0 18px !important;}
+  .species-top{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:12px !important;
+    margin:0 !important;
+    padding:0 0 16px !important;
+    border-bottom:1px solid #ece7e2 !important;
+  }
+  .species-top .section-h2{font-size:24px !important;line-height:1.2 !important;margin:0 !important;}
+  .species-top > a{
+    flex:0 0 auto !important;
+    padding:9px 12px !important;
+    font-size:12px !important;
+    border-radius:8px !important;
+  }
+
+  .catalog-toolbar{
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:10px !important;
+    margin:0 0 12px !important;
+    padding:0 !important;
+  }
+  .catalog-search{grid-column:1 / -1 !important;width:100% !important;min-width:0 !important;}
+  .catalog-search input{width:100% !important;box-sizing:border-box !important;}
+  .catalog-count{grid-column:1 / -1 !important;order:2 !important;margin:0 !important;}
+  .catalog-toolbar select{width:100% !important;min-width:0 !important;box-sizing:border-box !important;}
+
+  .catalog-sidebar{width:100% !important;max-width:100% !important;margin:0 0 14px !important;overflow:hidden !important;}
+  #species-tabs{
+    width:100% !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    gap:8px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    margin:0 !important;
+    padding:2px 1px 8px !important;
+    border:0 !important;
+    background:transparent !important;
+    -webkit-overflow-scrolling:touch !important;
+    scrollbar-width:none !important;
+  }
+  #species-tabs::-webkit-scrollbar{display:none !important;}
+  #species-tabs .species-tab{
+    flex:0 0 auto !important;
+    min-width:auto !important;
+    padding:10px 15px !important;
+    font-size:12px !important;
+    white-space:nowrap !important;
+  }
+
+  .catalog-main,.species-grid{width:100% !important;max-width:100% !important;min-width:0 !important;}
+  .species-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:16px 10px !important;}
+  .species-card{min-width:0 !important;width:100% !important;}
+
+  .social-float{
+    right:max(10px,env(safe-area-inset-right)) !important;
+    gap:8px !important;
+    z-index:3000 !important;
+  }
+  .social-float-link{width:40px !important;height:40px !important;}
+}
+
+@media (max-width: 420px){
+  .navbar{grid-template-columns:48px minmax(0,1fr) 48px !important;padding-left:10px !important;padding-right:10px !important;}
+  .nav-hamburger,.nav-right #auth-btn{width:42px !important;height:42px !important;min-width:42px !important;}
+  .nav-logo .logo-mark{width:40px !important;height:40px !important;max-width:40px !important;max-height:40px !important;}
+  .species-section{padding-left:12px !important;padding-right:12px !important;}
+  .species-top .section-h2{font-size:22px !important;}
+}
+</style>
+
 </head>
 <body>
 
@@ -2739,7 +2990,7 @@ body{background:#fff !important;}
     <li><a href="https://lin.ee/GhMS0B1" target="_blank" rel="noopener">聯絡</a></li>
   </ul>
 
-  <button class="nav-hamburger" id="nav-hamburger" aria-label="選單">
+  <button class="nav-hamburger" id="nav-hamburger" type="button" aria-label="選單" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
 
@@ -2978,34 +3229,43 @@ body{background:#fff !important;}
   </div>
 </section>
 
-<script type="module">
-window.toggleNav = function() {
-  const links = document.getElementById('nav-links');
-  const btn = document.getElementById('nav-hamburger');
-  links.classList.toggle('open');
-  btn.classList.toggle('open');
-}
-window.closeNav = function() {
-  document.getElementById('nav-links').classList.remove('open');
-  document.getElementById('nav-hamburger').classList.remove('open');
-}
+<script>
+(function(){
+  function getNav(){ return document.getElementById('nav-links'); }
+  function getBtn(){ return document.getElementById('nav-hamburger'); }
 
-// 漢堡按鈕事件
-document.getElementById('nav-hamburger').addEventListener('click', window.toggleNav);
+  window.toggleNav = function(ev){
+    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+    const nav=getNav(), btn=getBtn();
+    if(!nav || !btn) return;
+    const open=!nav.classList.contains('open');
+    nav.classList.toggle('open',open);
+    btn.classList.toggle('open',open);
+    btn.setAttribute('aria-expanded',open?'true':'false');
+  };
+  window.closeNav = function(){
+    const nav=getNav(), btn=getBtn();
+    if(nav) nav.classList.remove('open');
+    if(btn){ btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+  };
 
-// 點選單內連結自動關閉
-document.querySelectorAll('#nav-links a').forEach(a => {
-  a.addEventListener('click', window.closeNav);
-});
-
-// Close nav when clicking outside
-document.addEventListener('click', e => {
-  const nav = document.getElementById('nav-links');
-  const btn = document.getElementById('nav-hamburger');
-  if (nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) {
-    closeNav();
+  const btn=getBtn();
+  if(btn){
+    btn.setAttribute('aria-expanded','false');
+    btn.addEventListener('click',window.toggleNav,{passive:false});
+    btn.addEventListener('touchend',function(e){
+      /* iOS in-app browsers can swallow the synthetic click; handle touch directly. */
+      if(e.cancelable)e.preventDefault();
+      window.toggleNav(e);
+    },{passive:false});
   }
-});
+  document.querySelectorAll('#nav-links a').forEach(a=>a.addEventListener('click',window.closeNav));
+  document.addEventListener('click',function(e){
+    const nav=getNav(), button=getBtn();
+    if(nav && button && nav.classList.contains('open') && !nav.contains(e.target) && !button.contains(e.target)) window.closeNav();
+  });
+  window.addEventListener('resize',function(){ if(window.innerWidth>900) window.closeNav(); });
+})();
 </script>
 
 <script type="module">

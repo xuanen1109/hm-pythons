@@ -4518,60 +4518,78 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
 
   let editingSnakeId = null;
   let editingSnakeManaged = false;
+  let editingSnakeSaleId = '';
+  let editingSnakeCode = '';
   let editingLinkedLabelUrl = '';
   let editTags = [];
 
   function getEditLinkedLabelImageUrl(snake = {}) {
-    const code = String(snake.code || '').trim();
-    const master = code ? imDcMasterByCode(code) : null;
-    const sale = snake.imSaleId ? (IM.sales || []).find(r => String(r._id) === String(snake.imSaleId)) : null;
-    return master?.labelImageUrl || sale?.labelImageUrl || snake.labelImageUrl || '';
+    // IM / imDcMasterByCode 位於另一個 <script type="module">，
+    // 不能直接跨 module scope 呼叫；改走掛在 window 上的安全橋接函式。
+    try {
+      if (typeof window.imGetLabelImageUrlForSnake === 'function') {
+        return window.imGetLabelImageUrlForSnake(snake) || '';
+      }
+    } catch (e) {
+      console.warn('[edit] label image lookup failed', e);
+    }
+    return snake.labelImageUrl || '';
   }
 
   function refreshEditLabelImageBox(url = '') {
-    const box = document.getElementById('edit-label-image-box');
-    const img = document.getElementById('edit-label-image-preview');
-    const link = document.getElementById('edit-label-image-link');
-    const hint = document.getElementById('edit-label-image-hint');
-    if (!box || !img || !link || !hint) return;
-    if (url) {
-      box.style.display = 'block';
-      img.src = url;
-      link.href = url;
-      link.style.display = 'inline-flex';
-      hint.textContent = editingSnakeManaged
-        ? '這張標籤圖來自資料中心／銷售紀錄，可直接套用成這筆同步個體的展示照片。'
-        : '這張標籤圖已儲存在資料中心，可直接套用成這筆個體的展示照片。';
-    } else {
-      box.style.display = editingSnakeManaged ? 'block' : 'none';
-      img.removeAttribute('src');
-      link.removeAttribute('href');
-      link.style.display = 'none';
-      hint.textContent = editingSnakeManaged
-        ? '目前還沒有已儲存的標籤圖；之後到銷售紀錄產生並存到資料中心後，這裡就能直接套用。'
-        : '目前沒有已儲存的標籤圖。';
+    // 編輯視窗不再顯示額外的標籤圖資訊卡；標籤圖直接由照片區生成。
+  }
+
+  function applyEditPhotoUrl(url, mode = 'upload') {
+    const preview = document.getElementById('edit-upload-preview');
+    const placeholder = document.getElementById('edit-upload-placeholder');
+    const statusEl = document.getElementById('edit-upload-status');
+    document.getElementById('edit-img-url').value = url || '';
+    if (preview && url) {
+      preview.src = url;
+      preview.style.display = 'block';
+    } else if (preview) {
+      preview.removeAttribute('src');
+      preview.style.display = 'none';
+    }
+    if (placeholder) {
+      placeholder.textContent = url ? '🎨 點擊重新生成標籤圖' : '🎨 點擊生成標籤圖';
+    }
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.textContent = '✅ 標籤圖已更新，記得按下儲存變更';
+      setTimeout(() => { statusEl.style.display = 'none'; }, 2200);
     }
   }
+
+  window.imApplyGeneratedLabelToEdit = (url, meta = {}) => {
+    if (!url) return;
+    editingLinkedLabelUrl = url;
+    refreshEditLabelImageBox(url);
+    applyEditPhotoUrl(url, 'label');
+    if (meta?.saleDocId) editingSnakeSaleId = meta.saleDocId;
+    if (meta?.code) editingSnakeCode = meta.code;
+  };
+
+  window.openEditLabelGenerator = () => {
+    if (!editingSnakeSaleId) {
+      showToast('❌ 這筆目前沒有對應銷售紀錄，無法直接生成標籤圖');
+      return;
+    }
+    if (typeof window.imOpenPhotoLabel !== 'function') {
+      showToast('❌ 標籤圖工具尚未載入完成');
+      return;
+    }
+    window._editLabelGeneratorContext = { snakeId: editingSnakeId, saleDocId: editingSnakeSaleId, code: editingSnakeCode };
+    window.imOpenPhotoLabel(editingSnakeSaleId);
+  };
 
   window.useEditLabelImage = () => {
     if (!editingLinkedLabelUrl) {
       showToast('❌ 目前沒有可用的標籤圖');
       return;
     }
-    const preview = document.getElementById('edit-upload-preview');
-    const placeholder = document.getElementById('edit-upload-placeholder');
-    const statusEl = document.getElementById('edit-upload-status');
-    document.getElementById('edit-img-url').value = editingLinkedLabelUrl;
-    if (preview) {
-      preview.src = editingLinkedLabelUrl;
-      preview.style.display = 'block';
-    }
-    if (placeholder) placeholder.textContent = '目前使用：資料中心標籤圖';
-    if (statusEl) {
-      statusEl.style.display = 'block';
-      statusEl.textContent = '✅ 已套用標籤圖，記得按下儲存變更';
-      setTimeout(() => { statusEl.style.display = 'none'; }, 2200);
-    }
+    applyEditPhotoUrl(editingLinkedLabelUrl, 'label');
   };
 
   window.openEditModal = async (id) => {
@@ -4579,6 +4597,8 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     if (!snake) return;
     editingSnakeId = id;
     editingSnakeManaged = snake.fromIM === true || snake.dataCenterManaged === true;
+    editingSnakeSaleId = snake.imSaleId || (typeof window.imGetSaleDocIdForSnake === 'function' ? window.imGetSaleDocIdForSnake(snake) : '');
+    editingSnakeCode = snake.code || '';
     editTags = [...(snake.tags || [])];
 
     document.getElementById('edit-code').value = snake.code || '';
@@ -4613,20 +4633,14 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     if(tagWrap){tagWrap.style.pointerEvents=editingSnakeManaged?'none':'';tagWrap.style.opacity=editingSnakeManaged?'.55':'1';}
     if(tagInput)tagInput.disabled=editingSnakeManaged;
 
-    const preview = document.getElementById('edit-upload-preview');
-    const placeholder = document.getElementById('edit-upload-placeholder');
     if (snake.imgUrl) {
-      preview.src = snake.imgUrl;
-      preview.style.display = 'block';
-      placeholder.textContent = '點擊更換照片';
+      applyEditPhotoUrl(snake.imgUrl, 'upload');
     } else if (editingLinkedLabelUrl) {
-      preview.src = editingLinkedLabelUrl;
-      preview.style.display = 'block';
-      placeholder.textContent = '目前使用：資料中心標籤圖';
-      document.getElementById('edit-img-url').value = editingLinkedLabelUrl;
+      applyEditPhotoUrl(editingLinkedLabelUrl, 'label');
     } else {
-      preview.style.display = 'none';
-      placeholder.textContent = '點擊上傳照片';
+      const statusEl = document.getElementById('edit-upload-status');
+      if (statusEl) statusEl.style.display = 'none';
+      applyEditPhotoUrl('', 'upload');
     }
 
     refreshEditLabelImageBox(editingLinkedLabelUrl);
@@ -4635,10 +4649,14 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
   };
 
   window.closeEditModal = () => {
+    const closingId = editingSnakeId;
     document.getElementById('edit-modal-overlay').classList.remove('show');
     editingSnakeId = null;
     editingSnakeManaged = false;
+    editingSnakeSaleId = '';
+    editingSnakeCode = '';
     editingLinkedLabelUrl = '';
+    if (window._editLabelGeneratorContext?.snakeId === closingId) window._editLabelGeneratorContext = null;
   };
 
   window.handleEditImageUpload = async (input) => {
@@ -6508,28 +6526,13 @@ window.showToast = function showToast(msg) {
     <div class="modal-title">編輯個體</div>
     <div id="edit-data-center-note" style="display:none;margin-bottom:12px;padding:9px 11px;background:#f7f2e9;border:1px solid rgba(181,115,58,.22);border-radius:7px;font-size:10px;line-height:1.6;color:var(--muted)">🔒 這筆由資料中心管理。個體主資料與原價不可在官網編輯器修改；請回資料中心／銷售紀錄修改。這裡只保留照片、特價、公開狀態、競標與 SOTA 展示設定。</div>
     <div style="margin-bottom:16px;">
-      <!-- Image upload -->
-      <label class="form-label">照片</label>
-      <div id="edit-upload-area" onclick="document.getElementById('edit-img-input').click()" style="border:2px dashed rgba(181,115,58,0.3);border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:var(--cream);margin-bottom:12px;">
-        <img id="edit-upload-preview" style="max-height:160px;object-fit:cover;border-radius:4px;display:none;margin:0 auto 8px;">
-        <div id="edit-upload-placeholder" style="font-size:13px;color:var(--muted);">點擊上傳/更換照片</div>
+      <label class="form-label">照片／標籤圖</label>
+      <div id="edit-label-generator-entry" onclick="openEditLabelGenerator()" style="border:2px dashed rgba(181,115,58,0.3);border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:var(--cream);margin-bottom:12px;">
+        <img id="edit-upload-preview" style="max-height:180px;max-width:100%;object-fit:contain;border-radius:6px;display:none;margin:0 auto 10px;">
+        <div id="edit-upload-placeholder" style="font-size:13px;color:var(--muted);">🎨 點擊生成標籤圖</div>
         <div id="edit-upload-status" style="font-size:12px;color:var(--copper);margin-top:6px;display:none;"></div>
       </div>
-      <input type="file" id="edit-img-input" accept="image/*" style="display:none" onchange="handleEditImageUpload(this)">
       <input type="hidden" id="edit-img-url">
-      <div id="edit-label-image-box" style="display:none;border:1px solid rgba(139,74,181,.22);background:#faf6ff;border-radius:8px;padding:12px 12px 10px;margin-top:10px;">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <img id="edit-label-image-preview" src="" alt="標籤圖預覽" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid rgba(139,74,181,.18);background:white;">
-          <div style="flex:1;min-width:180px;">
-            <div style="font-size:11px;font-weight:700;color:#8b4ab5;">🎨 可直接使用資料中心標籤圖</div>
-            <div id="edit-label-image-hint" style="font-size:10px;color:var(--muted);line-height:1.6;margin-top:3px;">代售／同步個體可直接把已儲存的標籤圖設成照片，不用重新下載再上傳。</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button type="button" class="action-btn" style="flex:none;color:#8b4ab5;border-color:rgba(139,74,181,.28)" onclick="useEditLabelImage()">使用標籤圖</button>
-            <a id="edit-label-image-link" class="action-btn" href="#" target="_blank" style="flex:none;text-decoration:none;color:#8b4ab5;border-color:rgba(139,74,181,.2);display:none;">查看</a>
-          </div>
-        </div>
-      </div>
     </div>
     <div class="form-row" style="margin-bottom:12px;">
       <div>
@@ -6741,6 +6744,24 @@ function imDcMasterByCode(code=''){
   if(!key)return null;
   return (IM.animals||[]).find(a=>a.inBreederList===true&&imDcCodeOf(a).toLowerCase()===key)||null;
 }
+
+// 提供給第一個 module 的「所有個體 → 編輯」視窗使用。
+// 透過 window 橋接，避免 ES module 彼此 scope 隔離造成 ReferenceError。
+window.imGetLabelImageUrlForSnake = (snake = {}) => {
+  const code = String(snake?.code || '').trim();
+  const master = code ? imDcMasterByCode(code) : null;
+  const sale = snake?.imSaleId
+    ? (IM.sales || []).find(r => String(r._id) === String(snake.imSaleId))
+    : (IM.sales || []).find(r => String(r.saleId || '').trim() === code);
+  return master?.labelImageUrl || sale?.labelImageUrl || snake?.labelImageUrl || '';
+};
+window.imGetSaleDocIdForSnake = (snake = {}) => {
+  const direct = String(snake?.imSaleId || '').trim();
+  if (direct) return direct;
+  const code = String(snake?.code || '').trim();
+  if (!code) return '';
+  return ((IM.sales || []).find(r => String(r.saleId || '').trim() === code)?._id) || '';
+};
 function imSiteProjectionBySaleId(id=''){
   return (IM.siteSnakes||[]).find(s=>String(s.imSaleId||'')===String(id))||null;
 }
@@ -9057,7 +9078,7 @@ window.imOpenPhotoLabel = (id) => {
   document.getElementById('im-modal-body').innerHTML = `
     <div class="im-modal-title">🎨 生成標籤圖</div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px">
-      上傳蛇的原始照片，系統自動取色並合成編號、基因標籤。完成後可直接存進資料中心，不必先下載再上傳。
+      上傳蛇的原始照片，或直接用手機拍照，系統會自動取色並合成編號、基因標籤。完成後可直接存進資料中心，不必先下載再上傳。
     </p>
     ${(imDcMasterByCode(r.saleId||'')?.labelImageUrl || r.labelImageUrl)?`
       <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:#f8f5f0;border:1px solid rgba(181,115,58,.18);border-radius:7px;margin-bottom:12px">
@@ -9065,7 +9086,7 @@ window.imOpenPhotoLabel = (id) => {
         <div style="flex:1"><div style="font-size:11px;font-weight:700;color:var(--brown)">✅ 資料中心已有標籤圖</div><div style="font-size:10px;color:var(--muted);margin-top:3px">重新產生後按「覆蓋資料中心」即可更新；官網鏡像也會自動使用最新版。</div></div>
         <a class="action-btn" href="${esc(imDcMasterByCode(r.saleId||'')?.labelImageUrl || r.labelImageUrl)}" target="_blank" style="text-decoration:none">查看</a>
       </div>`:''}
-    <div style="background:var(--cream);border:2px dashed rgba(181,115,58,0.3);border-radius:8px;padding:24px;text-align:center;cursor:pointer;margin-bottom:14px" onclick="document.getElementById('label-img-input').click()">
+    <div style="background:var(--cream);border:2px dashed rgba(181,115,58,0.3);border-radius:8px;padding:24px;text-align:center;cursor:pointer;margin-bottom:10px" onclick="document.getElementById('label-img-input').click()">
       <div id="label-upload-placeholder">
         <div style="font-size:28px;margin-bottom:6px">📷</div>
         <div style="font-size:13px;color:var(--muted)">點擊選擇照片</div>
@@ -9073,7 +9094,12 @@ window.imOpenPhotoLabel = (id) => {
       </div>
       <img id="label-preview" style="max-width:100%;max-height:200px;border-radius:4px;display:none">
     </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button type="button" class="action-btn" style="flex:1;min-width:150px" onclick="document.getElementById('label-img-input').click()">🖼️ 從相簿選擇</button>
+      <button type="button" class="action-btn" style="flex:1;min-width:150px" onclick="document.getElementById('label-img-camera-input').click()">📷 直接拍照</button>
+    </div>
     <input type="file" id="label-img-input" accept="image/*" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">
+    <input type="file" id="label-img-camera-input" accept="image/*" capture="environment" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">
 
     <div class="form-row" style="margin-bottom:12px">
       <div class="form-group">
@@ -9421,6 +9447,13 @@ window.labelSaveToDataCenter = async (saleDocId, code) => {
     if(typeof imRenderDataCenter==='function') imRenderDataCenter();
     if(document.getElementById('page-im-sales')?.classList.contains('active')) imRenderTable('sales');
     window._imLabelImageUrl=url;
+    if (window._editLabelGeneratorContext && String(window._editLabelGeneratorContext.saleDocId||'') === String(saleDocId||'') && typeof window.imApplyGeneratedLabelToEdit === 'function') {
+      try {
+        window.imApplyGeneratedLabelToEdit(url, { saleDocId, code });
+      } catch (syncErr) {
+        console.warn('[labelSaveToDataCenter] edit modal sync failed', syncErr);
+      }
+    }
     window.showToast('✅ 標籤圖已存到資料中心；個體照片也可直接使用這張圖');
     imCloseModal();
   } catch(e) {
