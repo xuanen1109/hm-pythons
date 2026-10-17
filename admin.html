@@ -1964,9 +1964,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           <div style="font-size:12px;font-weight:700;color:var(--brown);margin-bottom:10px">🏦 公基金帳戶</div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
             <div style="font-size:12px;line-height:1.9;color:var(--brown)">
-              <div><b>台新銀行｜敦南分行</b></div>
-              <div>銀行代碼：<b>812</b></div>
-              <div>帳號：<b style="letter-spacing:.5px">28881811957954</b></div>
+              <div><b>hm.python公基金</b></div>
+              <div>友感帳戶：<b style="letter-spacing:.5px">116-0004-68035</b></div>
             </div>
             <button type="button" class="submit-btn" style="width:auto;padding:8px 16px" onclick="imCopyFundAccount()">複製帳號</button>
           </div>
@@ -4519,7 +4518,61 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
 
   let editingSnakeId = null;
   let editingSnakeManaged = false;
+  let editingLinkedLabelUrl = '';
   let editTags = [];
+
+  function getEditLinkedLabelImageUrl(snake = {}) {
+    const code = String(snake.code || '').trim();
+    const master = code ? imDcMasterByCode(code) : null;
+    const sale = snake.imSaleId ? (IM.sales || []).find(r => String(r._id) === String(snake.imSaleId)) : null;
+    return master?.labelImageUrl || sale?.labelImageUrl || snake.labelImageUrl || '';
+  }
+
+  function refreshEditLabelImageBox(url = '') {
+    const box = document.getElementById('edit-label-image-box');
+    const img = document.getElementById('edit-label-image-preview');
+    const link = document.getElementById('edit-label-image-link');
+    const hint = document.getElementById('edit-label-image-hint');
+    if (!box || !img || !link || !hint) return;
+    if (url) {
+      box.style.display = 'block';
+      img.src = url;
+      link.href = url;
+      link.style.display = 'inline-flex';
+      hint.textContent = editingSnakeManaged
+        ? '這張標籤圖來自資料中心／銷售紀錄，可直接套用成這筆同步個體的展示照片。'
+        : '這張標籤圖已儲存在資料中心，可直接套用成這筆個體的展示照片。';
+    } else {
+      box.style.display = editingSnakeManaged ? 'block' : 'none';
+      img.removeAttribute('src');
+      link.removeAttribute('href');
+      link.style.display = 'none';
+      hint.textContent = editingSnakeManaged
+        ? '目前還沒有已儲存的標籤圖；之後到銷售紀錄產生並存到資料中心後，這裡就能直接套用。'
+        : '目前沒有已儲存的標籤圖。';
+    }
+  }
+
+  window.useEditLabelImage = () => {
+    if (!editingLinkedLabelUrl) {
+      showToast('❌ 目前沒有可用的標籤圖');
+      return;
+    }
+    const preview = document.getElementById('edit-upload-preview');
+    const placeholder = document.getElementById('edit-upload-placeholder');
+    const statusEl = document.getElementById('edit-upload-status');
+    document.getElementById('edit-img-url').value = editingLinkedLabelUrl;
+    if (preview) {
+      preview.src = editingLinkedLabelUrl;
+      preview.style.display = 'block';
+    }
+    if (placeholder) placeholder.textContent = '目前使用：資料中心標籤圖';
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.textContent = '✅ 已套用標籤圖，記得按下儲存變更';
+      setTimeout(() => { statusEl.style.display = 'none'; }, 2200);
+    }
+  };
 
   window.openEditModal = async (id) => {
     const snake = allSnakes.find(s => s.id === id);
@@ -4548,6 +4601,7 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-img-url').value = snake.imgUrl || '';
     document.getElementById('edit-show-sota').checked = snake.showOnSota === true;
     document.getElementById('edit-sota-description').value = snake.sotaDescription || '';
+    editingLinkedLabelUrl = getEditLinkedLabelImageUrl(snake);
 
     const dcNote=document.getElementById('edit-data-center-note');
     if(dcNote)dcNote.style.display=editingSnakeManaged?'block':'none';
@@ -4565,11 +4619,17 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
       preview.src = snake.imgUrl;
       preview.style.display = 'block';
       placeholder.textContent = '點擊更換照片';
+    } else if (editingLinkedLabelUrl) {
+      preview.src = editingLinkedLabelUrl;
+      preview.style.display = 'block';
+      placeholder.textContent = '目前使用：資料中心標籤圖';
+      document.getElementById('edit-img-url').value = editingLinkedLabelUrl;
     } else {
       preview.style.display = 'none';
       placeholder.textContent = '點擊上傳照片';
     }
 
+    refreshEditLabelImageBox(editingLinkedLabelUrl);
     renderEditTags();
     document.getElementById('edit-modal-overlay').classList.add('show');
   };
@@ -4578,6 +4638,7 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-modal-overlay').classList.remove('show');
     editingSnakeId = null;
     editingSnakeManaged = false;
+    editingLinkedLabelUrl = '';
   };
 
   window.handleEditImageUpload = async (input) => {
@@ -6456,6 +6517,19 @@ window.showToast = function showToast(msg) {
       </div>
       <input type="file" id="edit-img-input" accept="image/*" style="display:none" onchange="handleEditImageUpload(this)">
       <input type="hidden" id="edit-img-url">
+      <div id="edit-label-image-box" style="display:none;border:1px solid rgba(139,74,181,.22);background:#faf6ff;border-radius:8px;padding:12px 12px 10px;margin-top:10px;">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <img id="edit-label-image-preview" src="" alt="標籤圖預覽" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid rgba(139,74,181,.18);background:white;">
+          <div style="flex:1;min-width:180px;">
+            <div style="font-size:11px;font-weight:700;color:#8b4ab5;">🎨 可直接使用資料中心標籤圖</div>
+            <div id="edit-label-image-hint" style="font-size:10px;color:var(--muted);line-height:1.6;margin-top:3px;">代售／同步個體可直接把已儲存的標籤圖設成照片，不用重新下載再上傳。</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="action-btn" style="flex:none;color:#8b4ab5;border-color:rgba(139,74,181,.28)" onclick="useEditLabelImage()">使用標籤圖</button>
+            <a id="edit-label-image-link" class="action-btn" href="#" target="_blank" style="flex:none;text-decoration:none;color:#8b4ab5;border-color:rgba(139,74,181,.2);display:none;">查看</a>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="form-row" style="margin-bottom:12px;">
       <div>
@@ -6958,7 +7032,7 @@ function saleStatusSpan(s) {
   return `<span class="im-tag im-tag-sold">${s||''}</span>`;
 }
 window.imCopyFundAccount = async () => {
-  const account = '28881811957954';
+  const account = '116-0004-68035';
   try {
     await navigator.clipboard.writeText(account);
     if (typeof showToast === 'function') showToast('✅ 已複製公基金帳號');
@@ -6974,7 +7048,7 @@ window.imCopyFundAccount = async () => {
       ta.remove();
       if (typeof showToast === 'function') showToast('✅ 已複製公基金帳號');
     } catch (_) {
-      alert('公基金帳號：' + account);
+      alert('公基金友感帳戶：' + account);
     }
   }
 };
