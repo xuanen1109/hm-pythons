@@ -1200,9 +1200,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   <!-- 手機快速操作列：只在 768px 以下顯示 -->
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="手機快速導覽">
     <button type="button" data-mobile-page="list" class="active" onclick="mobileAdminGo('list')"><span class="mb-icon">🐍</span><span>個體</span></button>
-    <button type="button" data-mobile-page="im-data-center" onclick="mobileAdminGo('im-data-center')"><span class="mb-icon">🗄️</span><span>資料中心</span></button>
+    <button type="button" data-mobile-page="im-breeding" onclick="mobileAdminGo('im-breeding')"><span class="mb-icon">🐍</span><span>交配紀錄</span></button>
     <button type="button" data-mobile-page="im-sales" onclick="mobileAdminGo('im-sales')"><span class="mb-icon">💰</span><span>銷售</span></button>
-    <button type="button" data-mobile-page="add" onclick="mobileAdminGo('add')"><span class="mb-icon">＋</span><span>新增</span></button>
+    <button type="button" data-mobile-page="im-hatch" onclick="mobileAdminGo('im-hatch')"><span class="mb-icon">🥚</span><span>新蛇出蛋登記</span></button>
     <button type="button" data-mobile-page="menu" onclick="toggleSidebar()"><span class="mb-icon">☰</span><span>選單</span></button>
   </nav>
 
@@ -8156,7 +8156,42 @@ window.imPrintCombinedReport = () => {
     .right{text-align:right}
     .muted{color:#7A6A5A}
     @media print{button{display:none}}
-  </style></head><body>
+  </style>
+<style id="mobile-polish-v46">
+@media (max-width:768px){
+  /* mobile dock: consistent finger targets and allow long labels */
+  .mobile-bottom-nav{min-height:70px;padding-top:7px}
+  .mobile-bottom-nav button{min-height:54px;font-size:9px;line-height:1.15;padding:5px 1px}
+  .mobile-bottom-nav button span:last-child{display:block;max-width:100%;white-space:normal;text-align:center}
+  .mobile-bottom-nav .mb-icon{font-size:20px;margin-bottom:1px}
+
+  /* all-individual cards */
+  .snake-grid{gap:16px}
+  .snake-card{overflow:hidden;border-radius:15px}
+  .snake-card-img{width:100%;aspect-ratio:4/3;object-fit:cover;background:#efebe5}
+  .snake-card-body{padding:15px 14px 16px}
+  .snake-card-name{font-size:17px;line-height:1.42}
+  .snake-card-code{font-size:11px;line-height:1.45}
+  .snake-card-tags{margin-top:2px;margin-bottom:12px}
+  .card-actions{gap:9px}
+  .card-actions .action-btn,.card-actions button{min-height:46px;font-size:13px;border-radius:11px}
+
+  /* common top actions */
+  #page-list > div:first-child > div:last-child .submit-btn,
+  #page-im-data-center > div:first-child > div:last-child > button{min-height:48px;border-radius:12px;font-size:12px!important}
+
+  /* label camera becomes an app-like full-screen sheet */
+  #label-camera-overlay{padding:0!important;background:#000!important;align-items:stretch!important;justify-content:stretch!important}
+  #label-camera-overlay > div{width:100%!important;max-width:none!important;height:100dvh!important;border-radius:0!important;padding:calc(12px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom))!important;display:flex;flex-direction:column;box-shadow:none!important}
+  #label-camera-overlay #label-camera-video{display:block}
+  #label-camera-overlay [style*="aspect-ratio:1/1"]{margin:auto 0;flex:0 0 auto;width:100%!important;aspect-ratio:1/1!important;border-radius:16px!important}
+  #label-camera-exposure-wrap{margin-top:14px!important;padding:0 4px}
+  #label-camera-exposure{height:32px}
+  #label-camera-overlay > div > div:last-child{margin-top:auto!important;padding-top:14px}
+  #label-camera-overlay > div > div:last-child button{min-height:50px;border-radius:13px;font-size:14px;font-weight:800}
+}
+</style>
+</head><body>
   <h2>hm.pythons 鼠量訂購單</h2>
   <div class="sub">日期：${today} &nbsp;·&nbsp; □ 宣恩 &nbsp;·&nbsp; ○ 有剛 &nbsp;·&nbsp; △ Neil</div>
   <table>
@@ -9078,7 +9113,7 @@ window.imOpenPhotoLabel = (id) => {
   document.getElementById('im-modal-body').innerHTML = `
     <div class="im-modal-title">🎨 生成標籤圖</div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px">
-      上傳蛇的原始照片，或直接用手機拍照，系統會自動取色並合成編號、基因標籤。完成後可直接存進資料中心，不必先下載再上傳。
+      上傳蛇的原始照片，或直接用手機正方形拍照，系統會自動取色並合成編號、基因標籤。完成後可直接存進資料中心，不必先下載再上傳。
     </p>
     ${(imDcMasterByCode(r.saleId||'')?.labelImageUrl || r.labelImageUrl)?`
       <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:#f8f5f0;border:1px solid rgba(181,115,58,.18);border-radius:7px;margin-bottom:12px">
@@ -9096,10 +9131,34 @@ window.imOpenPhotoLabel = (id) => {
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
       <button type="button" class="action-btn" style="flex:1;min-width:150px" onclick="document.getElementById('label-img-input').click()">🖼️ 從相簿選擇</button>
-      <button type="button" class="action-btn" style="flex:1;min-width:150px" onclick="document.getElementById('label-img-camera-input').click()">📷 直接拍照</button>
+      <button type="button" class="action-btn" style="flex:1;min-width:150px" onclick="labelOpenCamera('${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">📷 直接拍照</button>
     </div>
     <input type="file" id="label-img-input" accept="image/*" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">
     <input type="file" id="label-img-camera-input" accept="image/*" capture="environment" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">
+    <div id="label-camera-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:3000;align-items:center;justify-content:center;padding:18px">
+      <div style="width:min(92vw,520px);background:#111;border-radius:18px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.35)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#fff">
+          <div style="font-size:18px;font-weight:800">正方形拍照</div>
+          <button type="button" onclick="labelCloseCamera()" style="background:rgba(255,255,255,.12);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;cursor:pointer">×</button>
+        </div>
+        <div style="color:rgba(255,255,255,.78);font-size:12px;line-height:1.6;margin-bottom:10px">會以正方形畫面拍攝並直接做成標籤圖；若裝置支援，也可調整曝光。</div>
+        <div style="position:relative;width:100%;aspect-ratio:1/1;background:#000;border-radius:16px;overflow:hidden">
+          <video id="label-camera-video" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover"></video>
+          <div style="position:absolute;inset:0;border:2px solid rgba(255,255,255,.65);border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.08) inset;pointer-events:none"></div>
+        </div>
+        <div id="label-camera-exposure-wrap" style="display:none;margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12px;margin-bottom:6px">
+            <span>曝光</span><span id="label-camera-exposure-value">0</span>
+          </div>
+          <input type="range" id="label-camera-exposure" min="-2" max="2" step="0.1" value="0" oninput="labelUpdateExposure(this.value)" style="width:100%">
+        </div>
+        <div id="label-camera-exposure-note" style="display:none;margin-top:10px;color:rgba(255,255,255,.6);font-size:11px">此裝置瀏覽器不支援手動曝光，請直接調整拍攝角度或光線。</div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button type="button" class="action-btn" style="flex:1;background:#fff;color:#222;border:none" onclick="labelCloseCamera()">取消</button>
+          <button type="button" class="submit-btn" style="flex:1;width:auto;padding:12px 16px" onclick="labelCaptureCamera()">使用照片</button>
+        </div>
+      </div>
+    </div>
 
     <div class="form-row" style="margin-bottom:12px">
       <div class="form-group">
@@ -9195,10 +9254,13 @@ window.labelPickColor = (e) => {
 };
 
 let _labelImg = null;
+let _labelCameraStream = null;
+let _labelCameraTrack = null;
+let _labelCameraMeta = { code:'', gene:'', sex:'' };
 
-window.labelLoadImage = (input, code, gene, sex) => {
-  const file = input.files[0];
+window.labelLoadFile = (file, code, gene, sex) => {
   if (!file) return;
+  _labelCameraMeta = { code, gene, sex };
   _labelStripColor = null; // 重置手動取色
   const hint = document.getElementById('label-pick-hint');
   if (hint) hint.innerHTML = '（點擊照片取色→右邊色條）';
@@ -9218,6 +9280,113 @@ window.labelLoadImage = (input, code, gene, sex) => {
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+};
+
+window.labelLoadImage = (input, code, gene, sex) => {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  labelLoadFile(file, code, gene, sex);
+  input.value = '';
+};
+
+window.labelOpenCamera = async (code, gene, sex) => {
+  const overlay = document.getElementById('label-camera-overlay');
+  const video = document.getElementById('label-camera-video');
+  const wrap = document.getElementById('label-camera-exposure-wrap');
+  const note = document.getElementById('label-camera-exposure-note');
+  const slider = document.getElementById('label-camera-exposure');
+  const valueEl = document.getElementById('label-camera-exposure-value');
+  if (!overlay || !video) return;
+  _labelCameraMeta = { code, gene, sex };
+  overlay.style.display = 'flex';
+  wrap.style.display = 'none';
+  note.style.display = 'none';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1600 },
+        height: { ideal: 1600 },
+        aspectRatio: { ideal: 1 }
+      }
+    });
+    _labelCameraStream = stream;
+    _labelCameraTrack = stream.getVideoTracks()[0] || null;
+    video.srcObject = stream;
+    await video.play().catch(() => {});
+    if (_labelCameraTrack && typeof _labelCameraTrack.getCapabilities === 'function') {
+      const caps = _labelCameraTrack.getCapabilities();
+      const exp = caps?.exposureCompensation;
+      if (exp) {
+        const min = Number(exp.min ?? -2);
+        const max = Number(exp.max ?? 2);
+        const step = Number(exp.step ?? 0.1);
+        slider.min = String(min);
+        slider.max = String(max);
+        slider.step = String(step);
+        slider.value = '0';
+        valueEl.textContent = '0';
+        wrap.style.display = 'block';
+      } else {
+        note.style.display = 'block';
+      }
+    } else {
+      note.style.display = 'block';
+    }
+  } catch (err) {
+    console.error('[labelOpenCamera]', err);
+    overlay.style.display = 'none';
+    showToast('❌ 無法開啟相機，請確認相機權限或改用相簿選擇');
+  }
+};
+
+window.labelUpdateExposure = async (value) => {
+  const valueEl = document.getElementById('label-camera-exposure-value');
+  if (valueEl) valueEl.textContent = String(value);
+  if (!_labelCameraTrack || typeof _labelCameraTrack.applyConstraints !== 'function') return;
+  try {
+    await _labelCameraTrack.applyConstraints({ advanced: [{ exposureCompensation: Number(value) }] });
+  } catch (err) {
+    console.warn('[labelUpdateExposure]', err);
+  }
+};
+
+window.labelCloseCamera = () => {
+  const overlay = document.getElementById('label-camera-overlay');
+  const video = document.getElementById('label-camera-video');
+  if (_labelCameraStream) {
+    _labelCameraStream.getTracks().forEach(t => t.stop());
+  }
+  _labelCameraStream = null;
+  _labelCameraTrack = null;
+  if (video) video.srcObject = null;
+  if (overlay) overlay.style.display = 'none';
+};
+
+window.labelCaptureCamera = () => {
+  const video = document.getElementById('label-camera-video');
+  if (!video || !video.videoWidth || !video.videoHeight) {
+    showToast('❌ 相機尚未準備完成');
+    return;
+  }
+  const side = Math.min(video.videoWidth, video.videoHeight);
+  const sx = Math.max(0, Math.floor((video.videoWidth - side) / 2));
+  const sy = Math.max(0, Math.floor((video.videoHeight - side) / 2));
+  const canvas = document.createElement('canvas');
+  canvas.width = side;
+  canvas.height = side;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, sx, sy, side, side, 0, 0, side, side);
+  canvas.toBlob(blob => {
+    if (!blob) {
+      showToast('❌ 拍照失敗，請再試一次');
+      return;
+    }
+    const file = new File([blob], `label-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    labelLoadFile(file, _labelCameraMeta.code, _labelCameraMeta.gene, _labelCameraMeta.sex);
+    labelCloseCamera();
+  }, 'image/jpeg', 0.95);
 };
 
 window.labelRedraw = () => {
@@ -10370,7 +10539,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 250);
 });
-window.imCloseModal = () => { document.getElementById('im-modal-overlay').classList.remove('show'); };
+window.imCloseModal = () => { try { if (typeof labelCloseCamera === 'function') labelCloseCamera(); } catch(_e){} const overlay=document.getElementById('im-modal-overlay'); const body=document.getElementById('im-modal-body'); if(overlay) overlay.classList.remove('show'); if(body) body.innerHTML=''; };
 
 // ── PROFIT SETTLEMENT ────────────────────────────
 window.imRenderProfit = async () => {
@@ -11927,7 +12096,7 @@ window.showPage = (page, btn) => {
   }
 };
 
-window.imCloseModal = () => { document.getElementById('im-modal-overlay').classList.remove('show'); };
+window.imCloseModal = () => { try { if (typeof labelCloseCamera === 'function') labelCloseCamera(); } catch(_e){} const overlay=document.getElementById('im-modal-overlay'); const body=document.getElementById('im-modal-body'); if(overlay) overlay.classList.remove('show'); if(body) body.innerHTML=''; };
 window.toggleSidebar = () => {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-overlay').classList.toggle('show');
@@ -12467,7 +12636,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const syncMobileDock = (page) => {
     const groups = {
-      'list':'list', 'add':'add', 'im-data-center':'im-data-center', 'im-sales':'im-sales'
+      'list':'list', 'im-breeding':'im-breeding', 'im-sales':'im-sales', 'im-hatch':'im-hatch'
     };
     const active = groups[page] || '';
     document.querySelectorAll('#mobile-bottom-nav [data-mobile-page]').forEach(btn => {
