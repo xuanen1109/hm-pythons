@@ -3514,7 +3514,7 @@ async function loadHomeFeatureImage() {
   }
 }
 
-const AUCTION_URL = 'https://www.auc-tion.com/auctions/iKRuQgSc7aoHukOdFFUV';
+const AUCTION_URL = 'https://www.auc-tion.com/users/e0pgQhNyizaq9SrTgFSSe4AFDCm1'; // 未填個別競標網址時，預設連到賣家頁面
 const SPECIES_LABELS = {ball_python:'球蟒',boa:'紅尾蚺',leopard_gecko:'豹紋守宮',corn_snake:'玉米蛇',king_snake:'王蛇',other:'其他'};
 const SPECIES_ORDER = {ball_python:0,boa:1,leopard_gecko:2,corn_snake:3,king_snake:4,other:5};
 const STATUS_ORDER = {sale:0,auction:1,sold:2};
@@ -3579,11 +3579,28 @@ const SPECIAL_SOLD_PLACEHOLDER_LIGHT = `<div class="auction-placeholder-card" st
   <div style="font-size:12px;color:rgba(74,48,28,0.4);margin-top:6px;letter-spacing:0.5px;">下次不要猶豫</div>
 </div>`;
 
+/* ── Upcoming auctions: rolling 7 days, Taiwan time ─────── */
+const AUCTION_SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+function auctionEndTimestamp(raw) {
+  if (!raw) return NaN;
+  if (typeof raw?.toMillis === 'function') return raw.toMillis();
+  if (typeof raw?.seconds === 'number') return raw.seconds*1000;
+  const s = String(raw).trim();
+  const taiwanDate = /^\d{4}-\d\d-\d\d[T ]\d\d:\d\d(?::\d\d)?$/.test(s)
+    ? s.replace(' ','T')+'+08:00' : s;
+  return new Date(taiwanDate).getTime();
+}
+function auctionIsVisible(s, now=Date.now()) {
+  if(s.status !== 'auction' || s.publicVisible===false || s.species!=='ball_python') return false;
+  const end=auctionEndTimestamp(s.auctionEnd);
+  return Number.isFinite(end) && end>now && end<=now+AUCTION_SEVEN_DAYS;
+}
 /* ── Countdown helper ─────────────────────────────── */
 function startCountdown(el, endTimeStr) {
   function tick() {
+    if (!el.isConnected) return; // 已重新渲染的商品卡片停止倒數，避免重複計時
     const now = Date.now();
-    const end = new Date(endTimeStr).getTime();
+    const end = auctionEndTimestamp(endTimeStr);
     const diff = end - now;
     if (diff <= 0) {
       el.textContent = '競標已結束';
@@ -3724,10 +3741,8 @@ function makeCard(s, num) {
   if (s.status === 'auction') {
     const countdownId = `cd-${s.id}`;
     const year = s.birth ? (String(s.birth).match(/\d{4}/)?.[0] || '') : '';
-    const auctionHref = s.auctionUrl || AUCTION_URL;
-    const countdownHtml = s.auctionEnd
-      ? `<div class="auction-mini-countdown" id="${countdownId}" data-end="${s.auctionEnd}">計算中...</div>`
-      : `<div class="auction-mini-countdown">競標進行中</div>`;
+    const auctionHref = String(s.auctionUrl || '').trim() || AUCTION_URL;
+    const countdownHtml = `<div class="auction-mini-countdown" id="${countdownId}" data-end="${s.auctionEnd}">計算中...</div>`;
 
     return `<a href="${auctionHref}" target="_blank" rel="noopener" class="species-card auction-product-card">
       <div class="auction-mini-badge">競標中</div>
@@ -4067,30 +4082,34 @@ function renderSaleGrid(snakes, speciesFilter) {
 
   renderSalePagination(totalPages);
 }
-function renderAuctionGrid(snakes) {
+function renderAuctionGrid(snakes, force=false) {
   const grid = document.getElementById('auction-grid');
+  if (!grid) return;
+  const now = Date.now();
   const auctionSnakes = snakes
-    .filter(s => s.status === 'auction')
-    .slice()
-    .sort((a,b) => {
-      const ta = a.auctionEnd ? new Date(a.auctionEnd).getTime() : Number.MAX_SAFE_INTEGER;
-      const tb = b.auctionEnd ? new Date(b.auctionEnd).getTime() : Number.MAX_SAFE_INTEGER;
-      return ta - tb;
-    });
+    .filter(s => auctionIsVisible(s, now))
+    .sort((a,b) => auctionEndTimestamp(a.auctionEnd)-auctionEndTimestamp(b.auctionEnd));
+  const fingerprint=auctionSnakes.map(s=>[s.id,s.auctionEnd,s.imgUrl,s.nameZh,s.auctionUrl].join('|')).join(';');
+  // 只有剛好進入／離開七天區間，或資料變更時重畫，避免整頁每分鐘閃一下。
+  if (!force && grid.dataset.auctionFingerprint===fingerprint && grid.dataset.auctionReady==='1') return;
+  grid.dataset.auctionFingerprint=fingerprint;
+  grid.dataset.auctionReady='1';
 
-  if (auctionSnakes.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);font-size:14px;">目前沒有競標中的個體</div>';
+  if (!auctionSnakes.length) {
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);font-size:14px;">未來 7 天內沒有即將結標的球蟒</div>';
     return;
   }
-
-  grid.innerHTML = auctionSnakes.map((s,i) => makeCard(s, i+1)).join('');
-
+  grid.innerHTML = auctionSnakes.map((s,i) => makeCard(s,i+1)).join('');
   auctionSnakes.forEach(s => {
-    if (!s.auctionEnd) return;
     const el = document.getElementById(`cd-${s.id}`);
     if (el) startCountdown(el, s.auctionEnd);
   });
 }
+// 新排程進入 7 天內、到時結標，無需訪客手動重整網頁。
+setInterval(() => {
+  if (document.visibilityState !== 'hidden' && Array.isArray(window._allSnakes))
+    renderAuctionGrid(window._allSnakes);
+}, 60000);
 
 async function loadSnakes() {
   try {
@@ -4160,7 +4179,7 @@ async function loadSnakes() {
     window._salePage = window._salePage || 1;
 
     renderSaleGrid(snakes, window._currentSpecies);
-    renderAuctionGrid(snakes);
+    renderAuctionGrid(snakes, true);
 
   } catch(e) {
     console.error('載入失敗:', e);

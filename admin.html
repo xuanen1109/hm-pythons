@@ -1161,6 +1161,29 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     contain-intrinsic-size:180px;
   }
 }
+
+/* 競標排程：桌機、手機共用，勿改動其他資料中心表格 */
+.auction-schedule-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:15px 0}
+.auction-schedule-metric{border:1px solid #eee1d3;background:#fff;border-radius:12px;padding:14px}
+.auction-schedule-metric strong{font-size:24px;display:block;color:#35190f;margin:4px 0}
+.auction-schedule-metric span{color:#816d5d;font-size:11px}
+.auction-schedule-controls{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0 18px}
+.auction-schedule-controls .form-input{flex:1;min-width:210px;max-width:560px}
+.auction-schedule-controls .form-select{width:auto;min-width:168px}
+.auction-schedule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.auction-schedule-card{background:#fff;border:1px solid #eaded2;border-radius:12px;padding:14px;display:grid;grid-template-columns:85px minmax(0,1fr);gap:12px;min-width:0}
+.auction-schedule-card img{width:85px;height:85px;object-fit:cover;border-radius:9px;background:#f4eee7}
+.auction-schedule-card .asc-title{font-weight:750;font-size:14px;color:#3b1b10;word-break:break-word}
+.auction-schedule-card .asc-small{font-size:11px;color:#846f60;margin:5px 0}
+.auction-schedule-card .asc-description{font-size:12px;color:#574b43;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-height:4.5em;overflow:hidden}
+.auction-schedule-card .asc-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;grid-column:1/-1}
+.auction-schedule-card .asc-actions button{min-height:36px}
+.auction-schedule-state{display:inline-block;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:750;background:#f3eee7;color:#6c4e3c;margin-top:5px}
+.auction-schedule-state.soon{background:#eaf6ed;color:#22613d}
+.auction-schedule-state.undated{background:#fff3e0;color:#9d5f13}
+.auction-schedule-state.expired{background:#f4e9e9;color:#965050}
+@media(max-width:1050px){.auction-schedule-grid{grid-template-columns:1fr}}
+@media(max-width:768px){.auction-schedule-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.auction-schedule-controls .form-input,.auction-schedule-controls .form-select{width:100%;max-width:none;flex:auto}.auction-schedule-card{grid-template-columns:70px minmax(0,1fr);padding:12px}.auction-schedule-card img{width:70px;height:70px}}
 </style>
 </head>
 <body>
@@ -1248,6 +1271,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         </button>
         <button class="sidebar-btn" data-snake-filter="auction" onclick="filterSnakes('auction'); showPage('list', this); window.imRefreshAllIndividuals().catch(e=>console.warn('[snakes] filter refresh failed',e))">
           <span class="sidebar-icon">🔨</span> 競標中
+        </button>
+        <button class="sidebar-btn" onclick="showPage('auction-schedule', this); auctionScheduleRefresh(false)">
+          <span class="sidebar-icon">📅</span> 競標排程表
         </button>
         <button class="sidebar-btn" data-snake-filter="sold" onclick="filterSnakes('sold'); showPage('list', this); window.imRefreshAllIndividuals().catch(e=>console.warn('[snakes] filter refresh failed',e))">
           <span class="sidebar-icon">📦</span> 已售出
@@ -1340,6 +1366,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleText()">📋 匯出待售文字</button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="exportSaleTextNoPrice()">📋 匯出無售價</button>
             <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="openAuctionPromoModal()">🔨 競標宣傳</button>
+            <button class="submit-btn" style="width:auto;padding:10px 18px;white-space:nowrap;" onclick="showPage('auction-schedule'); auctionScheduleRefresh(false)">📅 競標排程表</button>
           </div>
         </div>
 
@@ -1362,6 +1389,30 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         </div>
 
         <div class="snake-grid" id="snake-grid"></div>
+      </div>
+
+      <!-- AUCTION SCHEDULE: managed on existing snakes documents (no extra collection) -->
+      <div class="page" id="page-auction-schedule">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div class="page-title">📅 競標排程表</div>
+            <div class="page-sub">可提前填寫結標時間及競標敘述；官網僅顯示狀態為「競標中」、結標時間在未來 7 天內的球蟒。未填或已過期皆不顯示。</div>
+          </div>
+          <button class="action-btn" onclick="auctionScheduleRefresh(true)">↻ 更新排程</button>
+        </div>
+        <div id="auction-schedule-summary" class="auction-schedule-summary"></div>
+        <div class="auction-schedule-controls">
+          <input class="form-input" id="auction-schedule-search" type="search" placeholder="搜尋編號、中文名稱、基因…" oninput="auctionScheduleRender()">
+          <select class="form-select" id="auction-schedule-filter" onchange="auctionScheduleRender()">
+            <option value="all">全部排程</option>
+            <option value="soon">官網顯示（7天內）</option>
+            <option value="later">7天後結標</option>
+            <option value="undated">未設定結標時間</option>
+            <option value="inactive">尚未設定為競標</option>
+            <option value="expired">已過期</option>
+          </select>
+        </div>
+        <div id="auction-schedule-grid" class="auction-schedule-grid"><div class="page-sub">載入中…</div></div>
       </div>
 
       <!-- AUTO MARKDOWN PAGE -->
@@ -1700,12 +1751,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
           <div class="form-group">
             <label class="form-label">競標連結 <span style="font-size:11px;color:var(--muted);">（競標中時填寫）</span></label>
-            <input class="form-input" id="f-auction-url" placeholder="https://www.auc-tion.com/...">
+            <input class="form-input" id="f-auction-url" placeholder="未填預設：https://www.auc-tion.com/users/e0pgQhNyizaq9SrTgFSSe4AFDCm1">
           </div>
 
           <div class="form-group">
             <label class="form-label">結標時間 <span style="font-size:11px;color:var(--muted);">（競標中時填寫，用於前台倒數）</span></label>
             <input class="form-input" id="f-auction-end" type="datetime-local">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">競標敘述（排程用，可複製到競標平台）</label>
+            <textarea class="form-input" id="f-auction-description" rows="4" style="resize:vertical;min-height:96px" placeholder="由工作人員先填寫競標敘述，之後可在競標排程表一鍵複製。"></textarea>
           </div>
 
           <div style="border-top:1px solid rgba(181,115,58,0.15);margin:8px 0 20px;"></div>
@@ -2958,6 +3014,30 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 </div>
 
+<!-- AUCTION SCHEDULE EDIT MODAL -->
+<div class="modal-overlay" id="auction-schedule-modal">
+  <div class="modal" style="width:min(92vw,560px);max-height:92vh;overflow-y:auto">
+    <div class="modal-title" id="auction-schedule-edit-title">編輯競標排程</div>
+    <p class="page-sub">所有時間均以台灣時間為準；只有狀態為「競標中」、結標在未來 7 天內的球蟒會在官網顯示。</p>
+    <div class="form-group"><label class="form-label">個體狀態</label>
+      <select class="form-select" id="auction-schedule-edit-status">
+        <option value="ready">準備上架（不公開）</option>
+        <option value="sale">待售中（不列入競標）</option>
+        <option value="auction">競標中（依結標時間顯示）</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">結標時間（台灣時間）</label><input class="form-input" type="datetime-local" id="auction-schedule-edit-end"></div>
+    <div class="form-group"><label class="form-label">競標網址</label><input class="form-input" type="url" id="auction-schedule-edit-url" placeholder="未填預設：https://www.auc-tion.com/users/e0pgQhNyizaq9SrTgFSSe4AFDCm1"><div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">留空時，官網會連到 預設競標賣家頁面。</div></div>
+    <div class="form-group"><label class="form-label">競標敘述（工作人員先填寫，刊登時複製）</label>
+      <textarea class="form-input" id="auction-schedule-edit-description" rows="9" style="min-height:180px;resize:vertical" placeholder="可先編寫所有競標資訊…"></textarea>
+      <button type="button" class="action-btn" style="margin-top:8px" onclick="auctionCopyText(document.getElementById('auction-schedule-edit-description').value)">📋 複製敘述</button>
+    </div>
+    <div class="im-form-actions" style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="action-btn" onclick="auctionScheduleClose()">取消</button>
+      <button class="submit-btn" style="width:auto" id="auction-schedule-save" onclick="auctionScheduleSave()">儲存排程</button>
+    </div>
+  </div>
+</div>
 <!-- STATUS MODAL -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
@@ -3644,6 +3724,7 @@ async function loadSnakes(force=false) {
 
   SNAKES_LAST_LOAD = Date.now();
   renderSnakes();
+  if(document.getElementById('page-auction-schedule')?.classList.contains('active')) auctionScheduleRender();
   return allSnakes;
   })();
   try {
@@ -4110,7 +4191,7 @@ window.exportSaleText = async () => {
   const sections = makeSaleExportSections(entries, false);
   const now = new Date();
   const updatedAt = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const text = `待售清單   照片參照官網   社群內9折優惠（限26年小蛇）\n更新時間：${updatedAt}\n\n${sections.join('\n\n')}\n\n社群:\nhttps://reurl.cc/YmDWga\n\n官網:\nhttps://hmpython.netlify.app/#auction`;
+  const text = `待售清單   照片參照官網\n更新時間：${updatedAt}\n\n${sections.join('\n\n')}\n\n社群:\nhttps://reurl.cc/YmDWga\n\n官網:\nhttps://hmpython.netlify.app/#auction`;
 
   try {
     await navigator.clipboard.writeText(text);
@@ -4405,6 +4486,7 @@ window.submitSnake = async () => {
   const status = document.getElementById('f-status').value;
   const auctionUrl = document.getElementById('f-auction-url').value.trim();
   const auctionEnd = document.getElementById('f-auction-end').value || '';
+  const auctionDescription = document.getElementById('f-auction-description').value.trim();
   const price = document.getElementById('f-price').value.trim();
   const specialPriceInput = document.getElementById('f-special-price').value.trim();
   const specialPrice = specialPriceInput || price;
@@ -4428,7 +4510,7 @@ window.submitSnake = async () => {
   try {
     const payload = {
       imgUrl, code, morph, nameZh, nameEn,
-      tags: [...currentTags], status, auctionUrl, auctionEnd, price, specialPrice, species,
+      tags: [...currentTags], status, auctionUrl, auctionEnd, auctionDescription, price, specialPrice, species,
       birth, frozen, sire, dam, nature, sex, weight,
       showOnSota, sotaDescription,
       createdAt: serverTimestamp(),
@@ -4449,7 +4531,7 @@ window.submitSnake = async () => {
     document.getElementById('img-url').value = '';
     document.getElementById('upload-preview').style.display = 'none';
     document.getElementById('upload-placeholder').style.display = 'block';
-    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-auction-end','f-price','f-special-price','f-birth','f-sire','f-dam','f-weight'].forEach(id => document.getElementById(id).value = '');
+    ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-auction-end','f-auction-description','f-price','f-special-price','f-birth','f-sire','f-dam','f-weight'].forEach(id => document.getElementById(id).value = '');
     newSpecialPriceManual = false;
     document.getElementById('f-frozen').value = '';
     document.getElementById('f-nature').value = '';
@@ -4666,6 +4748,7 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-status').value = snake.status || 'sale';
     document.getElementById('edit-auction-url').value = snake.auctionUrl || '';
     document.getElementById('edit-auction-end').value = snake.auctionEnd || '';
+    document.getElementById('edit-auction-description').value = snake.auctionDescription || '';
     document.getElementById('edit-birth').value = snake.birth || '';
     document.getElementById('edit-frozen').value = snake.frozen || '';
     document.getElementById('edit-sex').value = snake.sex || '';
@@ -4759,6 +4842,7 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         publicStatus: document.getElementById('edit-status').value === 'ready' ? 'sale' : document.getElementById('edit-status').value,
         auctionUrl: document.getElementById('edit-auction-url').value.trim(),
         auctionEnd: document.getElementById('edit-auction-end').value || '',
+        auctionDescription: document.getElementById('edit-auction-description').value.trim(),
         imgUrl: document.getElementById('edit-img-url').value,
         showOnSota: document.getElementById('edit-species').value === 'ball_python' && document.getElementById('edit-show-sota').checked,
         sotaDescription: document.getElementById('edit-sota-description').value.trim(),
@@ -4775,6 +4859,7 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         status: document.getElementById('edit-status').value,
         auctionUrl: document.getElementById('edit-auction-url').value.trim(),
         auctionEnd: document.getElementById('edit-auction-end').value || '',
+        auctionDescription: document.getElementById('edit-auction-description').value.trim(),
         birth: document.getElementById('edit-birth').value.trim(),
         frozen: document.getElementById('edit-frozen').value,
         sex: document.getElementById('edit-sex').value,
@@ -5907,13 +5992,14 @@ const AUCTION_PROFILE_URL = 'https://www.auc-tion.com/users/e0pgQhNyizaq9SrTgFSS
 
 function formatAuctionPromoEnd(value) {
   if (!value) return '';
-  const d = new Date(value);
+  const d = new Date(auctionScheduleEndMs(value));
   if (Number.isNaN(d.getTime())) return '';
-  const weekday = ['日','一','二','三','四','五','六'][d.getDay()];
-  const mm = d.getMonth() + 1;
-  const dd = d.getDate();
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mi = String(d.getMinutes()).padStart(2,'0');
+  const taipeiDate = new Date(d.toLocaleString('en-US',{timeZone:'Asia/Taipei'}));
+  const weekday = ['日','一','二','三','四','五','六'][taipeiDate.getDay()];
+  const mm = taipeiDate.getMonth() + 1;
+  const dd = taipeiDate.getDate();
+  const hh = String(taipeiDate.getHours()).padStart(2,'0');
+  const mi = String(taipeiDate.getMinutes()).padStart(2,'0');
   return `${mm}/${dd}（週${weekday}）${hh}:${mi}`;
 }
 
@@ -5928,8 +6014,11 @@ function auctionPromoYear(s) {
 }
 
 function buildAuctionPromoText() {
+  const now=Date.now();
   const auctions = allSnakes
-    .filter(s => s.status === 'auction')
+    .filter(s => s.status==='auction' && (s.species||'ball_python')==='ball_python' && s.publicVisible!==false
+      && Number.isFinite(auctionScheduleEndMs(s.auctionEnd)) && auctionScheduleEndMs(s.auctionEnd)>now
+      && auctionScheduleEndMs(s.auctionEnd)<=now+AUCTION_WINDOW_MS)
     .slice()
     .sort((a,b) => {
       const ta = a.auctionEnd ? new Date(a.auctionEnd).getTime() : Number.MAX_SAFE_INTEGER;
@@ -5966,13 +6055,16 @@ function buildAuctionPromoText() {
 }
 
 window.openAuctionPromoModal = () => {
-  const auctions = allSnakes.filter(s => s.status === 'auction');
+  const now=Date.now();
+  const auctions = allSnakes.filter(s=> s.status==='auction' && (s.species||'ball_python')==='ball_python'
+    && s.publicVisible!==false && Number.isFinite(auctionScheduleEndMs(s.auctionEnd))
+    && auctionScheduleEndMs(s.auctionEnd)>now && auctionScheduleEndMs(s.auctionEnd)<=now+AUCTION_WINDOW_MS);
   if (!auctions.length) {
-    window.showToast?.('目前沒有競標中的個體');
+    window.showToast?.('未來 7 天內沒有可宣傳的競標個體');
     return;
   }
   const countEl = document.getElementById('auction-promo-count');
-  if (countEl) countEl.textContent = `${auctions.length} 隻競標中`;
+  if (countEl) countEl.textContent = `${auctions.length} 隻｜7 天內結標`;
   const ta = document.getElementById('auction-promo-text');
   if (ta) ta.value = buildAuctionPromoText();
   const msg = document.getElementById('auction-promo-copy-msg');
@@ -6484,6 +6576,139 @@ window.fabulousLoadPage=async function(){
   await fabulousRefreshVersions();
 };
 
+
+// ── 競標排程表：只儲存在既有 snakes 文件，不需新增 collection ──
+const AUCTION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+let auctionScheduleRows = [];
+let auctionScheduleEditingId = '';
+const auctionScheduleEsc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+function auctionScheduleEndMs(raw) {
+  if (!raw) return NaN;
+  if (typeof raw?.toMillis === 'function') return raw.toMillis();
+  if (typeof raw?.seconds === 'number') return raw.seconds*1000;
+  const v = String(raw).trim();
+  // datetime-local 沒時區，後台的時間統一以台灣時間解讀，不隨瀏覽者時區變化。
+  const normalized = /^\d{4}-\d\d-\d\d[T ]\d\d:\d\d(?::\d\d)?$/.test(v)
+    ? v.replace(' ','T') + '+08:00' : v;
+  return new Date(normalized).getTime();
+}
+function auctionScheduleCategory(s,now=Date.now()) {
+  const end = auctionScheduleEndMs(s.auctionEnd);
+  if (s.status !== 'auction' || s.publicVisible===false) return 'inactive';
+  if (!Number.isFinite(end)) return 'undated';
+  if (end <= now) return 'expired';
+  return end <= now + AUCTION_WINDOW_MS ? 'soon' : 'later';
+}
+function auctionScheduleFormat(raw) {
+  const t = auctionScheduleEndMs(raw);
+  if (!Number.isFinite(t)) return '尚未設定結標時間';
+  return new Intl.DateTimeFormat('zh-TW', {
+    timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',hour12:false
+  }).format(new Date(t)) + '（台灣）';
+}
+window.auctionCopyText = async text => {
+  const value = String(text||'').trim();
+  if (!value) { window.showToast('請先填寫競標敘述'); return; }
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
+    else {
+      const temp=document.createElement('textarea');
+      temp.value=value;temp.setAttribute('readonly','');temp.style.position='fixed';temp.style.opacity='0';
+      document.body.appendChild(temp);temp.select();
+      const copied=document.execCommand('copy');temp.remove();
+      if(!copied) throw new Error('瀏覽器禁止複製');
+    }
+    window.showToast('✅ 競標敘述已複製');
+  }catch(e){ console.warn(e);window.showToast('❌ 無法複製，請選取文字手動複製'); }
+};
+window.auctionScheduleRefresh = async (force=false) => {
+  const grid=document.getElementById('auction-schedule-grid');
+  if(grid && !allSnakes.length) grid.innerHTML='<div class="page-sub">載入中…</div>';
+  try { await loadSnakes(force);auctionScheduleRender(); }
+  catch(e) {console.error('[auction schedule]',e);if(grid)grid.textContent='無法載入排程：'+e.message;}
+};
+window.auctionScheduleRender = () => {
+  const root=document.getElementById('auction-schedule-grid');
+  if(!root) return;
+  const all=(allSnakes||[]).filter(s => (s.species||'ball_python')==='ball_python' && s.status!=='sold'
+    && (s.status==='auction' || String(s.auctionEnd||'').trim() || String(s.auctionDescription||'').trim()));
+  const now=Date.now();
+  const score={soon:0,later:1,undated:2,inactive:3,expired:4};
+  all.sort((a,b)=>{
+    const aCat=auctionScheduleCategory(a,now),bCat=auctionScheduleCategory(b,now);
+    if(score[aCat]!==score[bCat])return score[aCat]-score[bCat];
+    const ea=auctionScheduleEndMs(a.auctionEnd),eb=auctionScheduleEndMs(b.auctionEnd);
+    if(Number.isFinite(ea)&&Number.isFinite(eb))return ea-eb;
+    return (a.code||'').localeCompare(b.code||'');
+  });
+  auctionScheduleRows=all;
+  const labels={soon:'官網顯示｜7天內',later:'7天後結標',undated:'未填結標時間',inactive:'未啟用競標',expired:'已過期'};
+  const counts={soon:0,later:0,undated:0,inactive:0,expired:0};
+  all.forEach(s=>counts[auctionScheduleCategory(s,now)]++);
+  const summary=document.getElementById('auction-schedule-summary');
+  if(summary)summary.innerHTML=[['soon','7 天內（官網）'],['later','7 天後'],['undated','未填時間'],['inactive','未啟用']]
+    .map(([key,label])=>`<div class="auction-schedule-metric"><span>${label}</span><strong>${counts[key]}</strong></div>`).join('');
+  const q=String(document.getElementById('auction-schedule-search')?.value||'').trim().toLowerCase();
+  const filter=document.getElementById('auction-schedule-filter')?.value||'all';
+  const filtered=all.map((s,i)=>({s,i,cat:auctionScheduleCategory(s,now)}))
+    .filter(x=>(filter==='all'||x.cat===filter) && (!q || [x.s.code,x.s.nameZh,x.s.nameEn,x.s.morph,x.s.auctionDescription].filter(Boolean).join(' ').toLowerCase().includes(q)));
+  if(!filtered.length){root.innerHTML='<div class="page-sub" style="grid-column:1/-1;padding:40px;text-align:center">目前沒有符合條件的競標排程。可先到「所有個體 → 編輯」設定競標狀態、結標時間或敘述。</div>';return;}
+  root.innerHTML=filtered.map(({s,i,cat})=>`
+    <article class="auction-schedule-card">
+      <img src="${auctionScheduleEsc(s.imgUrl||'')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div style="min-width:0">
+        <div class="asc-title">${auctionScheduleEsc(s.nameZh||s.morph||'未命名')}</div>
+        <div class="asc-small">${auctionScheduleEsc(s.code||'')} · ${s.status==='auction'?'競標中':s.status==='ready'?'準備上架':'待售中'}</div>
+        <div class="asc-small">結標：${auctionScheduleEsc(auctionScheduleFormat(s.auctionEnd))}</div>
+        <span class="auction-schedule-state ${cat}">${labels[cat]}</span>
+        <div class="asc-description" style="margin-top:7px">${auctionScheduleEsc(s.auctionDescription||'尚未填寫競標敘述')}</div>
+      </div>
+      <div class="asc-actions">
+        <button class="action-btn" onclick="auctionScheduleEdit(${i})">編輯排程</button>
+        <button class="action-btn" onclick="auctionScheduleCopy(${i})">📋 複製敘述</button>
+      </div>
+    </article>`).join('');
+};
+window.auctionScheduleCopy = (index) => auctionCopyText(auctionScheduleRows[index]?.auctionDescription||'');
+window.auctionScheduleEdit = index => {
+  const s=auctionScheduleRows[index];if(!s)return;
+  auctionScheduleEditingId=String(s.id);
+  const modal=document.getElementById('auction-schedule-modal');
+  document.getElementById('auction-schedule-edit-title').textContent=`編輯競標排程｜${s.code||s.nameZh||''}`;
+  document.getElementById('auction-schedule-edit-status').value=['auction','ready','sale'].includes(s.status)?s.status:'ready';
+  document.getElementById('auction-schedule-edit-end').value=String(s.auctionEnd||'').slice(0,16);
+  document.getElementById('auction-schedule-edit-url').value=s.auctionUrl||'';
+  document.getElementById('auction-schedule-edit-description').value=s.auctionDescription||'';
+  modal.classList.add('show');
+};
+window.auctionScheduleClose = () => {
+  document.getElementById('auction-schedule-modal')?.classList.remove('show');
+  auctionScheduleEditingId='';
+};
+window.auctionScheduleSave = async () => {
+  if(!auctionScheduleEditingId)return;
+  const btn=document.getElementById('auction-schedule-save');
+  if(btn){btn.disabled=true;btn.textContent='儲存中…';}
+  const data={
+    status:document.getElementById('auction-schedule-edit-status').value,
+    publicStatus:document.getElementById('auction-schedule-edit-status').value,
+    publicVisible:document.getElementById('auction-schedule-edit-status').value !== 'ready',
+    auctionEnd:document.getElementById('auction-schedule-edit-end').value||'',
+    auctionUrl:document.getElementById('auction-schedule-edit-url').value.trim(),
+    auctionDescription:document.getElementById('auction-schedule-edit-description').value.trim(),
+    updatedAt:serverTimestamp()
+  };
+  try {
+    await updateDoc(doc(db,'snakes',auctionScheduleEditingId),data);
+    snakeLocalPatch(auctionScheduleEditingId,{...data,updatedAt:new Date()});
+    auctionScheduleClose();auctionScheduleRender();
+    const cat=auctionScheduleCategory(data);
+    window.showToast(cat==='soon'?'✅ 排程已儲存，符合官網 7 天內顯示條件':'✅ 排程已儲存；尚不符合官網顯示條件');
+  }catch(e){console.error('[auctionScheduleSave]',e);window.showToast('❌ 儲存失敗：'+e.message);}
+  finally{if(btn){btn.disabled=false;btn.textContent='儲存排程';}}
+};
+
 // UI helpers
 window.showPage = (page, btn) => {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -6654,11 +6879,16 @@ window.showToast = function showToast(msg) {
     </div>
     <div style="margin-bottom:16px;">
       <label class="form-label">競標連結</label>
-      <input class="form-input" id="edit-auction-url" placeholder="https://...">
+      <input class="form-input" id="edit-auction-url" placeholder="未填預設：https://www.auc-tion.com/users/e0pgQhNyizaq9SrTgFSSe4AFDCm1">
     </div>
     <div style="margin-bottom:16px;">
       <label class="form-label">結標時間 <span style="font-size:11px;color:var(--muted);">（用於前台倒數計時）</span></label>
       <input class="form-input" id="edit-auction-end" type="datetime-local">
+    </div>
+    <div style="margin-bottom:16px;">
+      <label class="form-label">競標敘述（可在排程表複製）</label>
+      <textarea class="form-input" id="edit-auction-description" rows="5" style="resize:vertical;min-height:100px" placeholder="可先輸入競標貼文，複製到外部競標網站。"></textarea>
+      <button type="button" class="action-btn" style="margin-top:8px" onclick="auctionCopyText(document.getElementById('edit-auction-description').value)">📋 複製敘述</button>
     </div>
     <div style="border-top:1px solid rgba(181,115,58,0.15);margin:4px 0 16px;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
@@ -10054,6 +10284,7 @@ function imBuildWebsiteProjection(r,existing={},settings={}){
     status:(publicStatus==='ready'||!visible)?'ready':publicStatus, publicVisible:publicStatus==='ready'?false:!!visible, publicStatus,
     auctionUrl:settings.auctionUrl!==undefined?settings.auctionUrl:(existing.auctionUrl||''),
     auctionEnd:settings.auctionEnd!==undefined?settings.auctionEnd:(existing.auctionEnd||''),
+    auctionDescription:settings.auctionDescription!==undefined?settings.auctionDescription:(existing.auctionDescription||''),
     imgUrl:img,
     year:String(r.birth||'').match(/(?:19|20)\d{2}/)?.[0]||'', birth:r.birth||'',
     frozen:r.frozen||'', weight:r.weight||'', sire:r.sireA||'', dam:r.damB||'', nature:r.nature||'', sex:r.sex||'',
@@ -10125,8 +10356,9 @@ window.imPushToSite = async (id) => {
       <div class="form-group"><label class="form-label">官網顯示</label><select class="form-select" id="push-visible" ${pstatus==='ready'?'disabled':''}><option value="hidden" ${(pstatus==='ready'||!visible)?'selected':''}>🔒 隱藏</option><option value="visible" ${(pstatus!=='ready'&&visible)?'selected':''}>🟢 顯示</option></select></div>
       <div class="form-group"><label class="form-label">同步售價</label><input class="form-input" value="${esc(imPublicBasePrice(r))}" readonly style="background:#f2f0ec;color:#80766d"></div>
       <div class="form-group"><label class="form-label">特價（展示專用）</label><input class="form-input" id="push-special-price" value="${esc(special)}" placeholder="例如 NT$1,800"></div>
-      <div class="form-group im-form-full"><label class="form-label">競標連結</label><input class="form-input" id="push-auction-url" value="${esc(existing.auctionUrl||'')}" placeholder="沒填會使用預設競標個人頁"></div>
-      <div class="form-group im-form-full"><label class="form-label">結標時間</label><input class="form-input" id="push-auction-end" type="datetime-local" value="${esc(existing.auctionEnd||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">競標連結</label><input class="form-input" id="push-auction-url" value="${esc(existing.auctionUrl||'')}" placeholder="未填預設：https://www.auc-tion.com/users/e0pgQhNyizaq9SrTgFSSe4AFDCm1"></div>
+      <div class="form-group im-form-full"><label class="form-label">結標時間（台灣時間；未填或超過 7 天不出現在官網競標區）</label><input class="form-input" id="push-auction-end" type="datetime-local" value="${esc(existing.auctionEnd||'')}"></div>
+      <div class="form-group im-form-full"><label class="form-label">競標敘述（僅後台使用，可複製）</label><textarea class="form-input" id="push-auction-description" rows="4" style="resize:vertical;min-height:98px">${esc(existing.auctionDescription||'')}</textarea><button type="button" class="action-btn" style="margin-top:8px" onclick="auctionCopyText(document.getElementById('push-auction-description').value)">📋 複製敘述</button></div>
     </div>
     <div class="im-form-actions"><button class="im-btn-cancel" onclick="imCloseModal()">取消</button><button class="submit-btn" style="width:auto;padding:8px 24px" onclick="imDoPush('${id}')">儲存官網設定</button></div>`;
   document.getElementById('im-modal-overlay').classList.add('show');
@@ -10155,7 +10387,8 @@ window.imDoPush = async (id) => {
       visible:document.getElementById('push-status').value==='ready'?false:document.getElementById('push-visible').value==='visible',
       specialPrice:document.getElementById('push-special-price').value.trim()||imPublicBasePrice(r),
       auctionUrl:document.getElementById('push-auction-url').value.trim(),
-      auctionEnd:document.getElementById('push-auction-end').value||''
+      auctionEnd:document.getElementById('push-auction-end').value||'',
+      auctionDescription:document.getElementById('push-auction-description').value.trim()
     };
     if(r.siteSuppressed===true){
       await updateDoc(doc(db2,COL.sales,id),{siteSuppressed:false,updatedAt:serverTimestamp()});
