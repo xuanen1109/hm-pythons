@@ -3158,6 +3158,111 @@ body{background:#fff !important;}
   font-weight: 400 !important;
 }
 </style>
+<style id="individual-detail-styles">
+/* Individual pages share the catalog's type, colors and existing data. */
+body.snake-detail-open > section { display:none !important; }
+#snake-detail[hidden] { display:none !important; }
+#snake-detail {
+  --detail-ink:#211d19; --detail-muted:#756e66; --detail-line:#e8e4df;
+  color:var(--detail-ink); max-width:1240px; margin:0 auto;
+  padding:36px 40px 72px; min-height:70vh;
+}
+.individual-detail-link { text-decoration:none; color:inherit; }
+.individual-detail-link:focus-visible, #snake-detail :focus-visible,
+.breeding-detail-photo:focus-visible { outline:3px solid #a75f2a; outline-offset:5px; }
+.individual-detail-link .species-art img { cursor:pointer !important; }
+.species-arrow.detail-card-label { font-family:inherit; font-size:11px; white-space:nowrap; color:#756f69; }
+.species-arrow.detail-card-label, .catalog-main .species-arrow.detail-card-label { display:inline-flex !important; }
+.breeding-detail-photo { display:block; width:100%; height:100%; }
+.breeding-detail-photo img { cursor:pointer !important; }
+.detail-toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:28px; }
+.detail-back { color:var(--detail-muted); text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:10px; padding:8px 0; }
+.detail-back:hover { color:var(--detail-ink); }
+.detail-share { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--detail-line); background:#fff; color:var(--detail-ink); font:inherit; font-size:12px; border-radius:6px; padding:9px 14px; cursor:pointer; }
+.detail-hero { display:grid; grid-template-columns:minmax(0,1.08fr) minmax(0,1fr); gap:52px; align-items:start; }
+.detail-photo { margin:0; min-width:0; }
+.detail-photo-button { position:relative; display:block; width:100%; aspect-ratio:1; border:0; border-radius:12px; overflow:hidden; padding:0; background:#141613; color:#fff; cursor:zoom-in; }
+.detail-photo-button img { display:block; width:100%; height:100%; object-fit:contain; }
+.detail-photo-button:disabled { cursor:default; }
+.detail-photo-hint { position:absolute; right:14px; bottom:14px; padding:7px 11px; border:1px solid #ffffff40; background:#0009; border-radius:5px; font-size:11px; pointer-events:none; }
+.detail-no-photo { display:grid; place-content:center; height:100%; font-size:14px; color:#cbc9c3; }
+.detail-photo figcaption { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:13px; font-size:11px; color:var(--detail-muted); letter-spacing:.5px; }
+.detail-summary { min-width:0; padding-top:3px; }
+.detail-eyebrow { display:flex; align-items:center; flex-wrap:wrap; gap:10px; font-size:12px; color:var(--detail-muted); margin-bottom:17px; }
+.detail-status { display:inline-block; color:#427052; background:#edf4ef; padding:4px 10px; border-radius:4px; font-size:11px; }
+.detail-status.unavailable { color:#756e66; background:#f0efec; }
+#snake-detail h1 { font-size:clamp(24px,2.4vw,34px); font-weight:600; line-height:1.5; margin:0 0 10px; overflow-wrap:anywhere; letter-spacing:.2px; outline-offset:6px; }
+.detail-en { font-size:13px; line-height:1.8; color:var(--detail-muted); overflow-wrap:anywhere; }
+.detail-code { margin-top:14px; font-size:12px; color:var(--detail-muted); letter-spacing:1px; overflow-wrap:anywhere; }
+.detail-facts { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; border-top:1px solid var(--detail-line); margin:26px 0 24px; }
+.detail-facts > div { min-width:0; border-bottom:1px solid var(--detail-line); padding:14px 0; }
+.detail-facts dt { color:var(--detail-muted); font-size:11px; margin-bottom:6px; }
+.detail-facts dd { margin:0; font-size:14px; line-height:1.6; overflow-wrap:anywhere; }
+.detail-muted { color:var(--detail-muted); }
+.detail-price-label { font-size:11px; color:var(--detail-muted); margin-bottom:5px; }
+.detail-original-price { font-size:12px; color:#8d837b; margin-right:10px; }
+.detail-price { font-size:28px; letter-spacing:.4px; font-weight:600; line-height:1.5; }
+.detail-price.discount { color:#c62828; }
+.detail-price-note { color:var(--detail-muted); font-size:11px; line-height:1.8; margin-top:8px; }
+.detail-actions { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; margin-top:22px; }
+.detail-inquiry, .detail-copy-inquiry { display:flex; align-items:center; justify-content:center; text-decoration:none; font:inherit; font-size:13px; font-weight:500; line-height:1.5; border-radius:6px; padding:14px 16px; cursor:pointer; }
+.detail-inquiry { background:#253d2e; color:#fff; border:1px solid #253d2e; }
+.detail-inquiry:hover { background:#34553f; }
+.detail-copy-inquiry { background:#fff; border:1px solid #d8d3cd; color:var(--detail-ink); }
+.detail-terms { display:inline-block; margin-top:14px; color:var(--detail-muted); font-size:11px; text-underline-offset:4px; }
+.detail-pair { border-left:2px solid #a75f2a; padding:10px 14px; background:#f7f5f1; margin-top:18px; font-size:12px; line-height:1.8; overflow-wrap:anywhere; }
+.detail-pair a { display:block; color:#7b4825; text-underline-offset:3px; margin-top:4px; }
+.detail-section { margin-top:48px; padding-top:28px; border-top:1px solid var(--detail-line); }
+.detail-section-heading { display:flex; align-items:baseline; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+#snake-detail h2 { font-size:18px; font-weight:500; letter-spacing:1px; margin:0; }
+.detail-section-heading > span { font-size:10px; letter-spacing:2px; color:var(--detail-muted); }
+.detail-genetics { font-size:15px; line-height:1.9; overflow-wrap:anywhere; }
+.detail-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.detail-tags span { padding:5px 11px; background:#f5f3ef; border:1px solid #eae5de; border-radius:4px; font-size:11px; line-height:1.6; }
+.detail-parents { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.detail-parent { padding:24px 26px; border:1px solid var(--detail-line); border-radius:8px; background:#faf9f6; min-width:0; }
+.detail-parent-label { font-size:12px; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+.detail-parent-label span { color:var(--detail-muted); font-size:10px; letter-spacing:1.5px; }
+.detail-parent-name { font-size:16px; line-height:1.9; overflow-wrap:anywhere; white-space:pre-wrap; }
+.detail-parent-note { margin:14px 0 0; font-size:11px; line-height:1.9; color:var(--detail-muted); }
+.detail-state { text-align:center; padding:100px 20px; }
+.detail-state h1 { font-size:25px !important; }
+.detail-state p { font-size:13px; color:var(--detail-muted); line-height:1.9; margin:12px 0 24px; }
+.detail-state .detail-back { color:#7b4825; }
+#detail-notice { position:fixed; z-index:100000; left:50%; bottom:28px; transform:translateX(-50%); max-width:calc(100% - 32px); border-radius:7px; padding:13px 20px; background:#24241f; color:#fff; font-size:13px; box-shadow:0 4px 24px #0002; }
+#detail-notice:empty { display:none; }
+.detail-copy-fallback { margin-top:16px; font-size:12px; color:var(--detail-muted); }
+.detail-copy-fallback textarea { display:block; width:100%; min-height:90px; border:1px solid #d8d3cd; border-radius:4px; padding:10px; margin-top:8px; color:var(--detail-ink); background:#fff; font:inherit; overflow-wrap:anywhere; }
+@media(max-width:900px) {
+  #snake-detail { padding:24px 28px 56px; }
+  .detail-hero { gap:28px; }
+  .detail-actions { grid-template-columns:1fr; }
+  .detail-copy-inquiry { padding:11px; }
+}
+@media(max-width:650px) {
+  #snake-detail { padding:15px 20px 44px; }
+  .detail-toolbar { margin-bottom:18px; }
+  .detail-back { font-size:12px; }
+  .detail-share { padding:8px 11px; font-size:11px; }
+  .detail-hero { grid-template-columns:1fr; gap:26px; }
+  .detail-photo-button { border-radius:9px; }
+  .detail-summary { padding:0; }
+  #snake-detail h1 { font-size:25px; }
+  .detail-eyebrow { margin-bottom:13px; }
+  .detail-facts { margin-top:23px; }
+  .detail-actions { grid-template-columns:1fr auto; }
+  .detail-inquiry, .detail-copy-inquiry { padding:13px 12px; font-size:12px; }
+  .detail-section { margin-top:32px; padding-top:24px; }
+  .detail-parents { grid-template-columns:1fr; gap:12px; }
+  .detail-parent { padding:20px; }
+  .detail-parent-name { font-size:15px; }
+  body.snake-detail-open .social-float { display:none !important; }
+}
+@media(prefers-reduced-motion:reduce) {
+  body.snake-detail-open { scroll-behavior:auto; }
+}
+
+</style>
 </head>
 <body>
 
@@ -3647,9 +3752,14 @@ function publicBreedingGroupPrice(male, female) {
   return mp === null || fp === null ? null : mp + fp;
 }
 
+function individualLinkAttributes(s) {
+  return `href="${window.HMIndividualDetail.escape(window.HMIndividualDetail.url(s.id))}" data-snake-id="${window.HMIndividualDetail.escape(s.id)}"`;
+}
+
 function publicBreedingView(s, sexLabel) {
   const year = String(s?.birth || '').match(/(?:19|20)\d{2}/)?.[0] || '';
   return {
+    id: s?.id || '',
     imgUrl: s?.imgUrl || '',
     name: `${year ? year + ' ' : ''}${s?.nameZh || s?.morph || sexLabel}`,
     nameEn: s?.nameEn || '',
@@ -3676,7 +3786,12 @@ window.switchPublicBreedingGroup = function(cardId, side) {
   const maleBtn = document.getElementById(cardId + '_male_btn');
   const femaleBtn = document.getElementById(cardId + '_female_btn');
 
-  if (img) img.src = view.imgUrl || '';
+  card.querySelectorAll('a[data-snake-id]').forEach(link => {
+    link.dataset.snakeId = view.id || '';
+    link.href = window.HMIndividualDetail.url(view.id || '');
+    if (link.classList.contains('breeding-detail-photo')) link.setAttribute('aria-label', side === 'female' ? '查看母蛇個體資料' : '查看公蛇個體資料');
+  });
+  if (img) { img.src = view.imgUrl || ''; img.alt = view.name || ''; }
   if (name) name.textContent = view.name || '';
   if (en) {
     en.textContent = view.nameEn || '';
@@ -3711,8 +3826,9 @@ function makeBreedingGroupCard(s, num) {
   return `<div class="species-card breeding-public-card" id="${dataId}" data-male="${maleData}" data-female="${femaleData}">
     <div class="species-card-top"><span class="species-num">${String(num).padStart(2,'0')}</span></div>
     <div class="species-art breeding-public-art" style="position:relative;width:calc(100% + 64px);margin-left:-32px;margin-top:-44px;margin-bottom:28px;aspect-ratio:1/1;overflow:hidden;">
-      <img id="${dataId}_img" src="${maleView.imgUrl}" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;"
-        onclick="event.stopPropagation();openLightbox(this.src, document.getElementById('${dataId}_name').textContent + ' — ' + document.getElementById('${dataId}_code').textContent)">
+      <a class="breeding-detail-photo" ${individualLinkAttributes(s.male)} aria-label="查看公蛇個體資料">
+        <img id="${dataId}_img" src="${maleView.imgUrl}" alt="${window.HMIndividualDetail.escape(maleView.name)}" style="width:100%;height:100%;object-fit:cover;display:block;">
+      </a>
       <div class="breeding-public-badge">🧬 繁殖組</div>
       <div class="breeding-public-switcher" onclick="event.stopPropagation()">
         <button type="button" id="${dataId}_male_btn" class="breeding-public-switch-btn active" onclick="event.stopPropagation();switchPublicBreedingGroup('${dataId}','male')">♂ 公</button>
@@ -3727,7 +3843,7 @@ function makeBreedingGroupCard(s, num) {
     </div>
     <div class="auction-code" id="${dataId}_code" style="margin-bottom:8px;">${maleView.code}</div>
     <div class="species-tags" id="${dataId}_tags">${tags}</div>
-    <div class="species-footer"><div class="species-price">${priceText}</div><span class="species-arrow">↗</span></div>
+    <div class="species-footer"><div class="species-price">${priceText}</div><a class="species-arrow detail-card-label individual-detail-link" ${individualLinkAttributes(s.male)}>查看個體 ↗</a></div>
   </div>`;
 }
 
@@ -3760,10 +3876,10 @@ function makeCard(s, num) {
     const statusBadge = s.status === 'auction'
       ? `<span class="species-morph-badge" style="background:rgba(181,115,58,0.12);color:var(--copper);border-color:var(--copper);">競標中</span>`
       : `<span class="species-morph-badge">${s.morph||''}</span>`;
-    return `<div class="species-card" onclick="openLightbox('${s.imgUrl}','${(s.nameZh||'').replace(/'/g,"\\'")} — ${s.code||''}')">
+    return `<a class="species-card individual-detail-link" ${individualLinkAttributes(s)}>
       <div class="species-card-top"><span class="species-num">${String(num).padStart(2,'0')}</span>${statusBadge}</div>
       <div class="species-art" style="position:relative;width:calc(100% + 64px);margin-left:-32px;margin-top:-44px;margin-bottom:28px;aspect-ratio:1/1;overflow:hidden;">
-        <img src="${s.imgUrl||''}" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;">
+        <img src="${s.imgUrl||''}" style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;">
       </div>
       ${speciesTag}<div class="species-name">${s.birth ? String(s.birth).match(/\d{4}/)?.[0] + ' ' : ''}${s.nameZh||''}</div>
       ${s.nameEn ? `<div class="species-name-en" style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:10px;letter-spacing:.3px;">${s.nameEn}</div>` : ''}
@@ -3777,8 +3893,8 @@ function makeCard(s, num) {
           }
           return publicPriceText(s);
         })()
-      }</div><span class="species-arrow">↗</span></div>
-    </div>`;
+      }</div><span class="species-arrow detail-card-label">查看個體 ↗</span></div>
+    </a>`;
   }
 }
 function padToMultipleOf3(count) {
@@ -4180,9 +4296,11 @@ async function loadSnakes() {
 
     renderSaleGrid(snakes, window._currentSpecies);
     renderAuctionGrid(snakes, true);
+    window.hmIndividualDataReady?.();
 
   } catch(e) {
     console.error('載入失敗:', e);
+    window.hmIndividualDataReady?.({error:true});
     document.getElementById('sale-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);">載入失敗，請重新整理</div>';
   }
 }
@@ -4221,32 +4339,307 @@ loadHomeFeatureImage();
 </script>
 
 
+<main id="snake-detail" aria-label="個體詳情" hidden></main>
+<div id="detail-notice" role="status" aria-live="polite"></div>
+
 <!-- Lightbox -->
-<div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out;">
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="個體照片" onclick="closeLightbox()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out;">
   <div style="position:relative;max-width:90vw;max-height:90vh;" onclick="event.stopPropagation()">
-    <img id="lightbox-img" src="" style="max-width:90vw;max-height:88vh;object-fit:contain;border-radius:4px;display:block;">
+    <img id="lightbox-img" src="" alt="個體照片" style="max-width:90vw;max-height:88vh;object-fit:contain;border-radius:4px;display:block;">
     <div id="lightbox-name" style="text-align:center;color:rgba(255,255,255,0.7);font-size:13px;margin-top:10px;font-family:'Noto Sans TC',sans-serif;letter-spacing:1px;"></div>
-    <div onclick="closeLightbox()" style="position:absolute;top:-16px;right:-16px;width:32px;height:32px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:white;line-height:1;">×</div>
+    <button type="button" id="lightbox-close" aria-label="關閉照片" onclick="closeLightbox()" style="position:absolute;top:-16px;right:-16px;width:32px;height:32px;background:#454545;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:white;line-height:1;">×</button>
   </div>
 </div>
 
 <script>
+let lightboxPreviousFocus = null;
+let lightboxPreviousOverflow = '';
 function openLightbox(src, name) {
   const lb = document.getElementById('lightbox');
+  lightboxPreviousFocus = document.activeElement;
+  lightboxPreviousOverflow = document.body.style.overflow;
   document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox-img').alt = name || '個體照片';
   document.getElementById('lightbox-name').textContent = name || '';
   lb.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  document.getElementById('lightbox-close').focus();
 }
 function closeLightbox() {
-  document.getElementById('lightbox').style.display = 'none';
-  document.body.style.overflow = '';
+  const lb = document.getElementById('lightbox');
+  if (!lb || lb.style.display !== 'flex') return;
+  lb.style.display = 'none';
+  document.body.style.overflow = lightboxPreviousOverflow;
+  if (lightboxPreviousFocus?.isConnected) lightboxPreviousFocus.focus({preventScroll:true});
 }
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); });
+document.addEventListener('keydown', e => {
+  if (document.getElementById('lightbox').style.display !== 'flex') return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'Tab') { e.preventDefault(); document.getElementById('lightbox-close').focus(); }
+});
 </script>
 
 
 
+
+<script id="individual-detail-script">
+/* The detail view uses an explicit public-field allowlist; no internal notes/costs. */
+(function () {
+  'use strict';
+  const root = document.getElementById('snake-detail');
+  const originalTitle = document.title;
+  const species = {ball_python:'球蟒',boa:'紅尾蚺',leopard_gecko:'豹紋守宮',corn_snake:'玉米蛇',king_snake:'王蛇',other:'其他'};
+  let ready = false, failed = false, active = false, previousScroll = 0, previousFocus = null;
+  let returnURL = '', activeSnake = null, noticeTimer;
+  const plain = value => typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
+  const escape = value => plain(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function url(id) {
+    const next = new URL(location.href);
+    next.searchParams.set('snake', String(id));
+    next.hash = '';
+    return next.href;
+  }
+  function catalogURL(hash = '#species') {
+    const next = new URL(location.href);
+    next.searchParams.delete('snake');
+    next.hash = hash;
+    return next.href;
+  }
+  function isPublic(s) {
+    return !!s && s.publicVisible !== false && s.adminHidden !== true && ['sale','auction','sold'].includes(s.status);
+  }
+  function sexText(value) {
+    const raw = plain(value);
+    if (/^(M|Male|男生|公)$/i.test(raw)) return '公 ♂';
+    if (/^(F|Female|女生|母)$/i.test(raw)) return '母 ♀';
+    if (/^(U|Unknown|未知)$/i.test(raw)) return '未知';
+    return '';
+  }
+  function frozenText(value) {
+    const raw = typeof value === 'boolean' ? String(value) : plain(value);
+    if (/^(是|yes|y|true|1)$/i.test(raw)) return '接受冷凍';
+    if (/^(否|no|n|false|0)$/i.test(raw)) return '不接受冷凍';
+    return raw;
+  }
+  function birthText(s) {
+    const birth = plain(s.birth);
+    const raw = s.birth == null ? (plain(s.year) || plain(s.birthYear)) : birth;
+    if (!raw) return '';
+    if (/^(?:19|20)\d{2}$/.test(raw)) return raw + ' 年';
+    const legacy = raw.match(/^Date\(((?:19|20)\d{2}),/);
+    if (legacy) return legacy[1] + ' 年';
+    const match = raw.match(/^((?:19|20)\d{2})(\d{2})(\d{2})$/) || raw.match(/^((?:19|20)\d{2})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (match) {
+      const y=Number(match[1]), m=Number(match[2]), d=Number(match[3]);
+      const date=new Date(Date.UTC(y,m-1,d));
+      if (date.getUTCFullYear()===y && date.getUTCMonth()===m-1 && date.getUTCDate()===d)
+        return `${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+    }
+    return birth;
+  }
+  function priceNumber(value) {
+    const raw=plain(value), digits=raw.replace(/[^0-9]/g,'');
+    return raw && digits ? Number(digits) : null;
+  }
+  function currentPrice(s) { return priceNumber(s.specialPrice ?? s.price); }
+  function priceText(value) { return value === null ? '洽詢價格' : `NT$${value.toLocaleString('en-US')}`; }
+  function partnerFor(s, all, groups) {
+    if (s.status !== 'sale') return null;
+    const group=(groups || []).find(g => String(g.maleId)===String(s.id) || String(g.femaleId)===String(s.id));
+    const partnerId=group ? (String(group.maleId)===String(s.id) ? group.femaleId : group.maleId) : s.breedingPartnerId;
+    if (!partnerId) return null;
+    const partner=(all || []).find(x => String(x.id)===String(partnerId));
+    return partner && partner.status==='sale' && isPublic(partner) ? partner : null;
+  }
+  function safeImage(value) {
+    const raw=plain(value);
+    try { const u=new URL(raw); return ['https:','http:'].includes(u.protocol) ? u.href : ''; }
+    catch (_) { return /^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(raw) ? raw : ''; }
+  }
+  function viewData(s, all = [], groups = []) {
+    const partner=partnerFor(s,all,groups);
+    const ownPrice=currentPrice(s), partnerPrice=partner ? currentPrice(partner) : null;
+    const ownBase=priceNumber(s.price), partnerBase=partner ? priceNumber(partner.price) : null;
+    const price=partner ? (ownPrice===null || partnerPrice===null ? null : ownPrice+partnerPrice) : ownPrice;
+    const base=partner ? (ownBase===null || partnerBase===null ? null : ownBase+partnerBase) : ownBase;
+    const weight=plain(s.weight);
+    const parents=[
+      s.sire == null ? {label:'親代 A',en:'PARENT A',name:plain(s.parentA),legacy:true}
+        : {label:'親代 A（公）',en:'SIRE',name:plain(s.sire)},
+      s.dam == null ? {label:'親代 B',en:'PARENT B',name:plain(s.parentB),legacy:true}
+        : {label:'親代 B（母）',en:'DAM',name:plain(s.dam)}
+    ].filter(parent=>parent.name);
+    return {
+      id:plain(s.id), name:plain(s.nameZh) || plain(s.nameEn) || plain(s.morph) || '個體資訊',
+      nameEn:plain(s.nameEn), code:plain(s.code) || '尚未提供',
+      species:species[s.species] || '物種尚未提供',
+      sex:sexText(s.sex ?? s.gender),
+      birth:birthText(s), weight:/^\d+(?:\.\d+)?$/.test(weight) ? weight+' g' : weight,
+      frozen:frozenText(s.frozen), nature:plain(s.nature),
+      genetics:plain(s.gene) || plain(s.nameEn) || plain(s.morph) || '',
+      tags:Array.isArray(s.tags) ? s.tags.map(plain).filter(Boolean) : [],
+      imgUrl:safeImage(s.imgUrl || s.imageUrl), status:s.status, price, base,
+      partner:partner ? {id:plain(partner.id), name:plain(partner.nameZh) || plain(partner.nameEn) || plain(partner.code) || '配對個體',code:plain(partner.code)} : null,
+      parents, legacyParents:parents.some(parent=>parent.legacy)
+    };
+  }
+  function backLink() { return `<a class="detail-back" data-detail-back href="${escape(returnURL || catalogURL())}"><span aria-hidden="true">←</span> 返回待售個體</a>`; }
+  function statePage(title, text) {
+    root.innerHTML=`<div class="detail-state"><h1 tabindex="-1">${escape(title)}</h1><p>${escape(text)}</p>${backLink()}</div>`;
+  }
+  function render(s) {
+    const v=viewData(s,window._allSnakes,window._breedingGroupDocs);
+    const sold=v.status==='sold', auction=v.status==='auction';
+    const facts=[['個體編號',v.code],['性別',v.sex],['出生日期',v.birth],['體重',v.weight],
+      ['是否接受冷凍',v.frozen],['個性',v.nature]].filter(([,value])=>value);
+    const discount=v.price!==null && v.base!==null && v.price<v.base;
+    root.innerHTML=`
+      <div class="detail-toolbar">${backLink()}<button type="button" class="detail-share" data-detail-share><span aria-hidden="true">↗</span> 複製個體連結</button></div>
+      <div class="detail-hero">
+        <figure class="detail-photo">
+          <button type="button" class="detail-photo-button" data-detail-zoom aria-label="放大查看${escape(v.name)}的照片" ${v.imgUrl ? '' : 'disabled'}>
+            ${v.imgUrl ? `<img src="${escape(v.imgUrl)}" alt="${escape(v.name)}" decoding="async"><span class="detail-photo-hint">放大照片 ↗</span>` : '<span class="detail-no-photo">照片尚未提供</span>'}
+          </button>
+          <figcaption><span>hm.pythons</span><span>${escape(v.code)}</span></figcaption>
+        </figure>
+        <div class="detail-summary">
+          <div class="detail-eyebrow"><span>${escape(v.species)}</span><span class="detail-status ${sold ? 'unavailable' : ''}">${sold ? '已售出' : auction ? '競標個體' : '待售中'}</span>${v.partner ? '<span>繁殖組</span>' : ''}</div>
+          <h1 id="detail-title" tabindex="-1">${escape(v.name)}</h1>
+          ${v.nameEn ? `<p class="detail-en">${escape(v.nameEn)}</p>` : ''}
+          <div class="detail-code">${escape(v.code)}</div>
+          <dl class="detail-facts">${facts.map(([label,value])=>`<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl>
+          <div class="detail-price-label">${sold ? '個體狀態' : auction ? '競標資訊' : v.partner ? '繁殖組合售價 · 兩隻合計' : '個體售價'}</div>
+          <div>${!sold && !auction && discount ? `<del class="detail-original-price">${priceText(v.base)}</del>` : ''}<span class="detail-price ${!sold && !auction && discount ? 'discount' : ''}">${sold ? '已售出' : auction ? '以競標平台為準' : priceText(v.price)}</span></div>
+          ${v.partner ? `<div class="detail-pair">此個體屬於繁殖組，售價為兩隻合計。<a data-snake-id="${escape(v.partner.id)}" href="${escape(url(v.partner.id))}">查看配對個體：${escape(v.partner.name)} →</a></div>` : ''}
+          ${v.weight ? '<p class="detail-price-note">體重為登錄資料，最新狀況可透過 LINE 確認。</p>' : ''}
+          <div class="detail-actions"><a class="detail-inquiry" href="https://lin.ee/GhMS0B1" target="_blank" rel="noopener">${sold ? 'LINE 詢問其他個體' : 'LINE 詢問'}</a><button class="detail-copy-inquiry" type="button" data-detail-inquiry>複製詢問內容</button></div>
+          <a class="detail-terms" href="./terms.html">購買前請先閱讀交易須知 ↗</a>
+          <div id="detail-copy-fallback" class="detail-copy-fallback" hidden></div>
+        </div>
+      </div>
+      <section class="detail-section" aria-labelledby="detail-genetics-heading">
+        <div class="detail-section-heading"><h2 id="detail-genetics-heading">基因資料</h2><span>GENETICS</span></div>
+        <p class="detail-genetics">${escape(v.genetics || (v.tags.length ? v.tags.join(' · ') : '尚未提供'))}</p>
+        ${v.tags.length ? `<div class="detail-tags">${v.tags.map(t=>`<span>${escape(t)}</span>`).join('')}</div>` : ''}
+      </section>
+      ${v.parents.length ? `<section class="detail-section" aria-labelledby="detail-parents-heading">
+        <div class="detail-section-heading"><h2 id="detail-parents-heading">親代資訊</h2><span>PARENTAGE</span></div>
+        <div class="detail-parents">${v.parents.map(p=>`<article class="detail-parent"><div class="detail-parent-label">${p.label}<span>${p.en}</span></div><p class="detail-parent-name">${escape(p.name)}</p></article>`).join('')}</div>
+        ${v.legacyParents ? '<p class="detail-parent-note">舊資料中未標示公母的親代，依原有的 A／B 欄位呈現。</p>' : ''}
+      </section>` : ''}`;
+    const img=root.querySelector('.detail-photo-button img');
+    if (img) img.addEventListener('error',()=>{
+      const button=img.closest('button'); button.disabled=true;
+      button.innerHTML='<span class="detail-no-photo">照片暫時無法載入</span>';
+    },{once:true});
+    document.title=`${v.name}｜${v.code}｜hm.pythons`;
+  }
+  function instantScroll(top) {
+    const html=document.documentElement, old=html.style.scrollBehavior;
+    html.style.scrollBehavior='auto'; window.scrollTo({top,behavior:'instant'}); html.style.scrollBehavior=old;
+  }
+  function syncRoute(options = {}) {
+    if (typeof window.closeLightbox==='function') window.closeLightbox();
+    const id=new URL(location.href).searchParams.get('snake');
+    if (id === null) {
+      const wasActive=active;
+      active=false; activeSnake=null; root.hidden=true;
+      document.body.classList.remove('snake-detail-open'); document.title=originalTitle;
+      if (wasActive) {
+        instantScroll(previousScroll);
+        if (previousFocus?.isConnected) previousFocus.focus({preventScroll:true});
+      }
+      return;
+    }
+    if (!active) {
+      previousScroll=window.scrollY; previousFocus=document.activeElement;
+      if (!returnURL) returnURL=catalogURL();
+    }
+    active=true; root.hidden=false; document.body.classList.add('snake-detail-open');
+    activeSnake=null;
+    if (!ready && !failed) statePage('個體資料載入中…','正在讀取個體資訊，請稍候。');
+    else if (failed) statePage('暫時無法載入','請重新整理頁面，或透過 LINE 聯絡我們。');
+    else {
+      const s=(window._allSnakes || []).find(item=>String(item.id)===id);
+      activeSnake=isPublic(s) ? s : null;
+      if (activeSnake) render(activeSnake);
+      else { document.title='找不到此個體｜hm.pythons'; statePage('找不到此個體','此個體目前未公開，或連結已失效。你可以返回列表查看其他個體。'); }
+    }
+    if (options.focus) {
+      instantScroll(0);
+      root.querySelector('h1')?.focus({preventScroll:true});
+    }
+  }
+  function navigate(id) {
+    if (!active) { previousScroll=window.scrollY; previousFocus=document.activeElement; returnURL=location.href; }
+    history.pushState(history.state,'',url(id));
+    syncRoute({focus:true}); window.closeNav?.();
+  }
+  function showNotice(message) {
+    const notice=document.getElementById('detail-notice');
+    notice.textContent=message; clearTimeout(noticeTimer);
+    noticeTimer=setTimeout(()=>{ notice.textContent=''; },3500);
+  }
+  async function copy(text, success) {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(text); showNotice(success); return;
+    } catch (_) { /* Older in-app browsers may need the selection fallback. */ }
+    const input=document.createElement('textarea'); input.value=text;
+    input.setAttribute('readonly',''); input.style.cssText='position:fixed;opacity:0;left:0;top:0;';
+    document.body.appendChild(input); input.select(); input.setSelectionRange(0,text.length);
+    let copied=false;
+    try { copied=!!document.execCommand('copy'); } catch (_) { /* Use visible fallback. */ }
+    input.remove();
+    if (copied) { showNotice(success); return; }
+    const fallback=document.getElementById('detail-copy-fallback');
+    if (fallback) {
+      fallback.hidden=false; fallback.textContent='請長按或選取下方文字複製：';
+      const field=document.createElement('textarea'); field.value=text; field.readOnly=true;
+      field.setAttribute('aria-label','待複製內容'); fallback.appendChild(field); field.focus(); field.select();
+    }
+  }
+  document.addEventListener('click',event=>{
+    const target=event.target.closest ? event.target : event.target.parentElement;
+    if (!target) return;
+    const link=target.closest('a[data-snake-id]');
+    if (link) {
+      if (event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault(); navigate(link.dataset.snakeId); return;
+    }
+    const back=target.closest('[data-detail-back]');
+    const nav=active ? target.closest('.navbar a[href^="#"]') : null;
+    if (back || nav) {
+      if (event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      const next=nav ? catalogURL(nav.getAttribute('href')) : returnURL || catalogURL();
+      history.pushState(history.state,'',next); syncRoute(); window.closeNav?.();
+      if (nav || !previousFocus?.isConnected) {
+        const hash=new URL(next).hash;
+        const section=hash ? document.getElementById(hash.slice(1)) : null;
+        if (section) section.scrollIntoView({behavior:'auto',block:'start'});
+        else instantScroll(0);
+      }
+      return;
+    }
+    if (!activeSnake) return;
+    if (target.closest('[data-detail-zoom]') && !target.closest('button').disabled) {
+      const v=viewData(activeSnake); window.openLightbox(v.imgUrl,`${v.name} — ${v.code}`);
+    }
+    if (target.closest('[data-detail-share]')) copy(url(activeSnake.id),'已複製個體連結');
+    if (target.closest('[data-detail-inquiry]')) {
+      const v=viewData(activeSnake,window._allSnakes,window._breedingGroupDocs);
+      const enquiry=`你好，我想詢問${v.partner ? '這組繁殖組中的個體' : '這隻個體'}：\n${v.name}\n編號：${v.code}\n${url(v.id)}`;
+      copy(enquiry,'已複製詢問內容，可貼到 LINE');
+    }
+  });
+  window.addEventListener('popstate',()=>syncRoute({focus:true}));
+  window.hmIndividualDataReady=function (options = {}) { failed=!!options.error; ready=!failed; syncRoute({focus:active}); };
+  window.HMIndividualDetail={url,escape,isPublic,birthText,viewData,navigate};
+  syncRoute();
+})();
+
+</script>
 
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
