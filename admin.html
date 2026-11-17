@@ -256,6 +256,8 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
 }
 .form-group { margin-bottom:20px; }
 .form-label { font-size:12px; font-weight:500; color:var(--brown); letter-spacing:0.5px; margin-bottom:6px; display:block; }
+.form-checkbox { display:flex; align-items:center; gap:9px; cursor:pointer; }
+.form-checkbox input { width:17px; height:17px; accent-color:var(--copper); }
 .form-input, .form-select, .form-textarea {
   width:100%; border:1px solid rgba(181,115,58,0.25);
   border-radius:4px; padding:10px 12px; font-size:13px;
@@ -346,7 +348,7 @@ body { background:var(--cream); font-family:'Noto Sans TC',sans-serif; color:var
 .im-tag-safe { color:#2a6b3a; border-color:#b4d9be; background:#edf7f0; }
 .im-tag-iso { color:#8b5e10; border-color:#e8c97a; background:#fdf5e0; }
 .im-tag-avail { color:#2a6b3a; border-color:#b4d9be; background:#edf7f0; }
-.im-tag-sold { color:var(--muted); border-color:#ddd; background:#f5f5f5; }
+.im-tag-sold, .im-tag-u { color:var(--muted); border-color:#ddd; background:#f5f5f5; }
 .im-tag-ship { color:#1a5a8b; border-color:#a8cce0; background:#e8f3f9; }
 .im-owner { font-size:10px; padding:2px 6px; border-radius:3px; border:1px solid; font-weight:600; }
 .im-owner-yg { background:#eef4fb; color:#4a7fb5; border-color:#c5d9ef; }
@@ -1463,7 +1465,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           </label>
 
           <div style="margin-top:16px;padding:13px 15px;border-radius:7px;background:rgba(181,115,58,.08);border:1px solid rgba(181,115,58,.18);font-size:12px;line-height:1.8;color:var(--muted);">
-            <strong style="color:var(--brown)">執行方式：</strong>只會挑「待售中」且有有效售價的個體；已加入繁殖組的個體暫不自動降價。<br>
+            <strong style="color:var(--brown)">挑選規則</strong>　只會挑「待售中」且有有效售價的個體，會略過繁殖組及已勾選「排除自動降價」的個體。可到「所有個體」開啟該個體的編輯視窗變更勾選。<br>
             每次會在你設定的降幅範圍內隨機抽一個百分比，直接把新價格寫回個體「特價」，原始售價保持不變，因此官網會持續顯示降價後價格，不會在下一週回升；自動降價後的售價會四捨五入到最接近的 10 元，尾數固定為 0。<br>
             <strong style="color:#9a5a24">注意：</strong>目前這是後台觸發型自動化：後台開著時會定時檢查；若關掉後台超過週期，下次登入會補執行 1 次。若要「完全不開後台也照時間跑」，需另外加 Netlify/Firebase 排程函式。
           </div>
@@ -1730,6 +1732,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           </div>
 
           <div class="form-group">
+            <label class="form-label form-checkbox">
+              <input type="checkbox" id="f-auto-markdown-excluded">
+              排除自動降價
+            </label>
+          </div>
+
+          <div class="form-group">
             <label class="form-label">狀態</label>
             <select class="form-select" id="f-status">
               <option value="sale">待售中</option>
@@ -1768,12 +1777,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label">性別</label>
+              <label class="form-label" for="f-sex">性別</label>
               <select class="form-select" id="f-sex">
                 <option value="">未填寫</option>
                 <option value="M">♂ 公</option>
                 <option value="F">♀ 母</option>
-                <option value="U">？ 未知</option>
+                <option value="U">未知</option>
               </select>
             </div>
             <div class="form-group" style="margin-bottom:0;">
@@ -3057,10 +3066,20 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<script>
+const SNAKE_SEX_LABELS = { M:'公', F:'母', U:'未知' };
+
+function normalizeSnakeSex(snake) {
+  const raw = String(snake?.sex ?? '').trim() || String(snake?.gender ?? '').trim();
+  if (/^(M|Male|男生|公)$/i.test(raw)) return 'M';
+  if (/^(F|Female|女生|母)$/i.test(raw)) return 'F';
+  return 'U';
+}
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 console.log('[HM ADMIN] BG build 2026-08-14 18:34 | no breedingGroups collection | fallback enabled');
 console.log('[HM ADMIN] BG-PARTNER3 loaded | partner fields are primary; group doc optional');
@@ -3894,8 +3913,10 @@ function renderSnakes() {
       <div class="snake-card-body">
         <div class="snake-card-name">${(() => { const m = String(s.birth || '').match(/(?:19|20)\d{2}/); return m ? m[0] + ' ' : ''; })()}${s.nameZh || ''}</div>
         <div class="snake-card-code">${s.code || ''}</div>
+        ${s.status === 'sale' ? `<div class="snake-card-code">性別 ${SNAKE_SEX_LABELS[normalizeSnakeSex(s)]}</div>` : ''}
         ${s.showOnSota === true && s.species === 'ball_python' ? '<div style="display:inline-block;margin:6px 0 2px;padding:3px 7px;border-radius:3px;background:#243d31;color:#dff3e8;font-size:9px;font-weight:700;letter-spacing:1px;">SOTA</div>' : ''}
         <div class="snake-card-tags">${tags}</div>
+        ${s.autoMarkdownExcluded === true ? '<div class="snake-card-code">已排除自動降價</div>' : ''}
         ${s.species === 'ball_python' ? `
         <label onclick="event.stopPropagation()" style="margin:8px 0;padding:7px 9px;border:1px solid rgba(36,61,49,.22);border-radius:5px;background:${s.showOnSota === true ? '#edf7f0' : '#f5f5f5'};display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:${s.showOnSota === true ? '#243d31' : 'var(--muted)'};cursor:pointer;">
           <input type="checkbox" ${s.showOnSota === true ? 'checked' : ''} onchange="toggleSotaSnake('${s.id}', this.checked)" style="width:16px;height:16px;accent-color:#243d31;">
@@ -4061,7 +4082,6 @@ function buildSaleExportEntries() {
     ball_python:'球蟒', boa:'紅尾蚺', leopard_gecko:'豹紋守宮',
     corn_snake:'玉米蛇', king_snake:'王蛇', other:'其他'
   };
-  const sexMap = { M:'公', F:'母', U:'性別未填' };
   const getYear = s => {
     const m = String(s?.birth || '').match(/(?:19|20)\d{2}/);
     return m ? Number(m[0]) : null;
@@ -4096,14 +4116,7 @@ function buildSaleExportEntries() {
     if (s?.morph && String(s.morph).trim()) return String(s.morph).trim();
     return (Array.isArray(s?.tags) ? s.tags.join(' ') : '') || '中文名稱未填';
   };
-  const getSex = s => {
-    const raw = String(s?.sex || s?.gender || '').trim();
-    if (!raw) return '性別未填';
-    if (/^(M|Male|男生|公)$/i.test(raw)) return '公';
-    if (/^(F|Female|女生|母)$/i.test(raw)) return '母';
-    if (/^(U|Unknown|未知)$/i.test(raw)) return '性別未填';
-    return sexMap[raw] || raw;
-  };
+  const getSex = s => SNAKE_SEX_LABELS[normalizeSnakeSex(s)];
 
   const activeGroups = breedingGroups.map(g => {
     const male = bgResolveSide(g, 'male');
@@ -4490,6 +4503,7 @@ window.submitSnake = async () => {
   const price = document.getElementById('f-price').value.trim();
   const specialPriceInput = document.getElementById('f-special-price').value.trim();
   const specialPrice = specialPriceInput || price;
+  const autoMarkdownExcluded = document.getElementById('f-auto-markdown-excluded').checked;
   const species = document.getElementById('f-species').value;
   const birth = document.getElementById('f-birth').value.trim();
   const frozen = document.getElementById('f-frozen').value;
@@ -4510,7 +4524,7 @@ window.submitSnake = async () => {
   try {
     const payload = {
       imgUrl, code, morph, nameZh, nameEn,
-      tags: [...currentTags], status, auctionUrl, auctionEnd, auctionDescription, price, specialPrice, species,
+      tags: [...currentTags], status, auctionUrl, auctionEnd, auctionDescription, price, specialPrice, autoMarkdownExcluded, species,
       birth, frozen, sire, dam, nature, sex, weight,
       showOnSota, sotaDescription,
       createdAt: serverTimestamp(),
@@ -4533,6 +4547,7 @@ window.submitSnake = async () => {
     document.getElementById('upload-placeholder').style.display = 'block';
     ['f-code','f-morph','f-name-zh','f-name-en','f-auction-url','f-auction-end','f-auction-description','f-price','f-special-price','f-birth','f-sire','f-dam','f-weight'].forEach(id => document.getElementById(id).value = '');
     newSpecialPriceManual = false;
+    document.getElementById('f-auto-markdown-excluded').checked = false;
     document.getElementById('f-frozen').value = '';
     document.getElementById('f-nature').value = '';
     document.getElementById('f-sex').value = '';
@@ -4743,15 +4758,20 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
     document.getElementById('edit-species').value = snake.species || 'ball_python';
     document.getElementById('edit-name-zh').value = snake.nameZh || '';
     document.getElementById('edit-name-en').value = snake.nameEn || '';
-    document.getElementById('edit-price').value = snake.price || '';
-    document.getElementById('edit-special-price').value = snake.specialPrice || snake.price || '';
+    const priceInput = document.getElementById('edit-price');
+    priceInput.value = priceInput.defaultValue = snake.price || '';
+    const specialPriceInput = document.getElementById('edit-special-price');
+    specialPriceInput.value = specialPriceInput.defaultValue = snake.specialPrice || snake.price || '';
+    const exclusionInput = document.getElementById('edit-auto-markdown-excluded');
+    exclusionInput.checked = exclusionInput.defaultChecked = snake.autoMarkdownExcluded === true;
     document.getElementById('edit-status').value = snake.status || 'sale';
     document.getElementById('edit-auction-url').value = snake.auctionUrl || '';
     document.getElementById('edit-auction-end').value = snake.auctionEnd || '';
     document.getElementById('edit-auction-description').value = snake.auctionDescription || '';
     document.getElementById('edit-birth').value = snake.birth || '';
     document.getElementById('edit-frozen').value = snake.frozen || '';
-    document.getElementById('edit-sex').value = snake.sex || '';
+    const hasSex = String(snake.sex ?? '').trim() || String(snake.gender ?? '').trim();
+    document.getElementById('edit-sex').value = hasSex ? normalizeSnakeSex(snake) : '';
     document.getElementById('edit-weight').value = snake.weight || '';
     document.getElementById('edit-sire').value = snake.sire || '';
     document.getElementById('edit-dam').value = snake.dam || '';
@@ -4836,7 +4856,6 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         nameZh: document.getElementById('edit-name-zh').value.trim(),
         weight: document.getElementById('edit-weight').value.trim(),
         frozen: document.getElementById('edit-frozen').value,
-        specialPrice: document.getElementById('edit-special-price').value.trim() || document.getElementById('edit-price').value.trim(),
         status: document.getElementById('edit-status').value,
         publicVisible: document.getElementById('edit-status').value !== 'ready',
         publicStatus: document.getElementById('edit-status').value === 'ready' ? 'sale' : document.getElementById('edit-status').value,
@@ -4854,8 +4873,6 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         nameZh: document.getElementById('edit-name-zh').value.trim(),
         nameEn: document.getElementById('edit-name-en').value.trim(),
         tags: editTags,
-        price: document.getElementById('edit-price').value.trim(),
-        specialPrice: document.getElementById('edit-special-price').value.trim() || document.getElementById('edit-price').value.trim(),
         status: document.getElementById('edit-status').value,
         auctionUrl: document.getElementById('edit-auction-url').value.trim(),
         auctionEnd: document.getElementById('edit-auction-end').value || '',
@@ -4872,7 +4889,19 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
         sotaDescription: document.getElementById('edit-sota-description').value.trim(),
         updatedAt: serverTimestamp(),
       };
+      const priceInput = document.getElementById('edit-price');
+      const specialPriceInput = document.getElementById('edit-special-price');
+      const basePriceChanged = !editingSnakeManaged && priceInput.value !== priceInput.defaultValue;
+      if (basePriceChanged) updatePayload.price = priceInput.value.trim();
+      if (basePriceChanged || specialPriceInput.value !== specialPriceInput.defaultValue) {
+        updatePayload.specialPrice = specialPriceInput.value.trim() || priceInput.value.trim();
+      }
+      const exclusionInput = document.getElementById('edit-auto-markdown-excluded');
+      if (exclusionInput.checked !== exclusionInput.defaultChecked) {
+        updatePayload.autoMarkdownExcluded = exclusionInput.checked;
+      }
       await updateDoc(doc(db, 'snakes', editingSnakeId), updatePayload);
+      snakeLocalPatch(editingSnakeId, {...updatePayload, updatedAt:new Date()});
       if (editingSnakeManaged && typeof window.imSyncEditableSnakeFields === 'function') {
         await window.imSyncEditableSnakeFields({
           saleDocId: editingSnakeSaleId,
@@ -4882,7 +4911,6 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
           frozen: updatePayload.frozen,
         });
       }
-      snakeLocalPatch(editingSnakeId, {...updatePayload, updatedAt:new Date()});
       showToast('✅ 已儲存！名稱、體重、冷凍設定已同步至相關紀錄');
       closeEditModal();
       loadSnakes(true).catch(e=>console.warn('[snakes] edit reconcile failed',e));
@@ -5559,15 +5587,14 @@ function amdRoundTo10(n) {
 function amdEsc(s) {
   return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+function amdIsCandidate(s) {
+  if (s.status !== 'sale' || s.breedingPartnerId || s.autoMarkdownExcluded === true) return false;
+  const price = amdPriceNumber(s);
+  if (price === null || price <= Math.max(0, Number(autoMarkdownConfig.floorPrice || 0))) return false;
+  return !autoMarkdownConfig.onceOnly || !(Number(s.autoMarkdownCount || 0) > 0);
+}
 function amdCandidates() {
-  return allSnakes.filter(s => {
-    if (s.status !== 'sale') return false;
-    if (s.breedingPartnerId) return false;
-    const p = amdPriceNumber(s);
-    if (p === null || p <= Math.max(0, Number(autoMarkdownConfig.floorPrice || 0))) return false;
-    if (autoMarkdownConfig.onceOnly && Number(s.autoMarkdownCount || 0) > 0) return false;
-    return true;
-  });
+  return allSnakes.filter(amdIsCandidate);
 }
 function amdShuffle(list) {
   const a = [...list];
@@ -5617,20 +5644,8 @@ async function executeAutoMarkdown(reason='scheduled') {
   autoMarkdownRunning = true;
   try {
     await loadAutoMarkdownConfig();
-    const candidates = amdCandidates();
-    if (!candidates.length) {
-      autoMarkdownConfig.lastRunAt = amdNowIso();
-      autoMarkdownConfig.nextRunAt = new Date(Date.now() + amdMsFromConfig(autoMarkdownConfig)).toISOString();
-      autoMarkdownConfig.history = [{
-        at:autoMarkdownConfig.lastRunAt, type:'empty', reason,
-        note:'本次沒有符合條件的待售個體'
-      }, ...(autoMarkdownConfig.history || [])].slice(0,100);
-      await persistAutoMarkdownConfig();
-      return false;
-    }
-
-    const qty = Math.min(Math.max(1, Number(autoMarkdownConfig.quantity || 1)), candidates.length);
-    const picks = amdShuffle(candidates).slice(0, qty);
+    const qty = Math.max(1, Number(autoMarkdownConfig.quantity || 1));
+    const picks = amdShuffle(amdCandidates()).slice(0, qty);
     const minPct = Math.min(Number(autoMarkdownConfig.minPct || 5), Number(autoMarkdownConfig.maxPct || 15));
     const maxPct = Math.max(Number(autoMarkdownConfig.minPct || 5), Number(autoMarkdownConfig.maxPct || 15));
     const floor = Math.max(0, Number(autoMarkdownConfig.floorPrice || 0));
@@ -5638,40 +5653,45 @@ async function executeAutoMarkdown(reason='scheduled') {
     const historyRows = [];
 
     for (const s of picks) {
-      const oldPrice = amdPriceNumber(s);
-      if (oldPrice === null) continue;
+      const ref = doc(db, 'snakes', String(s._docId || s.id));
       const pct = Math.floor(Math.random() * (maxPct - minPct + 1)) + minPct;
-      const floorTo10 = Math.ceil(floor / 10) * 10;
-      const newPrice = Math.max(floorTo10, amdRoundTo10(oldPrice * (1 - pct / 100)));
-      if (newPrice >= oldPrice) continue;
+      // 其他分頁可能已儲存排除設定，寫入時以 Firestore 上的資料為準。
+      const result = await runTransaction(db, async transaction => {
+        const latest = (await transaction.get(ref)).data();
+        if (!latest || !amdIsCandidate(latest)) return null;
 
-      const newCount = Number(s.autoMarkdownCount || 0) + 1;
-      await updateDoc(doc(db, 'snakes', String(s.id)), {
-        specialPrice:String(newPrice),
-        autoMarkdownCount:newCount,
-        autoMarkdownLastPct:pct,
-        autoMarkdownLastAt:serverTimestamp(),
-        autoMarkdownPreviousPrice:String(oldPrice),
-        updatedAt:serverTimestamp()
+        const oldPrice = amdPriceNumber(latest);
+        const floorTo10 = Math.ceil(floor / 10) * 10;
+        const newPrice = Math.max(floorTo10, amdRoundTo10(oldPrice * (1 - pct / 100)));
+        if (newPrice >= oldPrice) return null;
+
+        const patch = {
+          specialPrice:String(newPrice),
+          autoMarkdownCount:Number(latest.autoMarkdownCount || 0) + 1,
+          autoMarkdownLastPct:pct,
+          autoMarkdownPreviousPrice:String(oldPrice)
+        };
+        transaction.update(ref, {...patch, autoMarkdownLastAt:serverTimestamp(), updatedAt:serverTimestamp()});
+        return {patch, oldPrice, newPrice};
       });
-
-      s.specialPrice = String(newPrice);
-      s.autoMarkdownCount = newCount;
-      s.autoMarkdownLastPct = pct;
-      s.autoMarkdownPreviousPrice = String(oldPrice);
+      if (!result) continue;
+      const current = allSnakes.find(item => item.id === s.id);
+      if (current) Object.assign(current, result.patch);
 
       historyRows.push({
         at, type:'markdown', reason, id:String(s.id),
         code:String(s.code || ''), name:String(s.nameZh || s.morph || ''),
-        oldPrice, newPrice, pct
+        oldPrice:result.oldPrice, newPrice:result.newPrice, pct
       });
     }
 
+    const changed = historyRows.length > 0;
+    if (!changed) historyRows.push({at, type:'empty', reason, note:'本次沒有符合條件的待售個體'});
     autoMarkdownConfig.lastRunAt = at;
     autoMarkdownConfig.nextRunAt = new Date(Date.now() + amdMsFromConfig(autoMarkdownConfig)).toISOString();
     autoMarkdownConfig.history = [...historyRows.reverse(), ...(autoMarkdownConfig.history || [])].slice(0,100);
     await persistAutoMarkdownConfig();
-    return historyRows.length > 0;
+    return changed;
   } catch(e) {
     console.error('[autoMarkdown] execute failed', e);
     window.showToast?.('❌ 自動降價失敗：' + e.message);
@@ -6869,6 +6889,10 @@ window.showToast = function showToast(msg) {
         </select>
       </div>
     </div>
+    <label class="form-label form-checkbox" style="margin-bottom:14px;">
+      <input type="checkbox" id="edit-auto-markdown-excluded">
+      排除自動降價
+    </label>
     <div style="margin-bottom:14px;border:1px solid rgba(181,115,58,.22);background:rgba(181,115,58,.045);padding:12px 14px;border-radius:6px;">
       <label class="form-label" style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:7px;">
         <input type="checkbox" id="edit-show-sota" style="width:17px;height:17px;accent-color:var(--copper);">
@@ -6893,12 +6917,12 @@ window.showToast = function showToast(msg) {
     <div style="border-top:1px solid rgba(181,115,58,0.15);margin:4px 0 16px;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
       <div>
-        <label class="form-label">性別</label>
+        <label class="form-label" for="edit-sex">性別</label>
         <select class="form-select" id="edit-sex">
           <option value="">未填寫</option>
           <option value="M">♂ 公</option>
           <option value="F">♀ 母</option>
-          <option value="U">？ 未知</option>
+          <option value="U">未知</option>
         </select>
       </div>
       <div>
@@ -7511,7 +7535,7 @@ window.imRenderDataCenter=()=>{
     const hasSale=!!(code&&saleMap.has(code));
     const txt=[imDcCodeOf(a),a.nameZh,a.gene,a.owner,a.source,a.species,a.weight,a.frozen,imArchiveReasonText(a.archiveReason||a.individualArchiveReason)].join(' ').toLowerCase();
     if(q&&!txt.includes(q))return false;
-    if(sex&&(a.sex||'U')!==sex)return false;
+    if(sex&&normalizeSnakeSex(a)!==sex)return false;
     if(kind==='breeder'&&!a.inBreederList)return false;
     if(kind==='sale'&&!hasSale)return false;
     if(kind==='saleOnly'&&a._sourceType!=='sales')return false;
@@ -7536,7 +7560,7 @@ window.imRenderDataCenter=()=>{
       <td style="font-family:monospace;font-size:11px">${esc(imDcCodeOf(a)||'—')}</td>
       <td style="max-width:250px"><b>${esc(a.nameZh||'—')}</b></td>
       <td style="max-width:320px"><b>${esc(a.gene||'—')}</b><div style="font-size:9px;color:var(--muted)">${esc(a.species||'')}</div></td>
-      <td>${a.sex?sexSpan(a.sex):'—'}</td>
+      <td>${sexSpan(a)}</td>
       <td>${esc(a.weight??'—')}</td>
       <td>${esc(a.frozen||'—')}</td>
       <td>${a.owner?ownerSpan(a.owner):'—'}</td>
@@ -7555,7 +7579,11 @@ function ownerSpan(o) {
   const cls = {有剛:'im-owner-yg', 宣恩:'im-owner-xe', Neil:'im-owner-neil'}[o]||'';
   return `<span class="im-owner ${cls}">${o}</span>`;
 }
-function sexSpan(s) { return s==='M'?`<span class="im-tag im-tag-m">♂ 公</span>`:`<span class="im-tag im-tag-f">♀ 母</span>`; }
+function sexSpan(snake) {
+  const sex = normalizeSnakeSex(snake);
+  const label = { M:'♂ 公', F:'♀ 母', U:'未知' }[sex];
+  return `<span class="im-tag im-tag-${sex.toLowerCase()}">${label}</span>`;
+}
 function statusSpan(s) {
   if (s==='安全穩定') return `<span class="im-tag im-tag-safe">安全穩定</span>`;
   if (s==='隔離中') return `<span class="im-tag im-tag-iso">隔離中</span>`;
@@ -7769,7 +7797,7 @@ window.imRenderTable = (section) => {
       <td data-label="所有人">${ownerSpan(r.owner)}</td>
       <td data-label="產品編號" style="font-size:10px;color:var(--muted);white-space:nowrap">${r.saleId||''}</td>
       <td data-label="基因" style="font-size:11px;max-width:200px">${r.gene||''}</td>
-      <td data-label="性別">${sexSpan(r.sex)}</td>
+      <td data-label="性別">${sexSpan(r)}</td>
       <td data-label="個性" style="font-size:11px;color:var(--copper)">${r.nature||'—'}</td>
       <td data-label="售價" style="color:var(--copper);font-weight:600">${fmtMoney(r.price)}</td>
       <td data-label="公基金" style="color:var(--muted)">${r.fund?fmtMoney(r.fund):'—'}</td>
@@ -9169,6 +9197,7 @@ window.imOpenForm = async (section, id) => {
     window._imClearOutPrefill = null;
     if (!isNew) {} else { Object.assign(r, pre); }
     const saleMaster=imDcMasterByCode(r.saleId||'');
+    const saleSex=normalizeSnakeSex(saleMaster || r);
     const dcLocked=!!saleMaster;
     const dcRO=dcLocked?'readonly style="background:#f2f0ec;color:#80766d"':'';
     const dcDIS=dcLocked?'disabled style="background:#f2f0ec;color:#80766d"':'';
@@ -9179,7 +9208,7 @@ window.imOpenForm = async (section, id) => {
       <div class="form-group"><label class="form-label">所有人 *</label><select class="form-select" id="im-f-owner">${['有剛','宣恩','Neil'].map(x=>`<option ${r.owner===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">產品編號</label><input class="form-input" id="im-f-saleId" value="${esc(r.saleId||'')}" ${dcRO}></div>
       <div class="form-group"><label class="form-label">物種</label><select class="form-select" id="im-f-species" ${dcDIS}>${['球蟒','紅尾蚺','玉米蛇','王蛇','豹紋守宮'].map(x=>`<option ${(r.species||'球蟒')===x?'selected':''}>${x}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="im-f-sex" ${dcDIS}><option value="M" ${(r.sex||'M')==='M'?'selected':''}>♂ 公</option><option value="F" ${r.sex==='F'?'selected':''}>♀ 母</option><option value="U" ${r.sex==='U'?'selected':''}>？ 未知</option></select></div>
+      <div class="form-group"><label class="form-label" for="im-f-sex">性別</label><select class="form-select" id="im-f-sex" ${dcDIS}><option value="U" ${saleSex==='U'?'selected':''}>未知</option><option value="M" ${saleSex==='M'?'selected':''}>♂ 公</option><option value="F" ${saleSex==='F'?'selected':''}>♀ 母</option></select></div>
       <div class="form-group im-form-full"><label class="form-label">基因/品系 *</label><input class="form-input" id="im-f-gene" value="${esc(r.gene||'')}" ${dcRO}></div>
       <div class="form-group im-form-full"><label class="form-label">中文名稱 <span style="font-size:10px;color:var(--muted)">（由待售個體同步）</span></label><input class="form-input" id="im-f-nameZh" value="${esc(r.nameZh||saleMaster?.nameZh||'')}" readonly style="background:#f2f0ec;color:#80766d" placeholder="請到待售個體 → 編輯 填寫"></div>
       <div class="form-group"><label class="form-label">進貨成本 (NT$)</label><input class="form-input" id="im-f-cost" type="number" value="${r.cost||0}" oninput="imAutoFund()"></div>
@@ -9698,6 +9727,7 @@ window.imOpenPhotoLabel = async (id) => {
   }
   _labelImg=null;
   _labelStripColor=null;
+  const labelSex = { M:'Male', F:'Female', U:'Unknown' }[normalizeSnakeSex(r)];
   document.getElementById('im-modal-body').innerHTML = `
     <div class="im-modal-title">🎨 生成標籤圖</div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px">
@@ -9719,10 +9749,10 @@ window.imOpenPhotoLabel = async (id) => {
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
       <button type="button" class="action-btn" style="flex:1;min-width:150px" onclick="document.getElementById('label-img-input').click()">🖼️ 從相簿選擇</button>
-      <button type="button" class="action-btn" style="flex:1;min-width:150px" onclick="labelOpenCamera('${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">📷 直接拍照</button>
+      <button type="button" class="action-btn" style="flex:1;min-width:150px" onclick="labelOpenCamera('${esc(r.saleId||'')}','${esc(r.gene||'')}','${labelSex}')">📷 直接拍照</button>
     </div>
-    <input type="file" id="label-img-input" accept="image/*" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">
-    <input type="file" id="label-img-camera-input" accept="image/*" capture="environment" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${r.sex==='M'?'Male':'Female'}')">
+    <input type="file" id="label-img-input" accept="image/*" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${labelSex}')">
+    <input type="file" id="label-img-camera-input" accept="image/*" capture="environment" style="display:none" onchange="labelLoadImage(this,'${esc(r.saleId||'')}','${esc(r.gene||'')}','${labelSex}')">
     <div id="label-camera-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:3000;align-items:center;justify-content:center;padding:18px">
       <div style="width:min(92vw,520px);background:#111;border-radius:18px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.35)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#fff">
@@ -9755,7 +9785,7 @@ window.imOpenPhotoLabel = async (id) => {
       </div>
       <div class="form-group">
         <label class="form-label">基因品系</label>
-        <input class="form-input" id="label-gene" value="${esc(r.gene||'')} ${r.sex==='M'?'Male':'Female'}" oninput="labelRedraw()">
+        <input class="form-input" id="label-gene" value="${esc(r.gene||'')} ${labelSex}" oninput="labelRedraw()">
       </div>
     </div>
 
@@ -10271,9 +10301,15 @@ function imBuildWebsiteProjection(r,existing={},settings={}){
   if(!existing.specialPrice || existing.specialPrice===oldBase) special=basePrice;
   const visible=settings.visible!==undefined?settings.visible:(existing.publicVisible!==false&&existing.status!=='ready'&&!!existing.status);
   const publicStatus=settings.status||existing.publicStatus||existing.status||'ready';
-  const sexEn=r.sex==='M'?' Male':r.sex==='F'?' Female':'';
-  const fallbackNameZh=(r.gene||'')+(r.sex==='M'?'（公）':r.sex==='F'?'（母）':'');
-  const nameZh=String(r.nameZh||'').trim() || String(existing.nameZh||'').trim() || fallbackNameZh;
+  const sex=normalizeSnakeSex(r);
+  const sexEn={ M:' Male', F:' Female', U:'' }[sex];
+  const sexSuffixZh={ M:'（公）', F:'（母）', U:'' };
+  const fallbackNameZh=(r.gene||'')+sexSuffixZh[sex];
+  const existingName=String(existing.nameZh||'').trim();
+  const previousSex=normalizeSnakeSex(existing);
+  const previousFallbackName=(existing.morph||'')+sexSuffixZh[previousSex];
+  const keepExistingName=sex===previousSex || existingName!==previousFallbackName;
+  const nameZh=String(r.nameZh||'').trim() || (keepExistingName ? existingName : '') || fallbackNameZh;
   const master=imDcMasterByCode(r.saleId||'');
   const img=(master?.labelImageUrl || r.labelImageUrl || master?.imgUrl || (Array.isArray(master?.photos)&&master.photos[0]) || existing.imgUrl || '');
   return {
@@ -10287,7 +10323,7 @@ function imBuildWebsiteProjection(r,existing={},settings={}){
     auctionDescription:settings.auctionDescription!==undefined?settings.auctionDescription:(existing.auctionDescription||''),
     imgUrl:img,
     year:String(r.birth||'').match(/(?:19|20)\d{2}/)?.[0]||'', birth:r.birth||'',
-    frozen:r.frozen||'', weight:r.weight||'', sire:r.sireA||'', dam:r.damB||'', nature:r.nature||'', sex:r.sex||'',
+    frozen:r.frozen||'', weight:r.weight||'', sire:r.sireA||'', dam:r.damB||'', nature:r.nature||'', sex,
     showOnSota:existing.showOnSota===true, sotaDescription:existing.sotaDescription||'',
     fromIM:true, dataCenterManaged:true, imSaleId:r._id, updatedAt:serverTimestamp()
   };
@@ -12640,7 +12676,7 @@ window.hatchSave = async (legacyTarget='') => {
       if (dest === 'sales') {
         const data = {
           owner: ownerName, saleId, species: speciesName,
-          gene: gene||'(待確認)', sex, birth: dateVal, arrivalDate,
+          gene: gene||'(待確認)', sex:sex||'U', birth: dateVal, arrivalDate,
           sireA: sire, damB: dam, sireId, damId, sireOwner, damOwner, sireSpecies, damSpecies, cost: 0, price: 0, fund: 0,
           source: '品牌自繁', status: '待售',
           channel: '', buyer: '', ship: '', delivery: '',
