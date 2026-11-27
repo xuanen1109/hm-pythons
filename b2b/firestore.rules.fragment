@@ -7,8 +7,8 @@ function tradeMember() {
     get(/databases/$(database)/documents/b2b_members/$(request.auth.uid)).data.active == true;
 }
 function tradeRole(r) {
-  return tradeMember() && (r in get(/databases/$(database)/documents/b2b_members/$(request.auth.uid)).data.get('roles', []) ||
-    get(/databases/$(database)/documents/b2b_members/$(request.auth.uid)).data.get('role', '') == r);
+  return tradeMember() &&
+    get(/databases/$(database)/documents/b2b_members/$(request.auth.uid)).data.get('roles', []) == [r];
 }
 function tradeOwn() { return request.auth != null && resource.data.owner == request.auth.uid; }
 function tradeEntry() {
@@ -41,35 +41,68 @@ function tradeSignal() {
      (tradeRole('seller') && d.kind == 'offer' &&
       exists(/databases/$(database)/documents/b2b_wish_public/$(d.target))));
 }
-// Bootstrap the first admin with trusted Firebase console/Admin SDK, never via public signup.
+// Bootstrap the first admin with trusted Firebase console/Admin SDK: roles: ['admin'].
+function tradeVerified() {
+  return request.auth != null && request.auth.token.email_verified == true &&
+    request.auth.token.email is string;
+}
+function tradeInvite(email) {
+  return get(/databases/$(database)/documents/b2b_invites/$(email)).data;
+}
+function tradeHasInvite(email) {
+  return exists(/databases/$(database)/documents/b2b_invites/$(email)) &&
+    tradeInvite(email).active == true;
+}
+function tradeApplication(uid) {
+  return get(/databases/$(database)/documents/b2b_applications/$(uid)).data;
+}
 function tradeAssignable() {
   let d = request.resource.data;
   return d.keys().hasOnly(['roles','active','updatedAt']) &&
     d.keys().hasAll(['roles','active','updatedAt']) &&
-    d.roles is list && d.roles.size() >= 1 && d.roles.size() <= 3 &&
+    d.roles is list && d.roles.size() == 1 &&
     d.roles.hasOnly(['buyer','seller','export']) && d.active is bool &&
     d.updatedAt == request.time;
+}
+match /b2b_invites/{email} {
+  allow get: if tradeRole('admin') || (tradeVerified() && request.auth.token.email == email);
+  allow list: if tradeRole('admin');
+  allow create: if tradeRole('admin') &&
+    request.resource.data.keys().hasOnly(['role','active','createdAt']) &&
+    request.resource.data.keys().hasAll(['role','active','createdAt']) &&
+    request.resource.data.role in ['buyer','seller','export'] &&
+    request.resource.data.active == true && request.resource.data.createdAt == request.time;
+  allow update: if tradeRole('admin') &&
+    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active']) &&
+    request.resource.data.active is bool;
+  allow delete: if false;
 }
 match /b2b_members/{uid} {
   allow get: if request.auth != null && (request.auth.uid == uid || tradeRole('admin'));
   allow list: if tradeRole('admin');
   allow create: if tradeRole('admin') && uid != request.auth.uid && tradeAssignable() &&
-    exists(/databases/$(database)/documents/b2b_applications/$(uid));
+    request.resource.data.active == true &&
+    exists(/databases/$(database)/documents/b2b_applications/$(uid)) &&
+    tradeApplication(uid).status == 'pending' &&
+    tradeHasInvite(tradeApplication(uid).email) &&
+    request.resource.data.roles == [tradeInvite(tradeApplication(uid).email).role] &&
+    getAfter(/databases/$(database)/documents/b2b_applications/$(uid)).data.status == 'approved';
   allow update: if tradeRole('admin') && uid != request.auth.uid && tradeAssignable() &&
-    !('admin' in resource.data.get('roles', [])) && resource.data.get('role','') != 'admin';
+    request.resource.data.roles == resource.data.roles &&
+    resource.data.roles.hasOnly(['buyer','seller','export']);
   allow delete: if false;
 }
 match /b2b_applications/{uid} {
   allow get: if request.auth != null && (request.auth.uid == uid || tradeRole('admin'));
   allow list: if tradeRole('admin');
-  allow create: if request.auth != null && request.auth.uid == uid &&
-    request.auth.token.email_verified == true &&
+  allow create: if tradeVerified() && request.auth.uid == uid &&
     request.resource.data.keys().hasOnly(['business','email','requestedRole','status','createdAt']) &&
     request.resource.data.keys().hasAll(['business','email','requestedRole','status','createdAt']) &&
     request.resource.data.business is string && request.resource.data.business.size() > 0 &&
     request.resource.data.business.size() <= 120 &&
     request.resource.data.email == request.auth.token.email &&
-    request.resource.data.requestedRole in ['buyer','seller'] &&
+    tradeHasInvite(request.auth.token.email) &&
+    request.resource.data.requestedRole == tradeInvite(request.auth.token.email).role &&
     request.resource.data.status == 'pending' && request.resource.data.createdAt == request.time;
   allow update: if tradeRole('admin') &&
     resource.data.status == 'pending' &&
@@ -77,9 +110,11 @@ match /b2b_applications/{uid} {
     request.resource.data.status in ['approved','rejected'] &&
     request.resource.data.reviewedAt == request.time &&
     (request.resource.data.status == 'rejected' ||
-      (existsAfter(/databases/$(database)/documents/b2b_members/$(uid)) &&
+      (tradeHasInvite(resource.data.email) &&
+      resource.data.requestedRole == tradeInvite(resource.data.email).role &&
+      existsAfter(/databases/$(database)/documents/b2b_members/$(uid)) &&
       getAfter(/databases/$(database)/documents/b2b_members/$(uid)).data.active == true &&
-      resource.data.requestedRole in getAfter(/databases/$(database)/documents/b2b_members/$(uid)).data.roles));
+      getAfter(/databases/$(database)/documents/b2b_members/$(uid)).data.roles == [resource.data.requestedRole]));
   allow delete: if false;
 }
 match /b2b_supply_private/{id} {
