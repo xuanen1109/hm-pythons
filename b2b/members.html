@@ -13,7 +13,7 @@ function btn(parent,text,action){const b=el("button",text,parent);b.type="button
 async function act(b,fn){b.disabled=true;by("message").textContent="";try{await fn()}catch(e){by("message").textContent=tr("操作失敗，請確認權限及連線：","操作に失敗しました。権限と接続をご確認ください：")+e.code;}finally{b.disabled=false}}
 function roles(m){return Array.isArray(m?.roles)?m.roles:m?.role?[m.role]:[]}
 function roleName(r){return ({buyer:tr("買家","買い手"),seller:tr("賣家","売り手"),export:tr("出口負責人","輸出担当"),admin:tr("管理員","管理者")})[r]||r}
-const member=u=>doc(db,"b2b_members",u),application=u=>doc(db,"b2b_applications",u);
+const member=u=>doc(db,"b2b_members",u),application=u=>doc(db,"b2b_applications",u),invite=email=>doc(db,"b2b_invites",email);
 function shell(){document.documentElement.lang=lang==="ja"?"ja":"zh-Hant";by("lang").textContent=lang==="ja"?"繁體中文":"日本語";by("subtitle").textContent=tr("跨國採購會員申請與審核","国際仕入れ会員申請・審査");by("login").textContent=tr("使用 Google 登入","Google でログイン");by("logout").textContent=tr("登出","ログアウト");by("login").hidden=!!auth.currentUser;by("logout").hidden=!auth.currentUser}
 async function render(){const g=++generation;shell();const p=by("panel");p.replaceChildren();const u=auth.currentUser;if(!u)return;
 const [ms,as]=await Promise.all([getDoc(member(u.uid)),getDoc(application(u.uid))]);if(g!==generation)return;
@@ -21,22 +21,29 @@ const m=ms.data(),a=as.data();const s=el("section",null,p);el("h2",u.email,s);
 if(m?.active){el("p",tr("已核准：","承認済み：")+roles(m).map(roleName).join(" / "),s);if(roles(m).includes("admin"))await admin(p,g);else el("p",tr("會員權限已生效；交易頁面尚待接入。","会員権限は有効です。取引画面は接続準備中です。"),s);return;}
 if(m){el("p",tr("帳號已停權，請聯絡管理員。","アカウント停止中。管理者にお問い合わせください。"),s);return}
 if(a){el("p",a.status==="pending"?tr("審核中","審査中"):a.status==="rejected"?tr("申請未通過，請聯絡管理員。","申請は承認されませんでした。管理者にお問い合わせください。"):tr("權限尚未開通，請聯絡管理員。","権限未設定。管理者にお問い合わせください。"),s);return}
+if(!u.emailVerified||!u.email){el("p",tr("請使用已驗證的受邀電子郵件登入。","招待された確認済みメールアドレスでログインしてください。"),s);return;}
+const inv=(await getDoc(invite(u.email))).data();if(g!==generation)return;
+if(!inv?.active){el("p",tr("尚未收到邀請，請聯絡管理員。","招待がありません。管理者にお問い合わせください。"),s);return;}
+el("p",tr("指定身分：","指定された区分：")+roleName(inv.role),s);
 const l=el("label",tr("商家／合作夥伴名稱","店舗・事業者名"),s),name=el("input",null,l);name.maxLength=120;
-const rl=el("label",tr("申請身分","申請区分"),s),sel=el("select",null,rl);
-for(const r of ["buyer","seller"]){const o=el("option",roleName(r),sel);o.value=r}
-btn(s,tr("送出申請","申請する"),async()=>{if(!name.value.trim())throw {code:"business-required"};await setDoc(application(u.uid),{business:name.value.trim(),email:u.email,requestedRole:sel.value,status:"pending",createdAt:serverTimestamp()});await render()});
+btn(s,tr("送出申請","申請する"),async()=>{if(!name.value.trim())throw {code:"business-required"};await setDoc(application(u.uid),{business:name.value.trim(),email:u.email,requestedRole:inv.role,status:"pending",createdAt:serverTimestamp()});await render()});
 }
 async function admin(p,g){
-const [apps,mems]=await Promise.all([getDocs(collection(db,"b2b_applications")),getDocs(collection(db,"b2b_members"))]);if(g!==generation)return;
+const [apps,mems,invs]=await Promise.all([getDocs(collection(db,"b2b_applications")),getDocs(collection(db,"b2b_members")),getDocs(collection(db,"b2b_invites"))]);if(g!==generation)return;
+const is=el("section",null,p);el("h2",tr("新增指定身分邀請","区分指定の招待"),is);
+const il=el("label",tr("對方已驗證的 Google 電子郵件（完全一致）","相手の確認済み Google メール（完全一致）"),is),email=el("input",null,il);email.type="email";email.maxLength=254;
+const sl=el("label",tr("指定身分","指定区分"),is),rs=el("select",null,sl);
+for(const r of ["buyer","seller","export"]){const o=el("option",roleName(r),rs);o.value=r}
+btn(is,tr("建立邀請","招待を作成"),async()=>{const e=email.value.trim();if(!email.checkValidity()||!e||e.includes("/"))throw {code:"invalid-email"};await setDoc(invite(e),{role:rs.value,active:true,createdAt:serverTimestamp()});await render()});
+for(const row of invs.docs){const d=row.data(),c=el("article",null,is);el("p",row.id+" · "+roleName(d.role),c);btn(c,d.active?tr("取消邀請","招待停止"):tr("恢復邀請","招待再開"),async()=>{await updateDoc(invite(row.id),{active:!d.active});await render()});}
 const pending=el("section",null,p);el("h2",tr("待審核申請","審査待ち"),pending);
 for(const row of apps.docs){const a=row.data();if(a.status!=="pending")continue;const c=el("article",null,pending);el("p",a.business+" · "+a.email+" · "+roleName(a.requestedRole),c);
 btn(c,tr("核准","承認"),async()=>{const b=writeBatch(db);b.set(member(row.id),{roles:[a.requestedRole],active:true,updatedAt:serverTimestamp()});b.update(application(row.id),{status:"approved",reviewedAt:serverTimestamp()});await b.commit();await render()});
 btn(c,tr("拒絕","却下"),async()=>{await updateDoc(application(row.id),{status:"rejected",reviewedAt:serverTimestamp()});await render()});}
 const list=el("section",null,p);el("h2",tr("會員管理","会員管理"),list);const names=new Map(apps.docs.map(x=>[x.id,x.data()]));
-for(const row of mems.docs){const m=row.data();if(roles(m).includes("admin"))continue;const c=el("article",null,list),a=names.get(row.id);el("p",a?.business||row.id,c);el("small",a?.email||"",c);let checks=[];
-for(const r of ["buyer","seller","export"]){const l=el("label",null,c),i=el("input",null,l);i.type="checkbox";i.checked=roles(m).includes(r);checks.push([r,i]);l.append(" "+roleName(r))}
+for(const row of mems.docs){const m=row.data();if(roles(m).includes("admin"))continue;const c=el("article",null,list),a=names.get(row.id);el("p",a?.business||row.id,c);el("small",a?.email||"",c);el("p",roles(m).map(roleName).join(" / "),c);
 const l=el("label",null,c),active=el("input",null,l);active.type="checkbox";active.checked=m.active===true;l.append(" "+tr("啟用","有効"));
-btn(c,tr("儲存權限","権限を保存"),async()=>{const next=checks.filter(x=>x[1].checked).map(x=>x[0]);if(!next.length)throw {code:"role-required"};await setDoc(member(row.id),{roles:next,active:active.checked,updatedAt:serverTimestamp()});await render()});}
+btn(c,tr("儲存權限","権限を保存"),async()=>{await setDoc(member(row.id),{roles:roles(m),active:active.checked,updatedAt:serverTimestamp()});await render()});}
 }
 function safeRender(){render().catch(e=>{by("message").textContent=tr("無法載入會員資料：","会員情報を取得できません：")+e.code;})}
 by("login").onclick=()=>act(by("login"),()=>signInWithPopup(auth,new GoogleAuthProvider()));
