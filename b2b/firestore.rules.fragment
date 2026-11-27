@@ -1,0 +1,75 @@
+// MERGE the functions and match blocks below INSIDE existing match /databases/{database}/documents.
+// This is not a complete ruleset. Never replace the existing production rules with this fragment.
+// Audit overlapping wildcard matches; Firestore allows access if ANY matching rule allows it.
+function tradeMember() {
+  return request.auth != null &&
+    exists(/databases/$(database)/documents/b2b_members/$(request.auth.uid)) &&
+    get(/databases/$(database)/documents/b2b_members/$(request.auth.uid)).data.active == true;
+}
+function tradeRole(r) {
+  return tradeMember() && get(/databases/$(database)/documents/b2b_members/$(request.auth.uid)).data.role == r;
+}
+function tradeOwn() { return request.auth != null && resource.data.owner == request.auth.uid; }
+function tradeEntry() {
+  let d = request.resource.data;
+  return d.keys().hasOnly(['owner','species','genes','sex','amount','createdAt']) &&
+    d.keys().hasAll(['owner','species','genes','sex','amount','createdAt']) &&
+    d.owner == request.auth.uid &&
+    d.species in ['ball','boa','beard','leo','crest'] &&
+    d.genes is string && d.genes.size() > 0 && d.genes.size() <= 200 &&
+    d.sex in ['M','F','any'] && d.amount is int && d.amount > 0 &&
+    d.amount <= 100000000 && d.createdAt == request.time;
+}
+function tradeProjection() {
+  let d = request.resource.data;
+  return d.keys().hasOnly(['species','genes','sex','amount','publishedAt']) &&
+    d.keys().hasAll(['species','genes','sex','amount','publishedAt']) &&
+    d.species in ['ball','boa','beard','leo','crest'] &&
+    d.genes is string && d.genes.size() > 0 && d.genes.size() <= 200 &&
+    d.sex in ['M','F','any'] && d.amount is int && d.amount > 0 &&
+    d.amount <= 100000000 && d.publishedAt == request.time;
+}
+function tradeSignal() {
+  let d = request.resource.data;
+  return d.keys().hasOnly(['owner','kind','target','createdAt']) &&
+    d.keys().hasAll(['owner','kind','target','createdAt']) &&
+    d.owner == request.auth.uid && d.target is string && d.target.size() <= 100 &&
+    d.createdAt == request.time &&
+    ((tradeRole('buyer') && d.kind == 'purchase' &&
+      exists(/databases/$(database)/documents/b2b_supply_public/$(d.target))) ||
+     (tradeRole('seller') && d.kind == 'offer' &&
+      exists(/databases/$(database)/documents/b2b_wish_public/$(d.target))));
+}
+match /b2b_members/{uid} {
+  allow get: if request.auth != null && request.auth.uid == uid;
+  allow list: if false;
+  allow write: if false; // provision only from trusted Firebase Admin/console
+}
+match /b2b_supply_private/{id} {
+  allow read: if tradeRole('admin') || (tradeRole('seller') && tradeOwn());
+  allow create: if tradeRole('seller') && tradeEntry();
+  allow update, delete: if false;
+}
+match /b2b_wish_private/{id} {
+  allow read: if tradeRole('admin') || (tradeRole('buyer') && tradeOwn());
+  allow create: if tradeRole('buyer') && tradeEntry();
+  allow update, delete: if false;
+}
+match /b2b_supply_public/{id} {
+  allow read: if tradeRole('buyer') || tradeRole('admin');
+  allow create, update: if tradeRole('admin') && tradeProjection() &&
+    exists(/databases/$(database)/documents/b2b_supply_private/$(id));
+  allow delete: if tradeRole('admin');
+}
+match /b2b_wish_public/{id} {
+  allow read: if tradeRole('seller') || tradeRole('admin');
+  allow create, update: if tradeRole('admin') && tradeProjection() &&
+    exists(/databases/$(database)/documents/b2b_wish_private/$(id));
+  allow delete: if tradeRole('admin');
+}
+match /b2b_signals/{id} {
+  allow read: if tradeRole('admin') ||
+    ((tradeRole('buyer') || tradeRole('seller')) && tradeOwn());
+  allow create: if tradeSignal() && id == request.auth.uid + '_' + request.resource.data.kind + '_' + request.resource.data.target;
+  allow update, delete: if false;
+}
