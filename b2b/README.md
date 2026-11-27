@@ -1,0 +1,12 @@
+# B2B membership foundation
+Development branch only. Do not deploy to production until the current Firestore rules have been reviewed and merged, and emulator tests pass.
+
+- `members.html`: bilingual Google sign-in, buyer/seller application, review, approval/rejection, role management and suspension.
+- `firestore.rules.fragment`: merge into the existing match /databases/{database}/documents block, not a complete replacement. Audit all overlapping match rules, including recursive wildcards. Do not change existing snake inventory access.
+- Firebase Authentication is shared with the current site; authorization is separate via b2b_members/{uid}. Do not grant B2B users access to existing admin pages or data. Verify existing production rules do not grant all authenticated users access.
+- Bootstrap only the first authorized B2B admin via trusted Firebase console/Admin SDK: b2b_members/{actual authenticated UID}, fields active: true, roles: ["admin"]. Do not use email text in client code as an authorization check.
+- The member page requires authorized Firebase Auth domains, Google provider enabled, and actual deployed merged rules.
+- Current phase does not connect the membership page to the trading prototype or deploy payments/orders. No actual member documents created.
+
+## Required tests before deployment
+Use emulator/test project with separate buyer, seller, export, admin and anonymous accounts. Confirm pending users cannot trade, other users cannot read applications, applicants cannot self-approve or assign roles, admin can approve/reject and assign non-admin roles, suspended accounts immediately lose protected data access, buyer cannot read seller private costs and vice versa. Verify existing website inventory and admin rules remain unchanged. Test multi-role access, simultaneous approvals, repeated applications, and unauthorized direct Firestore writes. Only deploy after confirming exact production rules and authority.
